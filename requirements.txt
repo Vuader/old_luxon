@@ -1,0 +1,11 @@
+mock
+PyMySQL
+bcrypt
+passlib
+Jinja2
+redis
+phonenumbers
+pytz
+tzlocal
+sphinxcontrib.napoleon
+sphinx-rtd-theme
