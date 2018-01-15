@@ -49,7 +49,9 @@ def static(req, resp):
             resp.content_type = const.APPLICATION_OCTET_STREAM
             mime_type = mimetypes.guess_type(sfile_path)
             if mime_type is not None:
-                resp.content_type = str(mime_type)
+                resp.content_type = mime_type[0]
+                if mime_type[1] is not None:
+                    resp.content_type += ';charset=%s' % mime_type[1]
             return sfile
         elif os.path.isdir(sfile_path):
             page = HTMLDoc()
