@@ -71,8 +71,10 @@ def server(app_root=None, ip='127.0.0.1', port='8000'):
         'workers': number_of_workers(),
         'capture_output': True
     }
-
-    application = Wsgi(__name__, app_root)
+    app_root = os.path.abspath(app_root)
+    os.chdir(app_root)
+    site.addsitedir(app_root)
+    application = __import__('wsgi').application
 
     import luxon.core.servers.web.static
 
