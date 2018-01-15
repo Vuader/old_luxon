@@ -315,7 +315,7 @@ class Request(RequestBase):
         # Set HTTP Request Application URL - Router uses this.
         # PEP 3333 specifies that PATH_INFO may be the
         # empty string, so normalize it in that case.
-        route = env['PATH_INFO'].strip('/') or '/'
+        route = env['PATH_INFO'] or '/'
 
         # PEP 3333 specifies that PATH_INFO variable are alwaysa
         # "bytes tunneled as latin-1" and must be encoded back
