@@ -39,6 +39,20 @@ log = GetLogger(__name__)
 
 @register_resources()
 class Token(object):
+    """Token Middleware.
+
+    Validates token and sets request.context.token object.
+
+    Luxon tokens use PKI. Its required to have the private key to sign
+    new tokens on the tachyonic api. Endpoints will require the public cert
+    to validate tokens authenticity.
+
+    The tokens should be stored in the application root. Usually where the wsgi
+    file is located.
+
+    Creating token:
+        openssl req  -nodes -new -x509  -keyout token.key -out token.cert
+    """
     def __init__(self):
         g.router.add('POST', '/v1/token', self.post)
         g.router.add('GET', '/v1/token', self.get)
