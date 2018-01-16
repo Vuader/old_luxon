@@ -28,32 +28,21 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
 
-def object_name(obj):
-    try:
-        return obj.__module__ + '.' + obj.__name__
-    except AttributeError:
-        try:
-            return obj.__class__.__module__ + '.' + obj.__class__.__name__
-        except AttributeError:
-            return obj
+from luxon.core.auth.driver import BaseDriver
 
-    raise ValueError("Cannot determine object name '%s'" % type(obj)) from None
-
-def dict_value_property(dictionary, key):
-    """Create a read-only property
-
-    Args:
-        dictionary (dict): Dictionary in object..
-        key (str): Case-sensitive dictionary key.
-
-    Returns:
-        A property instance that can be assigned to a class variable.
+class ExampleDriver(BaseDriver):
+    """Example Authentication Driver.
     """
-    def fget(self):
-        dictionary_obj = getattr(self, dictionary)
-        try:
-            return dictionary_obj[key] or None
-        except KeyError:
-            return str(dictionary_obj)
+    def authenticate(self, username, password, domain='default'):
+        self._initial()
+        if username == 'root' and password == 'test' and domain == 'default':
+            # Roles list of tuples passed to token.
+            # e.g. ( 'Role', 'domain_name', 'tenant_id' )
+            roles = [ ('Root', 'default', None,) ]
 
-    return property(fget)
+            self.new_token(user_id=1234, username='root',
+                           domain=None, domain_id=None,
+                           tenant_id=None, roles=roles)
+            return True
+        else:
+            return False

@@ -41,5 +41,13 @@ defaults = {
         'restapi': 'http://localhost/api',
         'log_stdout': True,
         'log_level': 'WARNING',
-    }
+    },
+    'tokens': {
+        'expire': '3600',
+        'driver': 'luxon.core.auth.example:ExampleDriver',
+    },
+    'tenants': {
+        'driver': 'luxon.core.tenant.example:ExampleDriver',
+    },
+
 }

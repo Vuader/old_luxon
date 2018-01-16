@@ -43,21 +43,12 @@ class Container(object):
 
     Keys / Properties are also not case senstive.
     """
-    """
-    def __setattr__(self, attr, value):
-        if attr[0] == '_':
-            self.__dict__[attr] = value
-        else:
-            self.__setitem__(attr, value)
-
-    def __getattr__(self, attr):
-        try:
-            return self.__getitem__(attr)
-        except KeyError as e:
-            raise AttributeError(e) from None
-    """
+    __slots__ = ('__dict__')
 
     def __call__(self):
+        return self.to_dict()
+
+    def to_dict(self):
         return dict((value[0], value[1]) for (key, value) in self.__dict__.items())
 
     def clear(self):
@@ -69,6 +60,15 @@ class Container(object):
 
     def __setattr__(self, key, value):
         self[key] = value
+
+    def __getattribute__(self, attr):
+        if hasattr(Container, attr):
+            return super().__getattribute__(attr)
+
+        try:
+            return self.__getitem__(attr)
+        except KeyError as e:
+            raise AttributeError(e) from None
 
     def __setitem__(self, key, value):
         """Set key to value.
@@ -166,7 +166,7 @@ class Container(object):
         except KeyError:
             return default
 
-    def json(self):
+    def to_json(self):
         """Return JSON Object of container"""
         return js.dumps(self())
 
@@ -174,6 +174,6 @@ class Container(object):
         """Create a shallow copy of container.
         """
         new = Container()
-        new.__dict__.__dict__.update(self.__dict__)
+        new.__dict__.update(self.__dict__)
 
         return new

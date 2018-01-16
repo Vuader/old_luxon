@@ -30,8 +30,8 @@
 
 from luxon.utils.timer import Timer
 from luxon.core.logger import GetLogger
-from luxon.core import constants as const
-from luxon.core.exceptions import Error
+from luxon import constants as const
+from luxon.exceptions import Error
 
 log = GetLogger(__name__)
 

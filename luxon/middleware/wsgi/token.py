@@ -27,33 +27,42 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
+import os
 
-def object_name(obj):
-    try:
-        return obj.__module__ + '.' + obj.__name__
-    except AttributeError:
-        try:
-            return obj.__class__.__module__ + '.' + obj.__class__.__name__
-        except AttributeError:
-            return obj
+from luxon import g
+from luxon import GetLogger
+from luxon.exceptions import AccessDenied
+from luxon.utils.imports import get_class
 
-    raise ValueError("Cannot determine object name '%s'" % type(obj)) from None
+log = GetLogger(__name__)
 
-def dict_value_property(dictionary, key):
-    """Create a read-only property
+class Token(object):
+    """Tokens Responders / Views.
 
-    Args:
-        dictionary (dict): Dictionary in object..
-        key (str): Case-sensitive dictionary key.
+    Luxon tokens use PKI. Its required to have the private key to sign
+    new tokens on the tachyonic api. Endpoints will require the public cert
+    to validate tokens authenticity.
 
-    Returns:
-        A property instance that can be assigned to a class variable.
+    The tokens should be stored in the application root. Usually where the wsgi
+    file is located.
+
+    Creating token:
+        openssl req  -nodes -new -x509  -keyout token.key -out token.cert
+
     """
-    def fget(self):
-        dictionary_obj = getattr(self, dictionary)
-        try:
-            return dictionary_obj[key] or None
-        except KeyError:
-            return str(dictionary_obj)
+    __slots__ = ()
 
-    return property(fget)
+    def pre(self, req, resp):
+        driver = g.app.config.get('tokens','driver')
+        expire = g.app.config.getint('tokens','expire')
+        req.context.token = get_class(driver)(expire)
+        token = req.get_header('X-Auth-Token')
+        if token is not None:
+            req.context.token.parse_token(token)
+
+        req.context.domain = req.get_header('X-Domain', default='default')
+        req.context.tenant_id = req.get_header('X-Tenant-Id')
+        req.context.roles = req.context.token.roles(req.context.domain,
+                                                    req.context.tenant_id)
+        log.error(req.context.roles)
+

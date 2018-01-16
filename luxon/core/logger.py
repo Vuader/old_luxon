@@ -35,7 +35,7 @@ import logging.handlers
 import threading
 
 from luxon import g
-from luxon.core.exceptions import NoContextError
+from luxon.exceptions import NoContextError
 from luxon.structs.threadlist import ThreadList
 from luxon.core.cls.singleton import NamedSingleton
 from luxon.utils.formatting import format_ms
@@ -50,6 +50,8 @@ log_format = logging.Formatter('%(asctime)s%(app_name)s'
                                datefmt='%b %d %H:%M:%S')
 
 _cached_root_configured = False
+
+_cached_loggers = []
 
 def log_formatted(logger_facility, message, prepend=None, append=None):
     """Using logger log formatted content
@@ -181,9 +183,11 @@ class GetLogger(metaclass=NamedSingleton):
             name = 'root'
 
         self.info("Started Logger '%s'" % name)
-
+        _cached_loggers.append(self)
 
     def app_configure(self):
+        global _cached_root_configured
+
         if self.name is None:
             name = 'application'
         else:
@@ -211,13 +215,19 @@ class GetLogger(metaclass=NamedSingleton):
                 log_file = section.get('log_file', fallback=None)
                 if log_file is not None:
                     self.log_file(log_file)
+
+                if name == 'application':
+                    _cached_root_configured = True
         except NoContextError:
             pass
+
 
 
         return self
 
     def _check_root_configured(self):
+        global _cached_root_configured
+
         ### Enable Default Logging stdout.
         if self.name is not None:
             root = GetLogger()
@@ -228,19 +238,21 @@ class GetLogger(metaclass=NamedSingleton):
             root.setLevel('ERROR')
             root.log_stdout()
 
+        _cached_root_configured = True
+
     def setLevel(self, level):
         set_level(self.logger, level)
         self._cached_effective_level = self.logger.getEffectiveLevel()
+        for logger in _cached_loggers:
+            logger._cached_effective_level = None
+
 
     def _log(self, handler, log_level=logging.NOTSET):
-        global _cached_root_configured
-
         set_level(handler, log_level)
         handler.setFormatter(log_format)
         handler.addFilter(_TachyonFilter())
         self.logger.addHandler(handler)
 
-        _cached_root_configured = True
 
     def _no(self, name):
         if name in self.handlers:
@@ -320,7 +332,7 @@ class GetLogger(metaclass=NamedSingleton):
         """
         if _cached_root_configured is False:
             self._check_root_configured()
-        if self._cached_effective_level <= logging.CRITICAL:
+        if self.getEffectiveLevel() <= logging.CRITICAL:
             msg = format_msg(msg)
             if timer is not None:
                 msg += format_timer(timer)
@@ -341,7 +353,7 @@ class GetLogger(metaclass=NamedSingleton):
         """
         if _cached_root_configured is False:
             self._check_root_configured()
-        if self._cached_effective_level <= logging.ERROR:
+        if self.getEffectiveLevel() <= logging.ERROR:
             msg = format_msg(msg)
             if timer is not None:
                 msg += format_timer(timer)
@@ -362,7 +374,7 @@ class GetLogger(metaclass=NamedSingleton):
         """
         if _cached_root_configured is False:
             self._check_root_configured()
-        if self._cached_effective_level <= logging.WARNING:
+        if self.getEffectiveLevel() <= logging.WARNING:
             msg = format_msg(msg)
             if timer is not None:
                 msg += format_timer(timer)
@@ -384,7 +396,7 @@ class GetLogger(metaclass=NamedSingleton):
         if _cached_root_configured is False:
             self._check_root_configured()
 
-        if self._cached_effective_level <= logging.INFO:
+        if self.getEffectiveLevel() <= logging.INFO:
             msg = format_msg(msg)
             if timer is not None:
                 msg += format_timer(timer)
@@ -405,7 +417,7 @@ class GetLogger(metaclass=NamedSingleton):
         """
         if _cached_root_configured is False:
             self._check_root_configured()
-        if self._cached_effective_level <= logging.DEBUG:
+        if self.getEffectiveLevel() <= logging.DEBUG:
             msg = format_msg(msg)
             if timer is not None:
                 msg += format_timer(timer)
@@ -416,7 +428,7 @@ class GetLogger(metaclass=NamedSingleton):
 
         returns integer
         """
-        if self._cached_effective_level is not None:
+        if self._cached_effective_level is None:
             self._cached_effective_level = self.logger.getEffectiveLevel()
 
         return self._cached_effective_level
