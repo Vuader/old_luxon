@@ -27,13 +27,13 @@
 # STRICT LIABILITY,OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
 # WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
-import logging
 
 from pymysql import *
 from luxon.utils.timer import Timer
 from luxon.utils.filter import filter_none_text
+from luxon import GetLogger
 
-log = logging.getLogger(__name__)
+log = GetLogger(__name__)
 
 
 def _log(db, msg, elapsed=0):
@@ -47,7 +47,7 @@ def _log(db, msg, elapsed=0):
         msg (str): Log message.
         elapsed (float): Time elapsed.
     """
-    if log.getEffectiveLevel() <= logging.DEBUG:
+    if log.debug_mode():
         log_msg = (msg +
                    " (DURATION: %.4fs) (%s,%s,%s)" %
                    (elapsed,
@@ -191,12 +191,12 @@ class MysqlCursor(cursors.Cursor):
             Parsed Results list containing dictionaries with
             field values per row.
         """
-        if isinstance(args, str) or isinstance(args, int):
-            # If only one paramter string value, formated to list
-            args = [args]
-        elif isinstance(args, tuple):
+        if isinstance(args, tuple):
             # Convert params to list if tuple.
             args = list(args)
+        elif not isinstance(args, list):
+            if args is not None:
+                args = [ args ]
 
         result = self._execute(self.connection, query, args)
         self.connection._uncommited = True
@@ -220,7 +220,7 @@ class MysqlConnect(connections.Connection):
     """
     def __init__(self, host, username, password, database):
         with Timer() as elapsed:
-            if log.getEffectiveLevel() <= logging.DEBUG:
+            if log.debug_mode():
                 log.debug("Connecting Database Connection" +
                           " (server=%s,username=%s,database=%s)" %
                           (host, username,
@@ -239,7 +239,7 @@ class MysqlConnect(connections.Connection):
                              charset='utf8',
                              autocommit=False)
 
-            if log.getEffectiveLevel() <= logging.DEBUG:
+            if log.debug_mode():
                 log.debug("Connected Database Connection" +
                           " (server=%s,username=%s,database=%s,%s,%s,%s)" %
                           (host,

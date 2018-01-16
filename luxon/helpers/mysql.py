@@ -27,40 +27,29 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
-import os
 
 from luxon import g
-from luxon import GetLogger
-from luxon.exceptions import AccessDenied
-from luxon.utils.imports import get_class
+from luxon.utils.pool import Pool
 
-log = GetLogger(__name__)
+_cached_pool = None
 
-class Token(object):
-    """Tokens Responders / Views.
+def _get_conn():
+    # #PERFORMANCE - ONLY IMPORT HERE!
+    from luxon.api.mysql import connect
+    kwargs = g.app.config.kwargs('mysql')
+    return connect(kwargs.get('host', '127.0.0.1'),
+                   kwargs.get('username', 'tachyonic'),
+                   kwargs.get('password', 'password'),
+                   kwargs.get('database', 'tachyonic'))
 
-    Luxon tokens use PKI. Its required to have the private key to sign
-    new tokens on the tachyonic api. Endpoints will require the public cert
-    to validate tokens authenticity.
+def mysql():
+    global _cached_pool
+    kwargs = g.app.config.kwargs('mysql')
 
-    The tokens should be stored in the application root. Usually where the wsgi
-    file is located.
+    if _cached_pool is None:
+        _cached_pool = Pool(_get_conn,
+                            pool_size=kwargs.get('pool_size', 10),
+                            max_overflow=kwargs.get('max_overflow', 0))
 
-    Creating token:
-        openssl req  -nodes -new -x509  -keyout token.key -out token.cert
+    return _cached_pool()
 
-    """
-    __slots__ = ()
-
-    def pre(self, req, resp):
-        driver = g.app.config.get('tokens','driver')
-        expire = g.app.config.getint('tokens','expire')
-        req.context.token = get_class(driver)(expire)
-        token = req.get_header('X-Auth-Token')
-        if token is not None:
-            req.context.token.parse_token(token)
-
-        req.context.domain = req.get_header('X-Domain', default='default')
-        req.context.tenant_id = req.get_header('X-Tenant-Id')
-        req.context.roles = req.context.token.roles(req.context.domain,
-                                                    req.context.tenant_id)
