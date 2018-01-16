@@ -31,7 +31,7 @@
 from luxon.core.application import ApplicationBase
 from luxon.core.handlers.wsgi.request import Request
 from luxon.core.handlers.wsgi.response import Response
-from luxon.core.exceptions import NotFound, AccessDenied
+from luxon.exceptions import NotFound, AccessDenied
 
 class Application(ApplicationBase):
     """This class is part of the main entry point into the application.

@@ -28,7 +28,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
 
-from luxon.core.constants import HTTP_STATUS_CODES
+from luxon.constants import HTTP_STATUS_CODES
 
 class Error(Exception):
     """Tachyonic Root Exception
@@ -203,7 +203,7 @@ class HTTPError(Error):
         if title is None:
             self.title = "%s %s" % (self.status, HTTP_STATUS_CODES[self.status])
 
-        if description is None:
+        if description is not None:
             self.description = ': ' + description
         else:
             self.description = ''
@@ -228,8 +228,8 @@ class HTTPBadRequest(HTTPError):
         headers (dict): A dict of header names and values to set.
         href (str): An href that can be used for more information.
     """
-    def __init__(self, **kwargs):
-        super().__init__(400, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(400, *args, **kwargs)
 
 class HTTPUnauthorized(HTTPError):
     """401 Unauthorized.
@@ -281,8 +281,8 @@ class HTTPPaymentRequired(HTTPError):
         href (str): An href that can be used for more information.
     """
 
-    def __init__(self, **kwargs):
-        super().__init__(402, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(402, *args, **kwargs)
 
 class HTTPForbidden(HTTPError):
     """403 Forbidden.
@@ -311,8 +311,8 @@ class HTTPForbidden(HTTPError):
         headers (dict): A dict of header names and values to set.
         href (str): An href that can be used for more information.
     """
-    def __init__(self, **kwargs):
-        super().__init__(403, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(403, *args, **kwargs)
 
 class HTTPNotFound(HTTPError):
     """404 Not Found.
@@ -337,8 +337,8 @@ class HTTPNotFound(HTTPError):
         headers (dict): A dict of header names and values to set.
         href (str): An href that can be used for more information.
     """
-    def __init__(self, **kwargs):
-        super().__init__(404, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(404, *args, **kwargs)
 
 class HTTPMethodNotAllowed(HTTPError):
     """405 Method Not Allowed.
@@ -393,8 +393,8 @@ class HTTPNotAcceptable(HTTPError):
         headers (dict): A dict of header names and values to set.
         href (str): An href that can be used for more information.
     """
-    def __init__(self, **kwargs):
-        super().__init__(406, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(406, *args, **kwargs)
 
 
 class HTTPConflict(HTTPError):
@@ -423,8 +423,8 @@ class HTTPConflict(HTTPError):
         headers (dict): A dict of header names and values to set.
         href (str): An href that can be used for more information.
     """
-    def __init__(self, **kwargs):
-        super().__init__(409, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(409, *args, **kwargs)
 
 class HTTPGone(HTTPError):
     """410 Gone.
@@ -458,8 +458,8 @@ class HTTPGone(HTTPError):
         headers (dict): A dict of header names and values to set.
         href (str): An href that can be used for more information.
     """
-    def __init__(self, **kwargs):
-        super().__init__(410, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(410, *args, **kwargs)
 
 class HTTPLengthRequired(HTTPError):
     """411 Length Required.
@@ -499,8 +499,8 @@ class HTTPPreconditionFailed(HTTPError):
         headers (dict): A dict of header names and values to set.
         href (str): An href that can be used for more information.
     """
-    def __init__(self, **kwargs):
-        super().__init__(412, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(412, *args, **kwargs)
 
 class HTTPPayloadTooLarge(HTTPError):
     """413 Payload Too Large.
@@ -522,8 +522,8 @@ class HTTPPayloadTooLarge(HTTPError):
         headers (dict): A dict of header names and values to set.
         href (str): An href that can be used for more information.
     """
-    def __init__(self, **kwargs):
-        super().__init__(413, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(413, *args, **kwargs)
 
 class HTTPUriTooLong(HTTPError):
     """414 URI Too Long.
@@ -546,8 +546,8 @@ class HTTPUriTooLong(HTTPError):
         headers (dict): A dict of header names and values to set.
         href (str): An href that can be used for more information.
     """
-    def __init__(self, **kwargs):
-        super().__init__(414, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(414, *args, **kwargs)
 
 class HTTPUnsupportedMediaType(HTTPError):
     """415 Unsupported Media Type.
@@ -567,8 +567,8 @@ class HTTPUnsupportedMediaType(HTTPError):
         headers (dict): A dict of header names and values to set.
         href (str): An href that can be used for more information.
     """
-    def __init__(self, **kwargs):
-        super().__init__(415, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(415, *args, **kwargs)
 
 class HTTPRangeNotSatisfiable(HTTPError):
     """416 Range Not Satisfiable.
@@ -589,7 +589,7 @@ class HTTPRangeNotSatisfiable(HTTPError):
     For example:
         HTTP/1.1 416 Range Not Satisfiable
         Date: Fri, 20 Jan 2012 15:41:54 GMT
-        Content-Range: bytes */47022
+        Content-Range: bytes \*/47022
 
     Note: Because servers are free to ignore Range, many
     implementations will simply respond with the entire selected
@@ -634,8 +634,8 @@ class HTTPUnprocessableEntity(HTTPError):
         headers (dict): A dict of header names and values to set.
         href (str): An href that can be used for more information.
     """
-    def __init__(self, **kwargs):
-        super().__init__(422, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(422, *args, **kwargs)
 
 class HTTPLocked(HTTPError):
     """423 Locked.
@@ -653,8 +653,8 @@ class HTTPLocked(HTTPError):
         headers (dict): A dict of header names and values to set.
         href (str): An href that can be used for more information.
     """
-    def __init__(self, **kwargs):
-        super().__init__(423, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(423, *args, **kwargs)
 
 class HTTPFailedDependency(HTTPError):
     """424 Failed Dependency.
@@ -671,8 +671,8 @@ class HTTPFailedDependency(HTTPError):
         headers (dict): A dict of header names and values to set.
         href (str): An href that can be used for more information.
     """
-    def __init__(self, **kwargs):
-        super().__init__(424, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(424, *args, **kwargs)
 
 class HTTPPreconditionRequired(HTTPError):
     """428 Precondition Required.
@@ -691,12 +691,12 @@ class HTTPPreconditionRequired(HTTPError):
 
     Keyword Args:
         description (str): Human friendly description of the error.
-        title (str): Error title (default '424 Failed Dependency')
+        title (str): Error title (default '428 Precondition Required')
         headers (dict): A dict of header names and values to set.
         href (str): An href that can be used for more information.
     """
-    def __init__(self, **kwargs):
-        super().__init__(42, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(428, *args, **kwargs)
 
 class HTTPTooManyRequests(HTTPError):
     """429 Too Many Requests.
@@ -714,8 +714,8 @@ class HTTPTooManyRequests(HTTPError):
         headers (dict): A dict of header names and values to set.
         href (str): An href that can be used for more information.
     """
-    def __init__(self, **kwargs):
-        super().__init__(429, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(429, *args, **kwargs)
 
 class HTTPRequestHeaderFieldsTooLarge(HTTPError):
     """431 Request Header Fields Too Large.
@@ -739,8 +739,8 @@ class HTTPRequestHeaderFieldsTooLarge(HTTPError):
         headers (dict): A dict of header names and values to set.
         href (str): An href that can be used for more information.
     """
-    def __init__(self, **kwargs):
-        super().__init__(429, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(429, *args, **kwargs)
 
 
 class HTTPUnavailableForLegalReasons(HTTPError):
@@ -760,8 +760,8 @@ class HTTPUnavailableForLegalReasons(HTTPError):
         headers (dict): A dict of header names and values to set.
         href (str): An href that can be used for more information.
     """
-    def __init__(self, **kwargs):
-        super().__init__(451, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(451, *args, **kwargs)
 
 class HTTPInternalServerError(HTTPError):
     """500 Internal Server Error.
@@ -777,8 +777,8 @@ class HTTPInternalServerError(HTTPError):
         headers (dict): A dict of header names and values to set.
         href (str): An href that can be used for more information.
     """
-    def __init__(self, **kwargs):
-        super().__init__(500, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(500, *args, **kwargs)
 
 class HTTPNotImplemented(HTTPError):
     """501 Not Implemented.
@@ -800,8 +800,8 @@ class HTTPNotImplemented(HTTPError):
         headers (dict): A dict of header names and values to set.
         href (str): An href that can be used for more information.
     """
-    def __init__(self, **kwargs):
-        super().__init__(501, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(501, *args, **kwargs)
 
 class HTTPBadGateway(HTTPError):
     """502 Bad Gateway.
@@ -818,8 +818,8 @@ class HTTPBadGateway(HTTPError):
         headers (dict): A dict of header names and values to set.
         href (str): An href that can be used for more information.
     """
-    def __init__(self, **kwargs):
-        super().__init__(502, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(502, *args, **kwargs)
 
 class HTTPServiceUnavailable(HTTPError):
     """503 Service Unavailable.
@@ -844,8 +844,8 @@ class HTTPServiceUnavailable(HTTPError):
         headers (dict): A dict of header names and values to set.
         href (str): An href that can be used for more information.
     """
-    def __init__(self, **kwargs):
-        super().__init__(503, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(503, *args, **kwargs)
 
 class HTTPGatewayTimeout(HTTPError):
     """504 Gateway Timeout.
@@ -863,8 +863,8 @@ class HTTPGatewayTimeout(HTTPError):
         headers (dict): A dict of header names and values to set.
         href (str): An href that can be used for more information.
     """
-    def __init__(self, **kwargs):
-        super().__init__(504, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(504, *args, **kwargs)
 
 class HTTPVersionNotSupported(HTTPError):
     """505 HTTP Version Not Supported
@@ -887,8 +887,8 @@ class HTTPVersionNotSupported(HTTPError):
         headers (dict): A dict of header names and values to set.
         href (str): An href that can be used for more information.
     """
-    def __init__(self, **kwargs):
-        super().__init__(505, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(505, *args, **kwargs)
 
 class HTTPInsufficientStorage(HTTPError):
     """507 Insufficient Storage.
@@ -909,8 +909,8 @@ class HTTPInsufficientStorage(HTTPError):
         headers (dict): A dict of header names and values to set.
         href (str): An href that can be used for more information.
     """
-    def __init__(self, **kwargs):
-        super().__init__(507, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(507, *args, **kwargs)
 
 class HTTPLoopDetected(HTTPError):
     """508 Loop Detected.
@@ -928,8 +928,8 @@ class HTTPLoopDetected(HTTPError):
         headers (dict): A dict of header names and values to set.
         href (str): An href that can be used for more information.
     """
-    def __init__(self, **kwargs):
-        super().__init__(508, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(508, *args, **kwargs)
 
 class HTTPNetworkAuthenticationRequired(HTTPError):
     """511 Network Authentication Required.
@@ -959,8 +959,8 @@ class HTTPNetworkAuthenticationRequired(HTTPError):
         headers (dict): A dict of header names and values to set.
         href (str): An href that can be used for more information.
     """
-    def __init__(self, **kwargs):
-        super().__init__(511, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(511, *args, **kwargs)
 
 class HTTPInvalidHeader(HTTPBadRequest):
     """Header in the request is invalid.

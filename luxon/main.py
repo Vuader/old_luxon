@@ -28,11 +28,80 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
+import os
 import sys
 import argparse
+import hashlib
+from pkg_resources import (resource_stream, resource_listdir,
+                           resource_isdir, resource_exists)
 
 from luxon import metadata
 from luxon.core.servers.web import server as web_server
+from luxon.utils.imports import import_module
+
+def _create_dir(path, new):
+    new = os.path.normpath('%s%s' % (path, new))
+    if not os.path.exists(new):
+        os.makedirs(new)
+        print('Created directory: %s' % new)
+
+def _copy_file(module, path, src, dst, update=True):
+    try:
+        import_module(module)
+    except ImportError as e:
+        print("Import Error %s\n%s" % (module, e))
+        exit()
+
+    dst = os.path.normpath("%s/%s" % (path, dst))
+    if resource_exists(module, src):
+        src_file = resource_stream(module, src).read()
+        if not os.path.exists(dst):
+            with open(dst, 'wb') as handle:
+                handle.write(src_file)
+                print("Created %s" % dst)
+        else:
+            if update is False:
+                dst = "%s.default" % (dst,)
+                if not os.path.exists(dst):
+                    with open(dst, 'wb') as handle:
+                        handle.write(src_file)
+                        print("Created %s" % dst)
+            else:
+                src_sig = hashlib.md5(src_file)
+                dst_file = open(dst, 'rb').read()
+                dst_sig = hashlib.md5(dst_file)
+                if src_sig.hexdigest() != dst_sig.hexdigest():
+                    with open(dst, 'wb') as handle:
+                        handle.write(src_file)
+                        print("Updated %s" % dst)
+
+def _recursive_copy(local, module, path):
+    if resource_isdir(module, path):
+        for filename in resource_listdir(module, path):
+            fullname = path + '/' + filename
+            if resource_isdir(module, fullname):
+                _create_dir(local, '/%s' % filename)
+                _recursive_copy("%s/%s" % (local, filename), module, fullname)
+            else:
+                _copy_file(module, local, fullname, filename)
+
+
+
+def setup(args):
+    path = os.path.abspath(args.path)
+    pkg = args.pkg
+
+    if pkg == 'luxon':
+        print("Your suppose to install luxon applications not luxon itself")
+        exit()
+
+    _copy_file(pkg, path, 'settings.ini', 'settings.ini', False)
+    _copy_file(pkg, path, 'wsgi.py', 'wsgi.py', False)
+    _create_dir('', '%s/static' % path)
+    _create_dir('', '%s/static/%s' % (path, pkg))
+    _create_dir('', '%s/templates/%s' % (path, pkg))
+    _recursive_copy('%s/static' % path, pkg, 'static')
+
 
 def server(args):
     web_server(app_root=args.path, ip=args.ip, port=args.port)
@@ -46,6 +115,10 @@ def main(argv):
 
     parser.add_argument('path',
                         help='Application root path')
+
+    group.add_argument('-i',
+                       dest='pkg',
+                       help='Install/Update application in path specified')
 
     group.add_argument('-s',
                        dest='funcs',
@@ -64,6 +137,9 @@ def main(argv):
     if args.funcs is not None:
         for func in args.funcs:
             func(args)
+
+    if args.pkg is not None:
+        setup(args)
 
 def entry_point():
     """Zero-argument entry point for use with setuptools/distribute."""
