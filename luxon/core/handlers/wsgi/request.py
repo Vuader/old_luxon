@@ -33,7 +33,7 @@ from cgi import FieldStorage
 from http.cookies import SimpleCookie, CookieError
 
 from luxon import g
-from luxon.core import exceptions as errors
+from luxon import exceptions as errors
 from luxon.core.request import RequestBase
 from luxon.core.http.headers import parse_forwarded_header
 from luxon.utils.encoding import if_bytes_to_unicode
@@ -217,6 +217,8 @@ class Request(RequestBase):
 
                 'luxon.utils.file.CachedInput'
 
+        json (object): JSON Payload as object.
+
         form: cgi.FieldStorage() To get at submitted form data. As per Common
             Gateway Interface support provided by Python natively.
 
@@ -295,6 +297,7 @@ class Request(RequestBase):
         '_cached_is_mobile',
         '_cached_is_bot',
         '_cached_static',
+        '_cached_json',
         '_wsgierrors',
     )
     def __init__(self, env, start_response):
@@ -343,6 +346,7 @@ class Request(RequestBase):
         self._cached_is_mobile = None
         self._cached_is_bot = None
         self._cached_static = None
+        self._cached_json = None
 
     @property
     def app(self):
@@ -607,6 +611,15 @@ class Request(RequestBase):
                 return self._cached_stream
 
         raise errors.HTTPUnsupportedMediaType('Expecting payload')
+
+    @property
+    def json(self):
+        if self._cached_json is None:
+            self.stream.seek(0)
+            self._cached_json = js.loads(self.stream.read())
+
+        return self._cached_json
+
 
     @property
     def form(self):

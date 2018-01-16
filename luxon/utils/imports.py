@@ -49,9 +49,9 @@ def import_module(module):
 
             __import__(module)
 
-            log.info('Importing module: %s (Completed) (DURATION %.4fs)' %
-                      (module,
-                       elapsed()))
+            log.info('Importing module: %s (Completed)' %
+                      module,
+                      timer=elapsed())
 
     return sys.modules[module]
 

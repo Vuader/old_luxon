@@ -37,11 +37,11 @@ from luxon.core.globals import Globals
 from luxon.core.config import Config
 from luxon.core.request import RequestBase
 from luxon.core.response import ResponseBase
-from luxon.core.exceptions import (Error,
-                                   NotFound,
-                                   HTTPError,
-                                   AccessDenied,
-                                   NoContextError,)
+from luxon.exceptions import (Error,
+                              NotFound,
+                              HTTPError,
+                              AccessDenied,
+                              NoContextError,)
 from luxon.utils import imports
 from luxon.utils.timer import Timer
 

@@ -30,7 +30,7 @@
 
 from html.parser import HTMLParser
 
-from luxon.core import exceptions
+from luxon import exceptions
 
 html5_void_elements = ["area", "base", "br", "col",
                        "command", "embed", "hr", "img",

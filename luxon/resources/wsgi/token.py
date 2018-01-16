@@ -27,33 +27,37 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
+import os
 
-def object_name(obj):
-    try:
-        return obj.__module__ + '.' + obj.__name__
-    except AttributeError:
-        try:
-            return obj.__class__.__module__ + '.' + obj.__class__.__name__
-        except AttributeError:
-            return obj
+from luxon import g
+from luxon import GetLogger
+from luxon.exceptions import AccessDenied
+from luxon.utils.imports import get_class
+from luxon import register_resources
 
-    raise ValueError("Cannot determine object name '%s'" % type(obj)) from None
+log = GetLogger(__name__)
 
-def dict_value_property(dictionary, key):
-    """Create a read-only property
+@register_resources()
+class Token(object):
+    def __init__(self):
+        g.router.add('POST', '/v1/token', self.post)
+        g.router.add('GET', '/v1/token', self.get)
 
-    Args:
-        dictionary (dict): Dictionary in object..
-        key (str): Case-sensitive dictionary key.
+    def get(self, req, resp):
+        if 'token' in req.context:
+            return req.context.token
+        else:
+            raise ValueError('Middleware not loaded - no token' +
+                                 ' + authentication')
 
-    Returns:
-        A property instance that can be assigned to a class variable.
-    """
-    def fget(self):
-        dictionary_obj = getattr(self, dictionary)
-        try:
-            return dictionary_obj[key] or None
-        except KeyError:
-            return str(dictionary_obj)
-
-    return property(fget)
+    def post(self, req, resp):
+        request_object = req.json
+        if 'token' in req.context:
+            req.context.token.login(request_object.get('username',
+                                                       None),
+                        request_object.get('password', None),
+                        req.get_header('X-Domain', default='default'))
+            return req.context.token
+        else:
+            raise ValueError('Middleware not loaded - no token' +
+                             ' + authentication')

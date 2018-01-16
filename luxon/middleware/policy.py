@@ -34,7 +34,7 @@ from luxon import GetLogger
 from luxon.utils import js
 from luxon.core.policy import compiler
 from luxon.core.policy import Policy as PolicyEngine
-from luxon.core.exceptions import AccessDenied
+from luxon.exceptions import AccessDenied
 
 log = GetLogger(__name__)
 
