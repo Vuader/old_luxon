@@ -70,9 +70,9 @@ Writing data is simply doing:
 
     resp.write('hello world')
 
-The response object behaves exactly like a file, and middleware can write data to it aswell.
+The response object behaves exactly like a file, and middleware can write data to it as well.
 
-**If you simply return data the following types are supported**:
+**If you simply return data, the following types are supported**:
     * ordereddict - Translated to JSON and content-type set automatically.
     * list - Translated to JSON and content-type set automatically.
     * dict - Translated to JSON and content-type set automatically.
