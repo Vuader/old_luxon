@@ -1,7 +1,7 @@
 WSGI Interface Guide
 ====================
 
-The WSGI handler provides environment that is fast, flexible, scaleable and simple for building 'Web Applications' and APIs. The WSGI handler has minimal dependencies and unncessary abstraction. Templating for example is not initilized if not needed. However once used its pre-initilized for any other requests. 
+The WSGI handler provides environment that is fast, flexible, scalable and simple for building 'Web Applications' and APIs. The WSGI handler has minimal dependencies and unncessary abstraction. Templating for example is not initilized if not needed. However once used its pre-initilized for any other requests.
 
 **Hello world in** *'6'* **lines**
 

@@ -30,8 +30,8 @@
 import logging
 
 from pymysql import *
-from tachyonic.neutrino.timer import timer
-from tachyonic.neutrino.strings import filter_none_text
+from luxon.utils.timer import Timer
+from luxon.utils.filter import filter_none_text
 
 log = logging.getLogger(__name__)
 
@@ -152,7 +152,7 @@ class MysqlCursor(cursors.Cursor):
         Returns:
             List of parsed results.
         """
-        with timer() as elapsed:
+        with Timer() as elapsed:
             log_query = _log_query(query, params)
             parsed = _parsed_params(params)
 
@@ -198,7 +198,7 @@ class MysqlCursor(cursors.Cursor):
             # Convert params to list if tuple.
             args = list(args)
 
-        result = self._execute(self, query, args)
+        result = self._execute(self.connection, query, args)
         self.connection._uncommited = True
 
         return result
@@ -219,7 +219,7 @@ class MysqlConnect(connections.Connection):
                         one.
     """
     def __init__(self, host, username, password, database):
-        with timer() as elapsed:
+        with Timer() as elapsed:
             if log.getEffectiveLevel() <= logging.DEBUG:
                 log.debug("Connecting Database Connection" +
                           " (server=%s,username=%s,database=%s)" %
@@ -274,7 +274,7 @@ class MysqlConnect(connections.Connection):
         As per PEP-0249
 
         """
-        with timer() as elapsed:
+        with Timer() as elapsed:
             super().close()
             _log(self, "Mysql database closed", elapsed())
 
@@ -285,7 +285,7 @@ class MysqlConnect(connections.Connection):
         current transaction; otherwise this method successfully does nothing.
         """
         if self._uncommited is True:
-            with timer() as elapsed:
+            with Timer() as elapsed:
                 super().commit()
                 _log(self, "Commit", elapsed())
 
@@ -425,7 +425,7 @@ class MysqlConnect(connections.Connection):
         otherwise a NotSupportedError is raised.
         """
         if self._uncommited is True:
-            with timer() as elapsed:
+            with Timer() as elapsed:
                 super().rollback()
                 _log(self, "Rollback", elapsed())
 

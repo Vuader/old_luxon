@@ -33,7 +33,7 @@ from collections import OrderedDict
 from luxon.utils.timer import Timer
 from luxon.utils.cast import to_tuple
 from luxon.utils.objects import object_name
-from luxon.core.exceptions import Error
+from luxon.exceptions import Error
 from luxon.core.logger import GetLogger
 from luxon.core.router.compiled import CompiledRouter
 from luxon.core.cls.singleton import Singleton

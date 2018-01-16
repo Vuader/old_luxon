@@ -28,32 +28,37 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
 
-def object_name(obj):
+import OpenSSL
+from OpenSSL import crypto
+import base64
+
+
+def sign(key_file, data, passphrase=None, digest='sha512'):
+    with open(key_file, "r") as key_file:
+        key = key_file.read()
+
+    if key.startswith('-----BEGIN '):
+        pkey = crypto.load_privatekey(crypto.FILETYPE_PEM,
+                                      key,
+                                      passphrase=passphrase)
+    else:
+        pkey = crypto.load_pkcs12(key, passphrase=passphrase).get_privatekey()
+
+    signature = OpenSSL.crypto.sign(pkey, data, digest)
+    return base64.b64encode(signature)
+
+def verify(cert_file, signature, data, passphrase=None, digest='sha512'):
+    signature = base64.b64decode(signature)
+    with open(cert_file, "r") as cert_file:
+        cert = cert_file.read()
+
+    cert = crypto.load_certificate(crypto.FILETYPE_PEM, cert)
+
     try:
-        return obj.__module__ + '.' + obj.__name__
-    except AttributeError:
-        try:
-            return obj.__class__.__module__ + '.' + obj.__class__.__name__
-        except AttributeError:
-            return obj
+        OpenSSL.crypto.verify(cert, signature, data, digest)
+    except OpenSSL.crypto.Error as e:
+        raise ValueError("PKI Unable to verify signature '%s'" % e) from None
+        return False
 
-    raise ValueError("Cannot determine object name '%s'" % type(obj)) from None
+    return True
 
-def dict_value_property(dictionary, key):
-    """Create a read-only property
-
-    Args:
-        dictionary (dict): Dictionary in object..
-        key (str): Case-sensitive dictionary key.
-
-    Returns:
-        A property instance that can be assigned to a class variable.
-    """
-    def fget(self):
-        dictionary_obj = getattr(self, dictionary)
-        try:
-            return dictionary_obj[key] or None
-        except KeyError:
-            return str(dictionary_obj)
-
-    return property(fget)

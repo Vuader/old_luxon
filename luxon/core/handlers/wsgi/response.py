@@ -31,7 +31,7 @@ from http.cookies import SimpleCookie, CookieError
 
 from luxon import __identity__
 from luxon.core.response import ResponseBase
-from luxon.core import constants as const
+from luxon import constants as const
 from luxon.utils.encoding import is_ascii
 from luxon.utils.timezone import TimezoneGMT
 

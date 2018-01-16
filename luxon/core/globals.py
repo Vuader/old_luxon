@@ -29,7 +29,7 @@
 # THE POSSIBILITY OF SUCH DAMAGE.
 
 from luxon.core.cls.nullerror import NullError
-from luxon.core.exceptions import NoContextError
+from luxon.exceptions import NoContextError
 from luxon.utils.objects import object_name
 from luxon.structs.threaddict import ThreadDict
 

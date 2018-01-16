@@ -3,7 +3,7 @@
 Routing
 =======
 
-Luxon routes incoming requests to resources based on a route path defined. The paths are defiend for routes differently depending on the responder type. There are two types of responders:
+Luxon routes incoming requests to resources based on a route path defined. The paths are defined for routes differently depending on the responder type. There are two types of responders:
 
 	* Responder Class known as Resources.
 	* Function known as Resource.

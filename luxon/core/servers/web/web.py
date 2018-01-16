@@ -37,7 +37,7 @@ from luxon.core.handlers.wsgi import Wsgi
 def server(app_root=None, ip='127.0.0.1', port='8000'):
     try:
         from gunicorn.app.base import Application
-    except:
+    except ImportError:
         print("Requires Gunicorn - pip install gunicorn")
         exit()
 
@@ -72,11 +72,16 @@ def server(app_root=None, ip='127.0.0.1', port='8000'):
         'capture_output': True
     }
     app_root = os.path.abspath(app_root)
+    site.addsitedir(os.path.abspath(os.path.curdir))
     os.chdir(app_root)
-    site.addsitedir(app_root)
-    application = __import__('wsgi').application
+    if not os.path.isfile(app_root.rstrip('/') + '/wsgi.py'):
+        raise FileNotFoundError(app_root.rstrip('/') + '/wsgi.py')
+
+    with open(app_root.rstrip('/') + '/wsgi.py', 'r') as wsgi_file:
+        exec_g = {}
+        exec(wsgi_file.read(), exec_g, exec_g)
 
     import luxon.core.servers.web.static
 
     while True:
-        StandaloneApplication(application, options).run()
+        StandaloneApplication(exec_g['application'], options).run()

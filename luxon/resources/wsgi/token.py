@@ -31,36 +31,47 @@ import os
 
 from luxon import g
 from luxon import GetLogger
-from luxon.utils import js
-from luxon.core.policy import compiler
-from luxon.core.policy import Policy as PolicyEngine
 from luxon.exceptions import AccessDenied
+from luxon.utils.imports import get_class
+from luxon import register_resources
 
 log = GetLogger(__name__)
 
-class Policy(object):
-    __slots__ = ( '_compiled' )
+@register_resources()
+class Token(object):
+    """Token Middleware.
 
+    Validates token and sets request.context.token object.
+
+    Luxon tokens use PKI. Its required to have the private key to sign
+    new tokens on the tachyonic api. Endpoints will require the public cert
+    to validate tokens authenticity.
+
+    The tokens should be stored in the application root. Usually where the wsgi
+    file is located.
+
+    Creating token:
+        openssl req  -nodes -new -x509  -keyout token.key -out token.cert
+    """
     def __init__(self):
-        app_root = g.app.app_root
+        g.router.add('POST', '/v1/token', self.post)
+        g.router.add('GET', '/v1/token', self.get)
 
-        # Compile the policies if policy.json found.
-        if os.path.isfile(app_root + '/policy.json'):
-            policy_file = open(app_root + '/policy.json', 'r')
-            rule_set = js.loads(policy_file.read())
-            self._compiled = compiler(rule_set)
+    def get(self, req, resp):
+        if 'token' in req.context:
+            return req.context.token
         else:
-            log.warning("No 'policy.json' found in '" + app_root + "/policy.json'" +
-                        " compiling empty rule set")
-            self._compiled = compiler({})
+            raise ValueError('Middleware not loaded - no token' +
+                                 ' + authentication')
 
-    def resource(self, req, resp):
-        # Load policy for request.
-        req.policy = policy = PolicyEngine(self._compiled, req=req)
-        tag = req.tag
-
-        if tag is not None and not policy.validate(tag):
-            raise AccessDenied("Access Denied by Policy" +
-                               " Rule '%s'" % tag +
-                               " Route '%s'" % req.route +
-                               " Method '%s'" % req.method)
+    def post(self, req, resp):
+        request_object = req.json
+        if 'token' in req.context:
+            req.context.token.login(request_object.get('username',
+                                                       None),
+                        request_object.get('password', None),
+                        req.get_header('X-Domain', default='default'))
+            return req.context.token
+        else:
+            raise ValueError('Middleware not loaded - no token' +
+                             ' + authentication')

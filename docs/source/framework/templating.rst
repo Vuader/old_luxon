@@ -7,12 +7,12 @@ Luxon provides templating engine interface to Jinja2. Our interface only
 inherits from Jinja2 and extends the functionality needed in the framework. The
 loader will ensure that templates are found in the correct places.
 
-There are two places for templates to exisit:
+There are two places for templates to exist:
     * Python package.
     * File system. These are known as overrides.
 
 We have overrides so that users using your application can customize the
-templates to be renderd.
+templates to be rendered.
 
 By looking at the following example we will describe the process:
 

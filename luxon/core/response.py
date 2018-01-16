@@ -32,8 +32,8 @@ from io import BytesIO
 from collections import OrderedDict
 
 from luxon import g
-from luxon.core import constants as const
-from luxon.core import exceptions
+from luxon import constants as const
+from luxon import exceptions
 from luxon.utils.encoding import if_unicode_to_bytes
 from luxon.utils import js
 
