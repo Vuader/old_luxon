@@ -55,7 +55,7 @@ There is a conveniant utility decorator provided to add middleware responder(s) 
 
 .. code:: python
 
-	from luxon import register_resource, middleware
+	from luxon import register_resource, register_middleware
 
 	# Your middleware for specific responders.
 	def middleware(req, resp, **kwargs):

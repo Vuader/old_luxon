@@ -33,11 +33,11 @@ Open app in your favourite text editor and add following lines:
 
 .. code:: python
 
-    from luxon.core.handler.wsgi import Wsgi
+    from luxon.core.handlers.wsgi import Wsgi
 
     application = Wsgi(__name__)
 
-A WSGI application is just a callable with a well-defined signature so that you can host the application with any web server that understands the WSGI protocol. However we not going to use that file here.
+A WSGI application is just a callable with a well-defined signature so that you can host the application with any web server that understands the WSGI protocol. However we are not going to use that file here.
 
 You need to create a static folder which hosts the applications static content. Such as images, css, javascript and more.
 
@@ -82,10 +82,12 @@ Edit myapp/home.py with your editor and add the following lines.
 .. code:: python
 
     from luxon import register_resource
+    from luxon import render_template
 
     @register_resource('GET', '/')
     def homepage(req, resp):
-        render_template('myapp/home.html')
+        resp.content_type = 'text/html; charset=utf-8'
+        return render_template('myapp/home.html')
 
 Edit myapp/templates/home.html with your editor and add the following lines.
 

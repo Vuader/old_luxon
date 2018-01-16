@@ -6,11 +6,11 @@ Globals
 
 It is often needed that 'middleware', 'responders', 'helpers' and perhaps 'utilities' have access to objects within the context of the running application. To provide this context there is the big 'g' global. 
 
-The global allows us to provide conveniant errors when working outside of the context of application or request where a responder is not being used.
+The global allows us to provide convenient errors when working outside of the context of application or request where a responder is not being used.
 
 All requests are placed in threads, even as per WSGI. Hence the request can only be accessed from a utility function for example when a request is being processed.
 
-There are bultin globals such a *'current_request', 'app' and 'router'*.
+There are builtin globals such a *'current_request', 'app' and 'router'*.
 
 Context
 -------
@@ -24,6 +24,7 @@ Using 'g' by example
 --------------------
 
 **The following raises an error**
+
 .. code:: python
 
     from luxon import g
@@ -31,6 +32,7 @@ Using 'g' by example
     print(g.app.app_root) # Will Raise NoContextError. 
 
 **The following works as expected**
+
 .. code:: python
 
     from luxon import g
