@@ -29,7 +29,7 @@
 import queue
 import atexit
 
-from luxon.core.exceptions import PoolExhausted
+from luxon.exceptions import PoolExhausted
 
 class ProxyObject(object):
     """ Class ProxyObject
