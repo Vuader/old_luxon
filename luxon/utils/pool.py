@@ -29,7 +29,16 @@
 import queue
 import atexit
 
+from luxon import GetLogger
 from luxon.exceptions import PoolExhausted
+from luxon.utils.objects import object_name
+
+log = GetLogger(__name__)
+
+def _log(msg, obj, pool):
+    log.info('%s: %s (COUNT: %s, MAX_POOL_SIZE: %s, MAX_OVERFLOW %s' %
+             (msg, object_name(obj), pool._count,
+              pool._pool_size, pool._max_overflow))
 
 class ProxyObject(object):
     """ Class ProxyObject
@@ -72,6 +81,7 @@ class ProxyObject(object):
         or closes the proxied object in the case where the pool_size has been reached.
         """
         if self._pool._count <= self._pool._pool_size:
+            _log('Returning object to pool', self._obj, self._pool)
             self._pool._queue.put(self._obj)
         else:
             try:
@@ -163,11 +173,13 @@ class Pool(object):
             try:
                 # if in queue, grab it there
                 _get_obj = q.get(False)
+                _log('Using object from pool', _get_obj, self)
             except queue.Empty:
                 # If not in queue
                 # create new conn object.
                 _get_obj = self._get_obj_func()
                 self._count += 1
+                _log('Created new object', _get_obj, self)
                 try:
                     atexit.register(_get_obj.close)
                 except AttributeError:

@@ -51,6 +51,7 @@ from luxon.core import cls
 from luxon.utils import js
 from luxon.helpers.jinja2 import render_template
 from luxon.helpers.redis import strict as redis
+from luxon.helpers.mysql import mysql
 
 __version__ = metadata.version
 __author__ = metadata.authors[0]
