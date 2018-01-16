@@ -49,8 +49,8 @@ log = GetLogger()
 
 def determine_app_root(name, app_root=None):
     if app_root is None:
-        if name == "__main__":
-            app_mod = imports.import_module('__main__')
+        if name == "__main__" or "_mod_wsgi" in name:
+            app_mod = imports.import_module(name)
             return os.path.abspath( \
                 os.path.dirname( \
                     app_mod.__file__)).rstrip('/')
