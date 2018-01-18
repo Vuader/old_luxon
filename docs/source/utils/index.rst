@@ -5,3 +5,4 @@ Utilities Guide
     :maxdepth: 2
 
     timer
+    pool

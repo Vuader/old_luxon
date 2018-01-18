@@ -1,5 +1,6 @@
-Pool Helper
-===========
+.. _pool:
+Pool
+====
 
-.. autoclass:: luxon.core.http.headers.ForwardedElement
+.. autoclass:: luxon.utils.pool.Pool
     :members:
