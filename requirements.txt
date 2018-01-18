@@ -7,6 +7,6 @@ redis
 phonenumbers
 pytz
 tzlocal
-sphinxcontrib.napoleon
+sphinxcontrib-napoleon
 sphinx-rtd-theme
 pyopenssl
