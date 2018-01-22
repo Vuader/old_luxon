@@ -28,5 +28,32 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
 
-class Mysql(object):
-    pass
+from luxon import g
+from luxon.utils.pool import Pool
+
+_cached_pool = None
+
+def _get_conn():
+    # #PERFORMANCE - ONLY IMPORT HERE!
+    kwargs = g.app.config.kwargs('database')
+    if kwargs.get('type') == 'mysql':
+        from luxon.core.db.mysql import connect
+        return connect(kwargs.get('host', '127.0.0.1'),
+                       kwargs.get('username', 'tachyonic'),
+                       kwargs.get('password', 'password'),
+                       kwargs.get('database', 'tachyonic'))
+
+def db():
+    kwargs = g.app.config.kwargs('database')
+    global _cached_pool
+    if kwargs.get('type') == 'mysql':
+        if _cached_pool is None:
+            _cached_pool = Pool(_get_conn,
+                                pool_size=kwargs.get('pool_size', 10),
+                                max_overflow=kwargs.get('max_overflow', 0))
+        return _cached_pool()
+    elif kwargs.get('type') == 'sqlite3':
+        from luxon.core.db.sqlite import connect
+        return connect(kwargs.get('database'))
+    else:
+        raise TypeError('Unknown Database type defined in configuration')

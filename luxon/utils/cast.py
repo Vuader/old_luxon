@@ -34,4 +34,4 @@ def to_tuple(obj):
     elif isinstance(obj, tuple):
         return obj
     else:
-        return (str(obj), )
+        return (obj, )

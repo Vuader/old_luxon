@@ -82,6 +82,10 @@ class ProxyObject(object):
         """
         if self._pool._count <= self._pool._pool_size:
             _log('Returning object to pool', self._obj, self._pool)
+            try:
+                self._obj.clean_up()
+            except AttributeError:
+                pass
             self._pool._queue.put(self._obj)
         else:
             try:
@@ -173,6 +177,10 @@ class Pool(object):
             try:
                 # if in queue, grab it there
                 _get_obj = q.get(False)
+                try:
+                    _get_obj.ping()
+                except AttributeError:
+                    pass
                 _log('Using object from pool', _get_obj, self)
             except queue.Empty:
                 # If not in queue

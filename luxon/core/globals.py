@@ -38,8 +38,11 @@ _thread_items = ('current_request',)
 
 _context_items = ('app',
                   'current_request',
+                  'config',
+                  'app_root',
                  )
 
+_models = []
 _middleware_pre = []
 _middleware_resource = []
 _middleware_post = []
@@ -57,6 +60,10 @@ class Globals(object):
         obj (any): Any object you wish to proxy.
     """
     __slots__ = ( '__dict__' )
+
+    @property
+    def models(self):
+        return _models
 
     @property
     def middleware_pre(self):
@@ -105,12 +112,16 @@ class Globals(object):
             try:
                 return self.__dict__[key]
             except KeyError:
+                try:
+                    return super().__getattr__(key)
+                except AttributeError:
+                    pass
                 if key in _context_items:
                     # Place holder for context - Provides nice error.
                     return NullError(NoContextError,
                                      "Working outside of '%s'" % key +
                                      " context")
-                raise KeyError("'" + object_name(self) +
+                raise KeyError("'" + self.__class__.__name__ +
                                "' object has no key '" +
                                key + "'") from None
 
@@ -127,7 +138,7 @@ class Globals(object):
         try:
             return self[attr]
         except KeyError:
-            raise AttributeError("'" + object_name(self) +
+            raise AttributeError("'" + self.__class__.__name__ +
                                  "' object has no '" +
                                  attr + "'") from None
 
@@ -135,7 +146,7 @@ class Globals(object):
         try:
             del self[attr]
         except KeyError:
-            raise AttributeError("'" + object_name(self) +
+            raise AttributeError("'" + self.__class__.__name__ +
                                  "' object has no '" +
                                  attr + "'") from None
 
