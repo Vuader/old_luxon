@@ -183,8 +183,12 @@ class Cursor(BaseExeptions):
 
         Reference PEP-0249
         """
+
         with Timer() as elapsed:
             try:
+                if args is not None and not isinstance(args, (dict, list)):
+                    args = [ args ]
+
                 query, args = args_to(query, args, self._conn.DEST_FORMAT)
                 if args is not None:
                     self._crsr.execute(query, args)
