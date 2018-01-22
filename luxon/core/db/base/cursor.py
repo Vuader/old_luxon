@@ -46,13 +46,11 @@ def _log(db, msg, elapsed=0):
         msg (str): Log message.
         elapsed (float): Time elapsed.
     """
-    log_msg = (msg +
-               " (%s)" % db.info,
-               elapsed
-                )
+    log_msg = msg + " (%s)" % db.info
+
     if elapsed is not None and elapsed > 0.1:
         log_msg = "!SLOW! " + log_msg
-    log.info(log_msg)
+    log.info(log_msg, timer=elapsed)
 
 class Cursor(BaseExeptions):
     def __init__(self, conn):
