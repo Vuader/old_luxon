@@ -58,7 +58,14 @@ class String(BaseField):
         return value
 
     @property
-    def sql(self):
+    def sqlite3(self):
+        field = " `%s`" % self.name
+        field += " text"
+        return field
+
+
+    @property
+    def mysql(self):
         try:
             size = self.size
         except AttributeError:
@@ -73,7 +80,7 @@ class Boolean(BaseField):
         return value
 
     @property
-    def sql(self):
+    def mysql(self):
         field = " `%s`" % self.name
         field += " tinyint(1)"
         return field
@@ -88,7 +95,7 @@ class UniqueIndex(BaseField):
         super().__init__()
 
     @property
-    def sql(self):
+    def mysql(self):
         index = 'UNIQUE KEY'
         index += ' `%s` (' % self._name
         fields = []
@@ -109,7 +116,7 @@ class ForeignKey(BaseField):
         super().__init__()
 
     @property
-    def sql(self):
+    def mysql(self):
         foreign_keys = []
         references = []
         reference_table = self._reference_fields[0]._table

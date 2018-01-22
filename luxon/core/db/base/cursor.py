@@ -184,8 +184,11 @@ class Cursor(BaseExeptions):
 
         with Timer() as elapsed:
             try:
-                if args is not None and not isinstance(args, (dict, list)):
+                if args is not None and not isinstance(args, (dict,
+                                                              list,
+                                                              tuple)):
                     args = [ args ]
+                print(args)
 
                 query, args = args_to(query, args, self._conn.DEST_FORMAT)
                 if args is not None:
