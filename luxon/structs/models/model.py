@@ -29,6 +29,7 @@
 # THE POSSIBILITY OF SUCH DAMAGE.
 from collections import OrderedDict
 
+from luxon import g
 from luxon import GetLogger
 from luxon.utils.objects import object_name
 from luxon.structs.models.fields import BaseField
@@ -114,6 +115,8 @@ class BaseModel(object):
                            " No primary key") from None
 
         with db() as conn:
+            api = g.config.get('database', 'type')
+
             if conn.has_table(table):
                 # NOTE(cfrademan): Backup table..
                 log.info('Backup table %s' % table)
@@ -129,13 +132,15 @@ class BaseModel(object):
             sql_fields = []
             for field in fields:
                 try:
-                    sql_fields.append(" %s " % fields[field].sql)
+                    sql_fields.append(" %s " % getattr(fields[field], api))
                 except AttributeError:
                     pass
             create += ",".join(sql_fields)
-            if self.primary_key is not None:
+            if self.primary_key is not None and api == 'mysql':
                 create += ' ,PRIMARY KEY (`%s`)' % self.primary_key.name
-            create += ') ENGINE=%s CHARSET=%s;' \
+            create += ')'
+            if api == 'mysql':
+                create += ' ENGINE=%s CHARSET=%s;' \
                     % (self.db_engine, self.db_charset,)
             conn.execute(create)
 
@@ -188,7 +193,7 @@ class Models(BaseModel):
                     for row in result:
                         model = self.new()
                         model._created = False
-                        for field in row:
+                        for field in row.keys():
                             model[field] = row[field]
     @property
     def transaction(self):
@@ -236,8 +241,8 @@ class Models(BaseModel):
         self._deleted.clear()
 
     def commit(self):
-        try:
-            if self._sql is True:
+        if self._sql is True:
+            try:
                 conn = db()
                 table = self.__class__.__name__
                 if self.primary_key is None:
@@ -252,17 +257,15 @@ class Models(BaseModel):
                                ' WHERE %s' % key_id +
                                ' = %s',
                                delete_id)
-
-            for model in self.transaction:
-                model.commit()
-            self._current = self.transaction
-            self._new.clear()
-            self._deleted.clear()
-            if self._sql is True:
-                conn.commit()
-        finally:
-            if self._sql is True:
-                conn.close()
+            finally:
+                if self._sql is True:
+                    conn.commit()
+                    conn.close()
+        for model in self.transaction:
+            model.commit()
+        self._current = self.transaction
+        self._new.clear()
+        self._deleted.clear()
 
 class Model(BaseModel):
     __slots__ = ( '_model', '_current', '_new', '_deleted', '_created', )

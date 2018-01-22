@@ -46,13 +46,11 @@ def _log(db, msg, elapsed=0):
         msg (str): Log message.
         elapsed (float): Time elapsed.
     """
-    log_msg = (msg +
-               " (%s)" % db.info,
-               elapsed
-                )
+    log_msg = msg + " (%s)" % db.info
+
     if elapsed is not None and elapsed > 0.1:
         log_msg = "!SLOW! " + log_msg
-    log.info(log_msg)
+    log.info(log_msg, timer=elapsed)
 
 class Cursor(BaseExeptions):
     def __init__(self, conn):
@@ -186,8 +184,11 @@ class Cursor(BaseExeptions):
 
         with Timer() as elapsed:
             try:
-                if args is not None and not isinstance(args, (dict, list)):
+                if args is not None and not isinstance(args, (dict,
+                                                              list,
+                                                              tuple)):
                     args = [ args ]
+                print(args)
 
                 query, args = args_to(query, args, self._conn.DEST_FORMAT)
                 if args is not None:
