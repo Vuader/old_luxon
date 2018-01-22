@@ -15,5 +15,6 @@ Framework Guide
     middleware
     settings
     logging
+    database
     exceptions
     templating

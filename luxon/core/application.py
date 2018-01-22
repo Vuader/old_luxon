@@ -49,8 +49,8 @@ log = GetLogger()
 
 def determine_app_root(name, app_root=None):
     if app_root is None:
-        if name == "__main__":
-            app_mod = imports.import_module('__main__')
+        if name == "__main__" or "_mod_wsgi" in name:
+            app_mod = imports.import_module(name)
             return os.path.abspath( \
                 os.path.dirname( \
                     app_mod.__file__)).rstrip('/')
@@ -109,13 +109,13 @@ class ApplicationBase(object):
                 g.app = self
 
                 # Attempt to determine application root.
-                self.app_root = app_root = determine_app_root(name, app_root)
+                g.app_root = self.app_root = app_root = determine_app_root(name, app_root)
 
                 # Set Application Name
                 self.name = name
 
                 # Load Configuration
-                self.config = load_config(self.app_root)
+                g.config = self.config = load_config(self.app_root)
 
                 # Configure Logger.
                 GetLogger().app_configure()

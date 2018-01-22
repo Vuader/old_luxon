@@ -82,6 +82,10 @@ class ProxyObject(object):
         """
         if self._pool._count <= self._pool._pool_size:
             _log('Returning object to pool', self._obj, self._pool)
+            try:
+                self._obj.clean_up()
+            except AttributeError:
+                pass
             self._pool._queue.put(self._obj)
         else:
             try:
@@ -137,21 +141,24 @@ class Pool(object):
         self._get_obj_func (function): get_obj_func obtained from argument.
         self._count(int): Total count of the number of connector objects spawned.
 
-    Usage:
-        def someFunc():
-            return some_connector_object
+    Example:
+        .. code:: python
 
-        pool = Pool(someFunc, pool_size=10, max_overflow=10)
+            def someFunc():
+                return some_connector_object
 
-        conn = pool()
-        conn.someMethod()
-        conn.close()
+            pool = Pool(someFunc, pool_size=10, max_overflow=10)
+
+            conn = pool()
+            conn.someMethod()
+            conn.close()
 
         or
 
-        with pool() as conn:
-            conn.someMethod()
+        .. code:: python
 
+            with pool() as conn:
+                conn.someMethod()
     """
 
     def __init__(self, get_obj_func, pool_size=10, max_overflow=10):
@@ -173,6 +180,10 @@ class Pool(object):
             try:
                 # if in queue, grab it there
                 _get_obj = q.get(False)
+                try:
+                    _get_obj.ping()
+                except AttributeError:
+                    pass
                 _log('Using object from pool', _get_obj, self)
             except queue.Empty:
                 # If not in queue

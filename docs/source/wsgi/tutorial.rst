@@ -27,7 +27,7 @@ Next we create a new file for the entry point of the application. This is the ws
 
 .. code:: bash
 
-    $ touch myapp/app.py
+    $ touch myapp/wsgi.py
 
 Open app in your favourite text editor and add following lines:
 
@@ -101,6 +101,15 @@ Edit myapp/templates/home.html with your editor and add the following lines.
             <h1>Welcome to Myapp</h1>
         </body>
     </html>
+
+Finally, modify myapp/wsgi.py to import our new app:
+
+.. code:: python
+
+    from luxon.core.handlers.wsgi import Wsgi
+
+    application = Wsgi(__name__)
+    from myapp import home
 
 Now start with the webserver again.
 

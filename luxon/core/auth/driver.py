@@ -31,7 +31,6 @@ import base64
 from datetime import timedelta
 
 from luxon import g
-from luxon.utils.password import valid as is_valid_password
 from luxon.utils import js
 from luxon.utils.timezone import now
 from luxon.structs.container import Container

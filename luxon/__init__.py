@@ -37,6 +37,7 @@ from luxon.utils.middleware import middleware
 from luxon.core.register import resource as register_resource
 from luxon.core.register import resources as register_resources
 from luxon.core.register import middleware as register_middleware
+from luxon.core.register import model as database_model
 
 # We must start the logger before anything else.
 # This is to ensure no other modules try configure the logger before us.
@@ -51,7 +52,7 @@ from luxon.core import cls
 from luxon.utils import js
 from luxon.helpers.jinja2 import render_template
 from luxon.helpers.redis import strict as redis
-from luxon.helpers.mysql import mysql
+from luxon.helpers.db import db
 
 __version__ = metadata.version
 __author__ = metadata.authors[0]
