@@ -109,13 +109,13 @@ class ApplicationBase(object):
                 g.app = self
 
                 # Attempt to determine application root.
-                self.app_root = app_root = determine_app_root(name, app_root)
+                g.app_root = self.app_root = app_root = determine_app_root(name, app_root)
 
                 # Set Application Name
                 self.name = name
 
                 # Load Configuration
-                self.config = load_config(self.app_root)
+                g.config = self.config = load_config(self.app_root)
 
                 # Configure Logger.
                 GetLogger().app_configure()

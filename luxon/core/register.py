@@ -31,8 +31,25 @@ import traceback
 
 from luxon import g
 from luxon.core.logger import GetLogger
+from luxon.structs.models.fields import BaseField
 
 log = GetLogger(__name__)
+
+def model(*args, **kwargs):
+    def model_wrapper(cls):
+        cls._sql = True
+        for name in dir(cls):
+            try:
+                prop = getattr(cls, name)
+            except AttributeError:
+                prop = None
+
+            if isinstance(prop, BaseField):
+                prop._table = cls.__name__
+        g.models.append(cls)
+        return cls
+
+    return model_wrapper
 
 def resources(*args, name=None, **kwargs):
     def resource_wrapper(cls):

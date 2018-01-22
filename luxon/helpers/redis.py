@@ -34,6 +34,6 @@ def strict():
     # #PERFORMANCE - ONLY IMPORT HERE!
     import redis
 
-    kwargs = g.app.config.kwargs('redis')
+    kwargs = g.config.kwargs('redis')
 
     return redis.StrictRedis(**kwargs)

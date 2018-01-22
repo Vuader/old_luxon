@@ -32,16 +32,7 @@ from luxon.constants import HTTP_STATUS_CODES
 
 class Error(Exception):
     """Tachyonic Root Exception
-
-    Args:
-        message (str): Error Message.
     """
-    def __init__(self, message):
-        self._msg = message
-        super().__init__(self._msg)
-
-    def __str__(self):
-        return str(self._msg)
 
 class NoContextError(Error):
     """No Context Error.
@@ -1049,3 +1040,61 @@ class HTTPMissingFormField(HTTPBadRequest):
     def __init__(self, field, title=None, href=None):
         description = "The form field '%s' is missing." % field
         super().__init__(description, title, href=href)
+
+
+class SQLError(Error):
+    """Exception related to operation with MySQL."""
+
+
+class SQLWarning(Warning, SQLError):
+    """Exception raised for important warnings like data truncations
+    while inserting, etc."""
+
+
+class SQLInterfaceError(SQLError):
+    """Exception raised for errors that are related to the database
+    interface rather than the database itself."""
+
+
+class SQLDatabaseError(SQLError):
+    """Exception raised for errors that are related to the
+    database."""
+
+
+class SQLDataError(SQLDatabaseError):
+    """Exception raised for errors that are due to problems with the
+    processed data like division by zero, numeric value out of range,
+    etc."""
+
+
+class SQLOperationalError(SQLDatabaseError):
+    """Exception raised for errors that are related to the database's
+    operation and not necessarily under the control of the programmer,
+    e.g. an unexpected disconnect occurs, the data source name is not
+    found, a transaction could not be processed, a memory allocation
+    error occurred during processing, etc."""
+
+
+class SQLIntegrityError(SQLDatabaseError):
+    """Exception raised when the relational integrity of the database
+    is affected, e.g. a foreign key check fails, duplicate key,
+    etc."""
+
+
+class SQLInternalError(SQLDatabaseError):
+    """Exception raised when the database encounters an internal
+    error, e.g. the cursor is not valid anymore, the transaction is
+    out of sync, etc."""
+
+
+class SQLProgrammingError(SQLDatabaseError):
+    """Exception raised for programming errors, e.g. table not found
+    or already exists, syntax error in the SQL statement, wrong number
+    of parameters specified, etc."""
+
+
+class SQLNotSupportedError(SQLDatabaseError):
+    """Exception raised in case a method or database API was used
+    which is not supported by the database, e.g. requesting a
+    .rollback() on a connection that does not support transaction or
+    has transactions turned off."""
