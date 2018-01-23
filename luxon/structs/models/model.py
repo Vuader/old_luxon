@@ -35,6 +35,7 @@ from luxon.utils.objects import object_name
 from luxon.structs.models.fields import BaseField
 from luxon.helpers.db import db
 from luxon import exceptions
+from luxon.utils.imports import get_class
 
 log = GetLogger(__name__)
 
@@ -84,6 +85,48 @@ class BaseModel(object):
         self._values = values
         self._lock = lock
         self._declared_fields = _declared_fields(self)
+        table = self.__class__.__name__
+        result = None
+
+        if self._sql is True:
+            with db() as conn:
+                if conn.has_table(table):
+                    if self._query is not None:
+                        result = conn.execute(self._query, self._values)
+                    elif self._id is not None:
+                        if self.primary_key is None:
+                            raise KeyError("Model %s:" % table +
+                                           " No primary key") from None
+                        result = conn.execute("SELECT * FROM %s" % table +
+                                            " WHERE %s" % self.primary_key.name +
+                                            " = %s",
+                                            self._id)
+                    elif not isinstance(self, Model):
+                        result = conn.execute("SELECT * FROM %s" % table)
+
+                    if result is not None:
+                        if isinstance(self, Model):
+                            result = result.fetchall()
+                            if len(result) > 1:
+                                muerr = "Multiple rows for model"
+                                muerr += " '%s' returned" % table
+                                raise exceptions.MultipleOblectsReturned(muerr)
+                            if len(result) == 0 and (self._id is not None or
+                                                     self._query is not None):
+                                nferr = "Query for for model"
+                                nferr += " '%s' not found." % table
+                                raise exceptions.NotFound(nferr)
+                            if len(result) == 1:
+                                row = result[0]
+                                for field in row.keys():
+                                    self._current[field] = row[field]
+                                self._created = False
+                        else:
+                            for row in result:
+                                model = self.new()
+                                model._created = False
+                                for field in row.keys():
+                                    model._current[field] = row[field]
 
     def __setattr__(self, attr, value):
         if attr[0] == "_":
@@ -106,60 +149,14 @@ class BaseModel(object):
             raise TypeError("Model '%s' Not decorated with 'luxon.database_model'"
                            % self.__class__.__name__)
 
-        table = self.__class__.__name__
-        fields = self._declared_fields
-        backup = None
-
         if self.primary_key is None:
             raise KeyError("Model %s:" % self.__class__.__name__ +
                            " No primary key") from None
 
-        with db() as conn:
-            api = g.config.get('database', 'type')
-
-            if conn.has_table(table):
-                # NOTE(cfrademan): Backup table..
-                log.info('Backup table %s' % table)
-                backup = conn.execute("SELECT * FROM %s" % table)
-
-                # NOTE(cfrademan): Drop exisiting table..
-                log.info('Drop table %s' % table)
-                conn.execute("DROP TABLE %s" % table)
-
-            # NOTE(cfrademan): We need to create the table..
-            log.info('Create table %s' % table)
-            create = 'CREATE TABLE `%s` (' % table
-            sql_fields = []
-            for field in fields:
-                try:
-                    sql_fields.append(" %s " % getattr(fields[field], api))
-                except AttributeError:
-                    pass
-            create += ",".join(sql_fields)
-            if self.primary_key is not None and api == 'mysql':
-                create += ' ,PRIMARY KEY (`%s`)' % self.primary_key.name
-            create += ')'
-            if api == 'mysql':
-                create += ' ENGINE=%s CHARSET=%s;' \
-                    % (self.db_engine, self.db_charset,)
-            conn.execute(create)
-
-            # NOTE(cfrademan): Restore table..
-            if backup is not None:
-                log.info('Restore table %s' % table)
-                for row in backup:
-                    query = "INSERT INTO %s (" % table
-                    query += ','.join(row.keys())
-                    query += ')'
-                    query += ' VALUES'
-                    query += ' ('
-                    placeholders = []
-                    for ph in range(len(row)):
-                        placeholders.append('%s')
-                    query += ','.join(placeholders)
-                    query += ')'
-                    conn.execute(query, list(row.values()))
-                conn.commit()
+        api = g.config.get('database', 'type')
+        cls = api.title()
+        driver = get_class('luxon.structs.models.%s:%s' % (api, cls,))(self)
+        driver.bdcr()
 
 class Models(BaseModel):
     __slots__ = ( '_current', '_new', '_deleted', '_args', '_kwargs' )
@@ -170,31 +167,8 @@ class Models(BaseModel):
         self._deleted = []
         self._args = args
         self._kwargs = kwargs
-        table = self.__class__.__name__
         super().__init__(*args, **kwargs)
-        table = self.__class__.__name__
 
-        if self._sql is True:
-            with db() as conn:
-                if conn.has_table(table):
-                    if self._query is not None:
-                        result = conn.execute(self._query, self._values)
-                    elif self._id is not None:
-                        if self.primary_key is None:
-                            raise KeyError("Model %s:" % table +
-                                           " No primary key") from None
-                        result = conn.execute("SELECT * FROM %s" % table +
-                                            " WHERE %s" % self.primary_key.name +
-                                            " = %s",
-                                            self._id)
-                    else:
-                        result = conn.execute("SELECT * FROM %s" % table)
-
-                    for row in result:
-                        model = self.new()
-                        model._created = False
-                        for field in row.keys():
-                            model[field] = row[field]
     @property
     def transaction(self):
         return self._current + self._new
@@ -361,15 +335,21 @@ class Model(BaseModel):
 
                 else:
                     update_id = transaction[key_id]
-
+                    sets = []
+                    args = []
                     for field in self._new:
+                        sets.append('%s' % field +
+                                   ' = %s')
+                        args.append(self._new[field])
+
+                    if len(sets) > 0:
+                        sets = ", ".join(sets)
                         conn.execute('UPDATE %s' % table +
-                                   ' SET %s' % field +
-                                   ' = %s' +
+                                   ' SET %s' % sets +
                                    ' WHERE %s' % key_id +
                                    ' = %s',
-                                   (self._new[field],
-                                    update_id,))
+                                   args + [self.primary_key.name,
+                                    update_id,])
 
             self._current = self.transaction
             self._new.clear()

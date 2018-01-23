@@ -72,11 +72,11 @@ paramstyle = "qmark"
 
 # MAP Python SQLITE3 Exceptions to Luxon.
 error_map = (
-    (sqlite3.OperationalError, 'OperationalError'),
+    (sqlite3.Warning, 'Warning'),
     (sqlite3.ProgrammingError, 'ProgrammingError'),
+    (sqlite3.OperationalError, 'OperationalError'),
     (sqlite3.IntegrityError, 'IntegrityError'),
     (sqlite3.DatabaseError, 'DatabaseError'),
-    (sqlite3.Warning, 'Warning'),
     (sqlite3.Error, 'Error'),
 )
 
@@ -84,14 +84,17 @@ class Connection(BaseConnection):
     DB_API = sqlite3
     ERROR_MAP = error_map
     DEST_FORMAT='qmark'
-    _CONN_INFO = None
     THREADSAFETY = threadsafety
 
     def __init__(self, db):
         super().__init__(db)
         self._crsr_cls = getattr(self._conn, 'cursor')
-        self._CONN_INFO = db
+        self._db = db
         self._conn.row_factory = sqlite3.Row
+        self.execute('PRAGMA foreign_keys = ON;')
+
+    def __str__(self):
+        return "SQLite3 Database '%s'" % self._db
 
 def connect(*args, **kwargs):
     """Constructor for creating a connection to the database.

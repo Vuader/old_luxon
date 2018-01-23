@@ -7,7 +7,9 @@ Luxon Framework currently fully supports `CPython <https://www.python.org/downlo
 
 PyPi
 ----
-pip install luxon
+.. code:: bash
+
+    $ pip3 install luxon
 
 Source Code
 -----------
@@ -27,7 +29,7 @@ can install Luxon like this:
 .. code:: bash
 
     $ cd luxon
-    $ pip install .
+    $ pip3 install .
 
 Or, if you want to edit the code, first fork the main repo, clone the fork
 to your desktop, and then run the following to install it using symbolic
@@ -37,12 +39,12 @@ available to your app without having to reinstall the package:
 .. code:: bash
 
     $ cd luxon
-    $ pip install -e .
+    $ pip3 install -e .
 
 You can manually test changes to the luxon by switching to the 
 directory of the cloned repo:
 
 .. code:: bash
 
-    $ pip install -r requirements-dev.txt
+    $ pip3 install -r requirements-dev.txt
     $ paver test

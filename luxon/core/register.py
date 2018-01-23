@@ -45,11 +45,15 @@ def model(*args, **kwargs):
                 prop = None
 
             if isinstance(prop, BaseField):
-                prop._table = cls.__name__
+                if name != 'primary_key':
+                    prop._table = cls.__name__
+                    prop._name = name
+
         g.models.append(cls)
         return cls
 
     return model_wrapper
+
 
 def resources(*args, name=None, **kwargs):
     def resource_wrapper(cls):
