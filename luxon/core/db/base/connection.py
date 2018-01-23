@@ -27,7 +27,7 @@
 # STRICT LIABILITY,OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
 # WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
-from threading import Lock
+from threading import RLock
 
 from luxon import GetLogger
 from luxon import exceptions
@@ -85,16 +85,15 @@ class Connection(BaseExeptions):
     CHARSET = 'utf-8'
     DEST_FORMAT=None
     ERROR_MAP=error_map
-    _CONN_INFO = None
     _crsr_cls_args = []
     THREADSAFETY = threadsafety
     _instances = {}
 
-    def __new__(cls, val):
+    def __new__(cls, *args, **kwargs):
         if cls.THREADSAFETY == 0:
             if cls not in Connection._instances:
                 Connection._instances[cls] = object.__new__(cls)
-                Connection._instances[cls]._lock = Lock()
+                Connection._instances[cls]._lock = RLock()
             Connection._instances[cls]._lock.acquire()
             return Connection._instances[cls]
         else:
@@ -110,9 +109,8 @@ class Connection(BaseExeptions):
         except Exception as e:
             self._error_handler(self, e, self.ERROR_MAP)
 
-    @property
-    def info(self):
-        return self._CONN_INFO
+    def __repr__(self):
+        return str(self)
 
     def cursor(self):
         """Return a new Cursor Object using the connection.
@@ -188,6 +186,10 @@ class Connection(BaseExeptions):
             self.execute(query)
             return True
         except exceptions.SQLOperationalError:
+            # THIS ONE MATCHES FOR SQLLITE3? Kinda wrong.
+            return False
+        except exceptions.SQLProgrammingError:
+            # MYSQL USES THIS ONE
             return False
 
     def clean_up(self):
