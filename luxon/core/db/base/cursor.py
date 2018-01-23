@@ -35,7 +35,7 @@ from luxon.utils.timer import Timer
 
 log = GetLogger(__name__)
 
-def _log(db, msg, elapsed=0):
+def _log(cursor, msg, elapsed=0):
     """Debug Log Function
 
     Function to log in the case where debugging
@@ -46,10 +46,10 @@ def _log(db, msg, elapsed=0):
         msg (str): Log message.
         elapsed (float): Time elapsed.
     """
-    log_msg = msg + " (%s)" % db.info
+    log_msg = msg + " (%s)" % cursor
 
     if elapsed is not None and elapsed > 0.1:
-        log_msg = "!SLOW! " + log_msg
+        log_msg = " !!!SLOW!!!" + log_msg
     log.info(log_msg, timer=elapsed)
 
 class Cursor(BaseExeptions):
@@ -59,8 +59,16 @@ class Cursor(BaseExeptions):
             self._crsr = conn._crsr_cls(*conn._crsr_cls_args)
             self._uncommited = False
             self.arraysize = 1
+            self._rownumber = 0
+            self._executed = False
         except Exception as e:
             self._error_handler(self, e, self._conn.ERROR_MAP)
+
+    def __str__(self):
+        return "DB-Cursor %s" % self._conn
+
+    def __repr__(self):
+        return str(self)
 
     @property
     def connection(self):
@@ -80,10 +88,7 @@ class Cursor(BaseExeptions):
 
     @property
     def rownumber(self):
-        try:
-            return self._crsr.rownumber
-        except AttributeError:
-            raise NotImplemented()
+        return self._rownumber
 
     def scroll(self, value, mode='relative'):
         """Scroll the cursor in the result set new position according to mode.
@@ -149,7 +154,12 @@ class Cursor(BaseExeptions):
 
         Reference PEP-0249
         """
-        return iter(self._crsr)
+        while True:
+            value = self.fetchone()
+            if value is not None:
+                yield value
+            else:
+                break
 
     def execute(self, query, args=None):
         """Prepare and execute a database operation (query or command).
@@ -181,14 +191,13 @@ class Cursor(BaseExeptions):
 
         Reference PEP-0249
         """
-
         with Timer() as elapsed:
+            self._rownumber = 0
             try:
                 if args is not None and not isinstance(args, (dict,
                                                               list,
                                                               tuple)):
                     args = [ args ]
-                print(args)
 
                 query, args = args_to(query, args, self._conn.DEST_FORMAT)
                 if args is not None:
@@ -197,11 +206,12 @@ class Cursor(BaseExeptions):
                 else:
                     self._crsr.execute(query)
                     self._uncommited = True
-                return self._crsr
+                self._executed = True
+                return self
             except Exception as e:
                 self._error_handler(self, e, self._conn.ERROR_MAP)
             finally:
-                _log(self._conn, query, elapsed())
+                _log(self, query, elapsed())
 
     def executemany(self, query, params):
         """Pepare and Execute Many.
@@ -241,7 +251,14 @@ class Cursor(BaseExeptions):
 
         Reference PEP-0249
         """
-        return self._crsr.fetchone()
+        if self._executed is False:
+            raise self.ProgrammingError('No data, use execute method first')
+        try:
+            row = dict(self._crsr.fetchone())
+            self._rownumber += 1
+            return row
+        except TypeError:
+            return None
 
     def fetchmany(self, size=None):
         """Fetch many rows.
@@ -266,9 +283,12 @@ class Cursor(BaseExeptions):
 
         Reference PEP-0249
         """
+        many = []
         if size is None:
             size = self.arraysize
-        return self._crsr.fetchmany(size)
+        for a in range(size):
+            many.append(self.fetchone())
+        return many
 
     def fetchall(self):
         """Fetch all rows.
@@ -282,7 +302,10 @@ class Cursor(BaseExeptions):
 
         Reference PEP-0249
         """
-        return self._crsr.fetchall()
+        all = []
+        for a in self:
+            all.append(a)
+        return all
 
     def nextset(self):
         """Return next result set.
@@ -387,7 +410,7 @@ class Cursor(BaseExeptions):
                 except AttributeError:
                     self._conn._conn.commit()
 
-            _log(self._conn, "Commit", elapsed())
+            _log(self, "Commit", elapsed())
             self._uncommited = False
 
     def rollback(self):
@@ -403,7 +426,7 @@ class Cursor(BaseExeptions):
                     self._crsr.rollback()
                 except AttributeError:
                     self._conn.conn_rollback()
-            _log(self._conn, "Rollback", elapsed())
+            _log(self, "Rollback", elapsed())
             self._uncommited = False
 
     def __enter__(self):

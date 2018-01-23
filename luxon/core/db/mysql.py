@@ -34,11 +34,11 @@ from luxon.core.db.base.connection import Connection as BaseConnection
 
 # MAP Python PyMYSQL Exceptions to Luxon.
 error_map = (
-    (pymysql.OperationalError, 'OperationalError'),
+    (pymysql.Warning, 'Warning'),
     (pymysql.ProgrammingError, 'ProgrammingError'),
+    (pymysql.OperationalError, 'OperationalError'),
     (pymysql.IntegrityError, 'IntegrityError'),
     (pymysql.DatabaseError, 'DatabaseError'),
-    (pymysql.Warning, 'Warning'),
     (pymysql.Error, 'Error'),
 )
 
@@ -87,14 +87,17 @@ class Connection(BaseConnection):
     DB_API = pymysql
     ERROR_MAP = error_map
     DEST_FORMAT='format'
-    _CONN_INFO = None
     THREADSAFETY = threadsafety
 
     def __init__(self, host, username, password, database):
+        self._host = host
+        self._db = database
         super().__init__(host, username, password, database)
         self._crsr_cls = pymysql.cursors.DictCursor
         self._crsr_cls_args = [ self._conn ]
-        self._CONN_INFO = "%s(%s)" % (host, database,)
+
+    def __str__(self):
+        return "MySQL Server: '%s' Database: '%s'" % (self._host, self._db,)
 
 def connect(*args, **kwargs):
     """Constructor for creating a connection to the database.
