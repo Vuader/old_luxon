@@ -53,6 +53,8 @@ from luxon.utils import js
 from luxon.helpers.jinja2 import render_template
 from luxon.helpers.redis import strict as redis
 from luxon.helpers.db import db
+from luxon.structs.models.model import Models
+from luxon.structs.models.model import Model
 
 __version__ = metadata.version
 __author__ = metadata.authors[0]

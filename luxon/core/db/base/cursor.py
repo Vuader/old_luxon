@@ -425,9 +425,8 @@ class Cursor(BaseExeptions):
                 try:
                     self._crsr.rollback()
                 except AttributeError:
-                    self._conn.conn_rollback()
+                    self._conn._conn.rollback()
             _log(self, "Rollback", elapsed())
-            self._uncommited = False
 
     def __enter__(self):
         return self
