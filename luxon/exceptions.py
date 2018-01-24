@@ -87,8 +87,8 @@ class NotFound(ValidationError):
     def __init__(self, message):
         super().__init__( message)
 
-class FieldInvalid(ValidationError):
-    """Field Invalid.
+class FieldError(ValidationError):
+    """Field Error.
 
     The value of the specified field is invalid. Typically used by models.
 
@@ -103,10 +103,12 @@ class FieldInvalid(ValidationError):
         self.label = label
         self.description = description
         self.value = value
-        msg = "The field '%s' (%s) has invalid value of %s. (%s)" % (label,
-                                                                  field,
-                                                                  value,
-                                                                  description,)
+        msg = "The field"
+        if self.label is not None:
+            msg += " '%s' (%s)" % (label, field,)
+        else:
+            msg += " '%s'" % (field,)
+        msg += " %s" % description
         super().__init__(msg)
 
 class FieldMissing(ValidationError):

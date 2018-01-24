@@ -49,6 +49,7 @@ class Mysql(object):
                 # NOTE(cfrademan): Backup table..
                 backup = conn.execute("SELECT * FROM %s" % table)
                 backup = backup.fetchall()
+                conn.commit()
 
                 # NOTE(cfrademan): Drop exisiting table..
                 conn.execute("DROP TABLE %s" % table)
@@ -62,14 +63,14 @@ class Mysql(object):
                 column = model_fields[field].name
 
                 try:
-                    size = model_fields[field].size
+                    max_length = model_fields[field].max_length
                 except AttributeError:
-                    size = None
+                    max_length = None
 
                 try:
-                    values = model_fields[field].values
+                    enum = model_fields[field].enum
                 except AttributeError:
-                    values = []
+                    enum = []
 
                 try:
                     null = model_fields[field].null
@@ -82,72 +83,78 @@ class Mysql(object):
                     default = None
 
                 if isinstance(model_fields[field], fields.String):
-                    if size is None:
-                        size = '255'
-                    sql_field = " %s varchar(%s) " % (column, size)
+                    if max_length is None:
+                        max_length = '255'
+                    sql_field = " %s varchar(%s)" % (column, max_length)
 
                 if isinstance(model_fields[field], fields.TinyInt):
-                    if size is None:
-                        sql_field = " %s tinyint " % column
+                    if max_length is None:
+                        sql_field = " %s tinyint" % column
                     else:
-                        sql_field = " %s tinyint(%s) " % (column, size)
+                        sql_field = " %s tinyint(%s)" % (column, max_length)
 
                 if isinstance(model_fields[field], fields.SmallInt):
-                    if size is None:
-                        sql_field = " %s smallint " % column
+                    if max_length is None:
+                        sql_field = " %s smallint" % column
                     else:
-                        sql_field = " %s smallint(%s) " % (column, size)
+                        sql_field = " %s smallint(%s)" % (column, max_length)
 
                 if isinstance(model_fields[field], fields.MediumInt):
-                    if size is None:
-                        sql_field = " %s mediumint " % column
+                    if max_length is None:
+                        sql_field = " %s mediumint" % column
                     else:
-                        sql_field = " %s mediumint(%s) " % (column, size)
+                        sql_field = " %s mediumint(%s)" % (column, max_length)
 
                 if isinstance(model_fields[field], fields.Integer):
-                    if size is None:
-                        sql_field = " %s integer " % column
+                    if max_length is None:
+                        sql_field = " %s integer" % column
                     else:
-                        sql_field = " %s integer(%s) " % (column, size)
+                        sql_field = " %s integer(%s)" % (column, max_length)
 
                 if isinstance(model_fields[field], fields.BigInt):
-                    if size is None:
-                        sql_field = " %s bigint " % column
+                    if max_length is None:
+                        sql_field = " %s bigint" % column
                     else:
-                        sql_field = " %s bigint(%s) " % (column, size)
+                        sql_field = " %s bigint(%s)" % (column, max_length)
 
                 if isinstance(model_fields[field], fields.DateTime):
-                    sql_field = " %s datetime " % column
+                    sql_field = " %s datetime" % column
+
+                if isinstance(model_fields[field], fields.Blob):
+                    sql_field = " %s blob" % column
 
                 if isinstance(model_fields[field], fields.TinyBlob):
-                    sql_field = " %s tinyblob " % column
+                    sql_field = " %s tinyblob" % column
 
                 if isinstance(model_fields[field], fields.MediumBlob):
-                    sql_field = " %s mediumblob " % column
+                    sql_field = " %s mediumblob" % column
 
                 if isinstance(model_fields[field], fields.LongBlob):
-                    sql_field = " %s longblob " % column
+                    sql_field = " %s longblob" % column
 
                 if isinstance(model_fields[field], fields.TinyText):
                     sql_field = " %s tinytext " % column
 
                 if isinstance(model_fields[field], fields.Text):
-                    sql_field = " %s Text " % column
+                    sql_field = " %s Text" % column
 
                 if isinstance(model_fields[field], fields.MediumText):
-                    sql_field = " %s MediumText " % column
+                    sql_field = " %s MediumText" % column
 
                 if isinstance(model_fields[field], fields.LongText):
-                    sql_field = " %s MediumText " % column
+                    sql_field = " %s MediumText" % column
 
                 if isinstance(model_fields[field], fields.Enum):
-                    sql_field = " %s enum(%s) " % (column, values)
+                    sql_field = " %s enum(%s)" % (column, enum)
 
+                if isinstance(model_fields[field], fields.Integer):
+                    if self._primary_key.name == field:
+                        sql_field += " auto_increment"
                 if null is False:
-                    sql_field += 'NOT NULL'
+                    sql_field += ' NOT NULL'
 
                 if default is not None:
-                    sql_field += "default %s" % default
+                    sql_field += " default %s" % default
 
                 if isinstance(model_fields[field], fields.UniqueIndex):
                     index = 'UNIQUE KEY'
