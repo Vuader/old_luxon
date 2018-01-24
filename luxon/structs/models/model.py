@@ -36,6 +36,7 @@ from luxon.structs.models.fields import BaseField
 from luxon.helpers.db import db
 from luxon import exceptions
 from luxon.utils.imports import get_class
+from luxon import js
 
 log = GetLogger(__name__)
 
@@ -104,6 +105,7 @@ class BaseModel(object):
                     elif not isinstance(self, Model):
                         result = conn.execute("SELECT * FROM %s" % table)
 
+
                     if result is not None:
                         if isinstance(self, Model):
                             result = result.fetchall()
@@ -119,14 +121,14 @@ class BaseModel(object):
                             if len(result) == 1:
                                 row = result[0]
                                 for field in row.keys():
-                                    self._current[field] = row[field]
+                                    self[field] = row[field]
                                 self._created = False
                         else:
                             for row in result:
                                 model = self.new()
                                 model._created = False
                                 for field in row.keys():
-                                    model._current[field] = row[field]
+                                    model[field] = row[field]
 
     def __setattr__(self, attr, value):
         if attr[0] == "_":
@@ -158,6 +160,11 @@ class BaseModel(object):
         driver = get_class('luxon.structs.models.%s:%s' % (api, cls,))(self)
         driver.bdcr()
 
+    def __len__(self):
+        return len(self.transaction)
+
+
+
 class Models(BaseModel):
     __slots__ = ( '_current', '_new', '_deleted', '_args', '_kwargs' )
 
@@ -168,6 +175,9 @@ class Models(BaseModel):
         self._args = args
         self._kwargs = kwargs
         super().__init__(*args, **kwargs)
+
+    def to_json(self):
+        return js.dumps(list(self))
 
     @property
     def transaction(self):
@@ -250,6 +260,12 @@ class Model(BaseModel):
         self._created = True
         super().__init__(*args, **kwargs)
 
+    def to_json(self):
+        return js.dumps(self.transaction)
+
+    def to_dict(self):
+        return self.transaction.copy()
+
     @property
     def transaction(self):
         return {**self._current, **self._new}
@@ -312,7 +328,13 @@ class Model(BaseModel):
 
                 key_id = self.primary_key.name
 
-                transaction = self.transaction
+                transaction = {}
+                for field in self._declared_fields:
+                    if field in self.transaction:
+                        if self._declared_fields[field].db is True:
+                            transaction[field] = self.transaction[field]
+                    elif self._declared_fields[field].null is False:
+                        self._declared_fields[field].error('required field')
 
                 if self._created is True:
                     query = "INSERT INTO %s (" % table
@@ -338,9 +360,12 @@ class Model(BaseModel):
                     sets = []
                     args = []
                     for field in self._new:
-                        sets.append('%s' % field +
-                                   ' = %s')
-                        args.append(self._new[field])
+                        if self._declared_fields[field].readonly is True:
+                            self._new[field].error('readonly value')
+                        if self._declared_fields[field].db is True:
+                            sets.append('%s' % field +
+                                       ' = %s')
+                            args.append(self._new[field])
 
                     if len(sets) > 0:
                         sets = ", ".join(sets)

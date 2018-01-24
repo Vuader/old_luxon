@@ -129,7 +129,7 @@ class Connection(BaseExeptions):
     @property
     def _crsr(self):
         if self._cached_crsr is None:
-            self._cached_crsr = Cursor(self)
+            self._cached_crsr = self.cursor()
         return self._cached_crsr
 
     @property
@@ -184,6 +184,7 @@ class Connection(BaseExeptions):
         try:
             query = 'SELECT * FROM %s limit 1' % table
             self.execute(query)
+            self.commit()
             return True
         except exceptions.SQLOperationalError:
             # THIS ONE MATCHES FOR SQLLITE3? Kinda wrong.
@@ -220,14 +221,13 @@ class Connection(BaseExeptions):
         self.clean_up()
         for crsr in self._cursors:
             crsr.close()
-        try:
-            self._conn.close()
-        except AttributeError:
-            pass
+
         try:
             self._lock.release()
         except AttributeError:
-            pass
+            # NOTE(cfrademan) Its not got locking so close it..
+            # locking objects are singleton object.
+            self._conn.close()
 
     def commit(self):
         """Commit Transactionl Queries.

@@ -74,43 +74,16 @@ class Sqlite3(object):
                 if isinstance(model_fields[field], fields.String):
                     sql_field = " %s TEXT" % column
 
-                if isinstance(model_fields[field], fields.TinyInt):
-                    sql_field = " %s INTEGER" % column
-
-                if isinstance(model_fields[field], fields.SmallInt):
-                    sql_field = " %s INTEGER" % column
-
-                if isinstance(model_fields[field], fields.MediumInt):
-                    sql_field = " %s INTEGER" % column
-
                 if isinstance(model_fields[field], fields.Integer):
-                    sql_field = " %s INTEGER" % column
-
-                if isinstance(model_fields[field], fields.BigInt):
                     sql_field = " %s INTEGER" % column
 
                 if isinstance(model_fields[field], fields.DateTime):
                     sql_field = " %s TEXT" % column
 
-                if isinstance(model_fields[field], fields.TinyBlob):
-                    sql_field = " %s BLOB" % column
-
-                if isinstance(model_fields[field], fields.MediumBlob):
-                    sql_field = " %s BLOB" % column
-
-                if isinstance(model_fields[field], fields.LongBlob):
-                    sql_field = " %s BLOB" % column
-
-                if isinstance(model_fields[field], fields.TinyText):
+                if isinstance(model_fields[field], fields.Blob):
                     sql_field = " %s BLOB" % column
 
                 if isinstance(model_fields[field], fields.Text):
-                    sql_field = " %s TEXT" % column
-
-                if isinstance(model_fields[field], fields.MediumText):
-                    sql_field = " %s TEXT" % column
-
-                if isinstance(model_fields[field], fields.LongText):
                     sql_field = " %s TEXT" % column
 
                 if isinstance(model_fields[field], fields.Enum):
@@ -177,6 +150,6 @@ class Sqlite3(object):
                         placeholders.append('%s')
                     query += ','.join(placeholders)
                     query += ')'
-                    conn.execute(query, list(row))
+                    conn.execute(query, list(row.values()))
                 conn.commit()
 
