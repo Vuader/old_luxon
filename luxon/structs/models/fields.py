@@ -27,12 +27,32 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
+from datetime import datetime as py_datetime
+from decimal import Decimal as PyDecimal
+
 from luxon.utils.global_counter import global_counter
 from luxon.utils.cast import to_tuple
 from luxon.utils.encoding import if_bytes_to_unicode
 from luxon.exceptions import FieldError
+from luxon.utils.timezone import to_utc
+from luxon.utils.timezone import TimezoneUTC
+
+def parse_defaults(value):
+    if hasattr(value, '__call__'):
+        value = value()
+
+    if isinstance(value, str):
+        value = "'" + value + "'"
+    elif isinstance(value, bool):
+        if value is True or value == 1:
+            value = 1
+        else:
+            value = 0
+
+    return value
 
 class BaseField(object):
+
     """Field Class.
 
     Provides abstractions for most common database data types.
@@ -74,13 +94,13 @@ class BaseField(object):
     __slots__ = ('length', 'min_length', 'max_length', 'null', 'default',
                  'db', 'label', 'placeholder', 'readonly', 'prefix',
                  'suffix', 'columns' ,'hidden', 'enum', '_name', '_table',
-                 '_value', '_creation_counter')
+                 '_value', '_creation_counter', 'm', 'd', 'on_update')
 
     def __init__(self, length=None, min_length=None, max_length=None,
                  null=True, default=None, db=True, label=None,
                  placeholder=None, readonly=False, prefix=None,
                  suffix=None, columns=None, hidden=False,
-                 enum=[]):
+                 enum=[], on_update=None):
         self._creation_counter = global_counter()
         self._value = None
 
@@ -92,6 +112,7 @@ class BaseField(object):
             self.max_length = max_length
         self.null = null
         self.default = default
+        self.on_update = on_update
         self.db = db
         self.label = label
         self.placeholder = placeholder
@@ -110,10 +131,18 @@ class BaseField(object):
         raise FieldError(self.name, self.label, msg, value)
 
     def parse(self, value):
-        if self.min_length is not None and len(value) < self.min_length:
-            self.error("Minimum length '%s'" % self.min_length, value)
-        if self.max_length is not None and len(value) > self.max_length:
-            self.error("Exceeding max length '%s'" % self.max_length, value)
+        if hasattr(value, '__len__'):
+            if self.min_length is not None and len(value) < self.min_length:
+                self.error("Minimum length '%s'" % self.min_length, value)
+            if self.max_length is not None and len(value) > self.max_length:
+                self.error("Exceeding max length '%s'" % self.max_length, value)
+        if isinstance(value, (int, float, PyDecimal,)):
+            if self.min_length is not None and value < self.min_length:
+                self.error("Minimum value '%s'" % self.min_length, value)
+            if self.max_length is not None and value > self.max_length:
+                self.error("Exceeding max value '%s'" % self.max_length, value)
+
+
         if self.null is False and (value is None or value.strip() == ''):
             self.error('Empty field value (required)', value)
         return value
@@ -128,13 +157,60 @@ class String(BaseField):
 
 class Integer(BaseField):
     def parse(self, value):
-        value = super().parse(value)
         try:
             value = int(value)
         except ValueError:
             self.error('Integer value required)', value)
-            raise Exception('doos')
+        value = super().parse(value)
         return value
+
+class Float(BaseField):
+    """Float Field.
+
+    The FLOAT and DOUBLE types represent approximate numeric data values. MySQL
+    uses four bytes for single-precision values and eight bytes for
+    double-precision values.
+    """
+    def __init__(self, m, d):
+        self.m = m
+        self.d = d
+        super().__init__()
+
+    def parse(self, value):
+        try:
+            value = float(value)
+        except ValueError:
+            self.error('Float value required', value)
+        value = super().parse(value)
+        return value
+
+class Double(Float):
+    """Double Field.
+
+    The FLOAT and DOUBLE types represent approximate numeric data values. MySQL
+    uses four bytes for single-precision values and eight bytes for
+    double-precision values.
+    """
+    def parse(self, value):
+        try:
+            value = float(value)
+        except ValueError:
+            self.error('Float/Double value required', value)
+        value = super().parse(value)
+        return value
+
+class Decimal(BaseField):
+    def __init__(self, m, d):
+        super().__init__()
+
+    def parse(self, value):
+        try:
+            value = PyDecimal(value)
+        except ValueError:
+            self.error('Decimal value required', value)
+        value = super().parse(value)
+        return value
+
 
 class TinyInt(Integer):
     pass
@@ -150,6 +226,17 @@ class BigInt(Integer):
 
 class DateTime(BaseField):
     def parse(self, value):
+        try:
+            if isinstance(value, py_datetime):
+                if value.tzinfo is not None:
+                    value = to_utc(value)
+                else:
+                    value = to_utc(value, src=TimezoneUTC())
+            else:
+                value = to_utc(value, src=TimezoneUTC())
+
+        except ValueError as e:
+            self.error('DateTime value required (%s)' % e, value)
         return value
 
 class Blob(BaseField):

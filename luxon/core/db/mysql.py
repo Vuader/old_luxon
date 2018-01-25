@@ -28,6 +28,7 @@
 # WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 import pymysql
+from pymysql.constants import COMMAND
 
 from luxon import exceptions
 from luxon.core.db.base.connection import Connection as BaseConnection
@@ -95,9 +96,30 @@ class Connection(BaseConnection):
         super().__init__(host, username, password, database)
         self._crsr_cls = pymysql.cursors.DictCursor
         self._crsr_cls_args = [ self._conn ]
+        self.execute('SET time_zone = %s', '+00:00')
 
     def __str__(self):
         return "MySQL Server: '%s' Database: '%s'" % (self._host, self._db,)
+
+    def ping(self):
+        """Check if the server is alive.
+
+        Auto-Reconnect if not, and return false when reconnecting.
+        """
+        if self._conn._sock is None:
+            self._conn.connect()
+            self.execute('SET time_zone = %s', '+00:00')
+            return False
+        else:
+            try:
+                self._conn._execute_command(COMMAND.COM_PING, "")
+                self._conn._read_ok_packet()
+                return True
+            except Exception:
+                self._conn.connect()
+                self.execute('SET time_zone = %s', '+00:00')
+                return False
+
 
 def connect(*args, **kwargs):
     """Constructor for creating a connection to the database.

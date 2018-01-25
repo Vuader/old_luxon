@@ -63,24 +63,36 @@ class Mysql(object):
                 column = model_fields[field].name
 
                 try:
-                    max_length = model_fields[field].max_length
+                    m = model_fields[field].m
                 except AttributeError:
-                    max_length = None
+                    m = None
 
                 try:
-                    enum = model_fields[field].enum
+                    d = model_fields[field].d
                 except AttributeError:
-                    enum = []
+                    d = None
 
-                try:
-                    null = model_fields[field].null
-                except AttributeError:
-                    null = True
+                max_length = model_fields[field].max_length
+                enum = model_fields[field].enum
+                null = model_fields[field].null
 
-                try:
-                    default = model_fields[field].default
-                except AttributeError:
-                    default = None
+                if isinstance(model_fields[field], fields.Double):
+                    if m is not None and d is not None:
+                        sql_field = " %s double(%s,%s)" % (m, d)
+                    else:
+                        sql_field = " %s double"
+
+                if isinstance(model_fields[field], fields.Float):
+                    if m is not None and d is not None:
+                        sql_field = " %s float(%s,%s)" % (m, d)
+                    else:
+                        sql_field = " %s float"
+
+                if isinstance(model_fields[field], fields.Decimal):
+                    if m is not None and d is not None:
+                        sql_field = " %s decimal(%s,%s)" % (m, d)
+                    else:
+                        sql_field = " %s decimal"
 
                 if isinstance(model_fields[field], fields.String):
                     if max_length is None:
@@ -145,6 +157,10 @@ class Mysql(object):
                     sql_field = " %s MediumText" % column
 
                 if isinstance(model_fields[field], fields.Enum):
+                    for no, val in enumerate(enum):
+                        enum[no] = "'%s'" % val
+                    enum = ','.join(enum)
+
                     sql_field = " %s enum(%s)" % (column, enum)
 
                 if isinstance(model_fields[field], fields.Integer):
@@ -152,9 +168,6 @@ class Mysql(object):
                         sql_field += " auto_increment"
                 if null is False:
                     sql_field += ' NOT NULL'
-
-                if default is not None:
-                    sql_field += " default %s" % default
 
                 if isinstance(model_fields[field], fields.UniqueIndex):
                     index = 'UNIQUE KEY'

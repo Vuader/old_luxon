@@ -60,16 +60,13 @@ class Sqlite3(object):
                 sql_field = None
 
                 column = model_fields[field].name
+                null = model_fields[field].null
 
-                try:
-                    null = model_fields[field].null
-                except AttributeError:
-                    null = True
+                if isinstance(model_fields[field], fields.Float):
+                    sql_field = " %s REAL"
 
-                try:
-                    default = model_fields[field].default
-                except AttributeError:
-                    default = None
+                if isinstance(model_fields[field], fields.Decimal):
+                    sql_field = " %s REAL"
 
                 if isinstance(model_fields[field], fields.String):
                     sql_field = " %s TEXT" % column
@@ -91,9 +88,6 @@ class Sqlite3(object):
 
                 if null is False:
                     sql_field += ' NOT NULL'
-
-                if default is not None:
-                    sql_field += " default %s" % default
 
                 if self._primary_key.name == column:
                     sql_field += ' PRIMARY KEY'
