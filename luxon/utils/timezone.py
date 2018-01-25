@@ -34,11 +34,26 @@ import pytz
 from tzlocal import get_localzone
 
 from luxon import g
-from luxon import GetLogger
-
-log = GetLogger(__name__)
 
 _cached_time_zone_system = None
+
+TIME_FORMATS = (
+    '%Y-%m-%d %H:%M:%S.%f%z',
+    '%Y-%m-%d %H:%M:%S%z',
+    '%Y-%m-%d %H:%M:%S %Z',
+    '%Y/%m/%d %H:%M:%S %Z',
+    '%Y-%m-%d %H:%M %Z',
+    '%Y/%m/%d %H:%M %Z',
+    '%Y-%m-%d %H:%M:%S',
+    '%Y/%m/%d %H:%M:%S',
+    '%Y-%m-%d %H:%M',
+    '%Y/%m/%d %H:%M',
+    '%a, %d %b %Y %H:%M:%S %Z',
+    '%a, %d-%b-%Y %H:%M:%S %Z',
+    '%A, %d-%b-%y %H:%M:%S %Z',
+    '%a %b %d %H:%M:%S %Y',
+    '%a %b %d %H:%M:%S %Y',
+)
 
 def parse_http_date(http_date, obs_date=False):
     """Converts an HTTP date string to a datetime instance.
@@ -63,21 +78,7 @@ def parse_http_date(http_date, obs_date=False):
     if not obs_date:
         return py_datetime.strptime(http_date, '%a, %d %b %Y %H:%M:%S %Z')
 
-    time_formats = (
-        '%a, %d %b %Y %H:%M:%S %Z',
-        '%a, %d-%b-%Y %H:%M:%S %Z',
-        '%A, %d-%b-%y %H:%M:%S %Z',
-        '%a %b %d %H:%M:%S %Y',
-    )
-
-    for time_format in time_formats:
-        try:
-            return py_datetime.strptime(http_date, time_format)
-        except ValueError:
-            continue
-
-    raise ValueError('time data %r does not match known formats' % http_date)
-
+    return parse_datetime(http_date)
 
 class TimezoneGMT(tzinfo):
     """GMT timezone class implementing GMT Timezone"""
@@ -146,7 +147,35 @@ def TimezoneApp():
 
     return _cached_time_zone_app
 
+def parse_datetime(datetime):
+    if isinstance(datetime, py_datetime):
+        return datetime
+
+    if not isinstance(datetime, str):
+        raise ValueError("datetime value not" +
+                         " 'str' or 'datetime'")
+
+    # NOTE(cfrademan): PARSE UTC OFFSET FROM in FORM of +HH:MM to +HHMM
+    splitted_datetime = datetime.split('+')
+    datetime = splitted_datetime[0]
+    try:
+        datetime += '+' + splitted_datetime[1].replace(':', '')
+    except KeyError:
+        pass
+
+    for time_format in TIME_FORMATS:
+        try:
+            return py_datetime.strptime(datetime, time_format)
+        except ValueError:
+            continue
+
+    raise ValueError('datetime value %r does not' % datetime +
+                     ' match known formats')
+
 def to_timezone(datetime, dst=TimezoneSystem(), src=None):
+    if not isinstance(datetime, py_datetime):
+        datetime = parse_datetime(datetime)
+
     if src is None and datetime.tzinfo is None:
         raise ValueError('to_timezone not possible from naive datetime' +
                          ' use src keyword to define source timezone')
@@ -158,7 +187,11 @@ def to_timezone(datetime, dst=TimezoneSystem(), src=None):
         datetime = datetime.replace(tzinfo=src)
 
     datetime = datetime.astimezone(tz=dst)
-    return dst.normalize(datetime)
+    try:
+        datetime =  dst.normalize(datetime)
+    except AttributeError:
+        pass
+    return datetime
 
 def now(tz=TimezoneUTC()):
     """Current date time.
@@ -169,16 +202,16 @@ def now(tz=TimezoneUTC()):
     return py_datetime.now(tz=tz)
 
 def to_utc(datetime, src=None):
-    return to_timezone(datetime, dst=TimezoneUTC(), src=None)
+    return to_timezone(datetime, dst=TimezoneUTC(), src=src)
 
 def to_gmt(datetime, src=None):
-    return to_timezone(datetime, dst=TimezoneGMT(), src=None)
+    return to_timezone(datetime, dst=TimezoneGMT(), src=src)
 
 def to_system(datetime, src=None):
-    return to_timezone(datetime, dst=TimezoneSystem(), src=None)
+    return to_timezone(datetime, dst=TimezoneSystem(), src=src)
 
 def to_app(datetime, src=None):
-    return to_timezone(datetime, dst=TimezoneApp(), src=None)
+    return to_timezone(datetime, dst=TimezoneApp(), src=src)
 
 def parse(datetime):
     # TODO

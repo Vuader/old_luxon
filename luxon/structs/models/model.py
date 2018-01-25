@@ -37,6 +37,7 @@ from luxon.helpers.db import db
 from luxon import exceptions
 from luxon.utils.imports import get_class
 from luxon import js
+from luxon.structs.models.fields import Integer, parse_defaults
 
 log = GetLogger(__name__)
 
@@ -73,19 +74,25 @@ def _declared_fields(cls):
 
 class BaseModel(object):
     __slots__ = ( '_key_id', '_key_field', '_declared_fields',
-                  '_db_api', '_limit', '_lock')
+                  '_db_api', '_limit', '_lock', '_id', '_query',
+                  '_values',)
 
     primary_key = None
     _sql = False
     db_charset = 'UTF8'
     db_engine = 'innodb'
 
-    def __init__(self, id=None, query=None, values=None, lock=False):
+    def __init__(self, id=None, query=None, values=None, lock=False,
+                 declared_fields=None):
         self._id = id
         self._query = query
         self._values = values
         self._lock = lock
-        self._declared_fields = _declared_fields(self)
+        if declared_fields is None:
+            self._declared_fields = _declared_fields(self)
+        else:
+            self._declared_fields = declared_fields
+
         table = self.__class__.__name__
         result = None
 
@@ -121,14 +128,22 @@ class BaseModel(object):
                             if len(result) == 1:
                                 row = result[0]
                                 for field in row.keys():
-                                    self[field] = row[field]
+                                    if row[field] is not None:
+                                        self[field] = row[field]
                                 self._created = False
+                                self._updated = False
+                                self._current = model._new.copy()
+                                self._new.clear()
                         else:
                             for row in result:
                                 model = self.new()
-                                model._created = False
                                 for field in row.keys():
-                                    model[field] = row[field]
+                                    if row[field] is not None:
+                                        model[field] = row[field]
+                                model._current = model._new.copy()
+                                model._new.clear()
+                                model._created = False
+                                model._updated = False
 
     def __setattr__(self, attr, value):
         if attr[0] == "_":
@@ -207,8 +222,7 @@ class Models(BaseModel):
         NewModel.primary_key = self.primary_key
         NewModel.db_charset = self.db_charset
         NewModel.db_engine = self.db_engine
-        model = NewModel()
-        model._declared_fields = self._declared_fields
+        model = NewModel(declared_fields=self._declared_fields)
         self._new.append(model)
         return model
 
@@ -258,7 +272,17 @@ class Model(BaseModel):
         self._current = OrderedDict()
         self._new = OrderedDict()
         self._created = True
+        self._updated = False
         super().__init__(*args, **kwargs)
+        for field in self._declared_fields:
+            default = self._declared_fields[field].default
+            on_update = self._declared_fields[field].on_update
+            if default is not None and field not in self.transaction:
+                default = parse_defaults(default)
+                default = self._declared_fields[field].parse(default)
+                if (field not in self.transaction or
+                        self.transaction[field] is None):
+                    self._current[field] = default
 
     def to_json(self):
         return js.dumps(self.transaction)
@@ -300,6 +324,8 @@ class Model(BaseModel):
             except KeyError:
                 pass
             self._new[key] = self._declared_fields[key].parse(value)
+            if self._created is False:
+                self._updated = True
         except KeyError:
             raise KeyError("Model %s:" % self.__class__.__name__ +
                            " No such field '%s'" % key) from None
@@ -318,6 +344,25 @@ class Model(BaseModel):
         self._new.clear()
 
     def commit(self):
+        if self._updated is False and self._created is False:
+            return None
+
+        for field in self._declared_fields:
+            if field not in self._new:
+                on_update = self._declared_fields[field].on_update
+                if on_update is not None and self._updated is True:
+                    on_update = parse_defaults(on_update)
+                    on_update = self._declared_fields[field].parse(on_update)
+                    self._new[field] = on_update
+
+        transaction = {}
+        for field in self._declared_fields:
+            if field in self.transaction:
+                if self._declared_fields[field].db is True:
+                    transaction[field] = self.transaction[field]
+            elif self._declared_fields[field].null is False:
+                self._declared_fields[field].error('required field')
+
         try:
             if self._sql is True:
                 conn = db()
@@ -328,13 +373,6 @@ class Model(BaseModel):
 
                 key_id = self.primary_key.name
 
-                transaction = {}
-                for field in self._declared_fields:
-                    if field in self.transaction:
-                        if self._declared_fields[field].db is True:
-                            transaction[field] = self.transaction[field]
-                    elif self._declared_fields[field].null is False:
-                        self._declared_fields[field].error('required field')
 
                 if self._created is True:
                     query = "INSERT INTO %s (" % table
@@ -348,24 +386,22 @@ class Model(BaseModel):
                     query += ','.join(placeholders)
                     query += ')'
                     conn.execute(query, list(transaction.values()))
-                    try:
-                        if self.primary_key.auto_increment is True:
-                            self[self.primary_key.name] = db.last_row_id()
-                    except AttributeError:
-                        pass
+                    if isinstance(self.primary_key, Integer):
+                        self[self.primary_key.name] = conn.last_row_id()
                     conn.commit()
 
-                else:
+                elif self._updated is True:
                     update_id = transaction[key_id]
                     sets = []
                     args = []
                     for field in self._new:
-                        if self._declared_fields[field].readonly is True:
-                            self._new[field].error('readonly value')
-                        if self._declared_fields[field].db is True:
-                            sets.append('%s' % field +
-                                       ' = %s')
-                            args.append(self._new[field])
+                        if self.primary_key.name != field:
+                            if self._declared_fields[field].readonly is True:
+                                self._new[field].error('readonly value')
+                            if self._declared_fields[field].db is True:
+                                sets.append('%s' % field +
+                                           ' = %s')
+                                args.append(self._new[field])
 
                     if len(sets) > 0:
                         sets = ", ".join(sets)
@@ -373,11 +409,12 @@ class Model(BaseModel):
                                    ' SET %s' % sets +
                                    ' WHERE %s' % key_id +
                                    ' = %s',
-                                   args + [self.primary_key.name,
-                                    update_id,])
+                                   args + [update_id,])
 
             self._current = self.transaction
             self._new.clear()
+            self._created = False
+            self._updated = False
             if self._sql is True:
                 conn.commit()
         finally:
