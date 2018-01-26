@@ -199,7 +199,8 @@ class Cursor(BaseExeptions):
                                                               tuple)):
                     args = [ args ]
 
-                query, args = args_to(query, args, self._conn.DEST_FORMAT)
+                query, args = args_to(query, args, self._conn.DEST_FORMAT,
+                                      self._conn.CAST_MAP)
                 if args is not None:
                     self._crsr.execute(query, args)
                     self._uncommited = True

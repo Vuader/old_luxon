@@ -277,18 +277,22 @@ class Model(BaseModel):
         for field in self._declared_fields:
             default = self._declared_fields[field].default
             on_update = self._declared_fields[field].on_update
-            if default is not None and field not in self.transaction:
+            if default is not None and field not in self._transaction:
                 default = parse_defaults(default)
                 default = self._declared_fields[field].parse(default)
-                if (field not in self.transaction or
-                        self.transaction[field] is None):
+                if (field not in self._transaction or
+                        self._transaction[field] is None):
                     self._current[field] = default
 
     def to_json(self):
-        return js.dumps(self.transaction)
+        return js.dumps(self._transaction)
 
     def to_dict(self):
-        return self.transaction.copy()
+        return self._transaction.copy()
+
+    @property
+    def _transaction(self):
+        return {**self._current, **self._new}
 
     @property
     def transaction(self):
@@ -316,7 +320,7 @@ class Model(BaseModel):
     def __setitem__(self, key, value):
         try:
             try:
-                if (self.transaction[key] is not None and
+                if (self._transaction[key] is not None and
                         key == self.primary_key.name):
                     raise ValueError("Model %s:" % self.__class__.__name__ +
                                      " Cannot alter primary key '%s'"
@@ -333,8 +337,9 @@ class Model(BaseModel):
     def __getitem__(self, key):
         if key in self._declared_fields:
             try:
-                return self.transaction[key]
+                return self._transaction[key]
             except KeyError:
+                print(self._transaction)
                 return None
         else:
             raise KeyError("Model %s:" % self.__class__.__name__ +
@@ -357,9 +362,9 @@ class Model(BaseModel):
 
         transaction = {}
         for field in self._declared_fields:
-            if field in self.transaction:
+            if field in self._transaction:
                 if self._declared_fields[field].db is True:
-                    transaction[field] = self.transaction[field]
+                    transaction[field] = self._transaction[field]
             elif self._declared_fields[field].null is False:
                 self._declared_fields[field].error('required field')
 
@@ -411,7 +416,7 @@ class Model(BaseModel):
                                    ' = %s',
                                    args + [update_id,])
 
-            self._current = self.transaction
+            self._current = self._transaction
             self._new.clear()
             self._created = False
             self._updated = False

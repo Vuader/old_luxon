@@ -28,6 +28,7 @@
 # WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 import sqlite3
+from decimal import Decimal as PyDecimal
 
 from luxon import exceptions
 from luxon.core.db.base.connection import Connection as BaseConnection
@@ -79,10 +80,16 @@ error_map = (
     (sqlite3.DatabaseError, 'DatabaseError'),
     (sqlite3.Error, 'Error'),
 )
+# MAP Python Types.
+cast_map = (
+    (PyDecimal, float),
+)
+
 
 class Connection(BaseConnection):
     DB_API = sqlite3
     ERROR_MAP = error_map
+    CAST_MAP = cast_map
     DEST_FORMAT='qmark'
     THREADSAFETY = threadsafety
 

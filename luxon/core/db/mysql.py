@@ -43,6 +43,10 @@ error_map = (
     (pymysql.Error, 'Error'),
 )
 
+# MAP Python Types.
+cast_map = (
+)
+
 # LOCALIZE Exceptions to Module as pep-0249
 from luxon.core.db.base.exceptions import (Error, Warning,
                                            InterfaceError,
@@ -87,6 +91,7 @@ def error_handler(self, e):
 class Connection(BaseConnection):
     DB_API = pymysql
     ERROR_MAP = error_map
+    CAST_MAP = cast_map
     DEST_FORMAT='format'
     THREADSAFETY = threadsafety
 

@@ -35,7 +35,7 @@ _cached_pool = None
 
 def _get_conn():
     # #PERFORMANCE - ONLY IMPORT HERE!
-    kwargs = g.app.config.kwargs('database')
+    kwargs = g.config.kwargs('database')
     if kwargs.get('type') == 'mysql':
         from luxon.core.db.mysql import connect
         return connect(kwargs.get('host', '127.0.0.1'),
@@ -44,7 +44,7 @@ def _get_conn():
                        kwargs.get('database', 'tachyonic'))
 
 def db():
-    kwargs = g.app.config.kwargs('database')
+    kwargs = g.config.kwargs('database')
     global _cached_pool
     if kwargs.get('type') == 'mysql':
         if _cached_pool is None:

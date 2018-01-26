@@ -52,7 +52,6 @@ def parse_defaults(value):
     return value
 
 class BaseField(object):
-
     """Field Class.
 
     Provides abstractions for most common database data types.
@@ -63,6 +62,7 @@ class BaseField(object):
         max_length (int): Maximum Length of field value others length value.
         null (bool): If value is allowed to NULL.
         default: Default value for field.
+        on_update: Default value for field on update..
         db (bool): Wether to store value in db column.
         label (str): Human friendly name for field.
         placeholder (str): Example to display in field.
@@ -80,6 +80,7 @@ class BaseField(object):
         max_length (int): Maximum Length of field value others length value.
         null (bool): If value is allowed to NULL.
         default: Default value for field.
+        on_update: Default value for field on update..
         db (bool): Wether to store value in db column.
         label (str): Human friendly name for field.
         placeholder (str): Example to display in field.
@@ -94,13 +95,14 @@ class BaseField(object):
     __slots__ = ('length', 'min_length', 'max_length', 'null', 'default',
                  'db', 'label', 'placeholder', 'readonly', 'prefix',
                  'suffix', 'columns' ,'hidden', 'enum', '_name', '_table',
-                 '_value', '_creation_counter', 'm', 'd', 'on_update')
+                 '_value', '_creation_counter', 'm', 'd', 'on_update',
+                 'password')
 
     def __init__(self, length=None, min_length=None, max_length=None,
                  null=True, default=None, db=True, label=None,
                  placeholder=None, readonly=False, prefix=None,
                  suffix=None, columns=None, hidden=False,
-                 enum=[], on_update=None):
+                 enum=[], on_update=None, password=False):
         self._creation_counter = global_counter()
         self._value = None
 
@@ -122,6 +124,7 @@ class BaseField(object):
         self.columns = columns
         self.hidden = hidden
         self.enum = enum
+        self.password = password
 
     @property
     def name(self):
@@ -239,6 +242,14 @@ class DateTime(BaseField):
             self.error('DateTime value required (%s)' % e, value)
         return value
 
+class PyObject(BaseField):
+    def __init__(self):
+        super().__init__()
+        self.db = False
+
+    def parse(self, value):
+        return value
+
 class Blob(BaseField):
     def parse(self, value):
         value = super().parse(value)
@@ -266,10 +277,14 @@ class LongText(String):
     pass
 
 class Enum(String):
+    def __init__(self, *args):
+        super().__init__()
+        self.enum = args
+
     def parse(self, value):
+        print(self.enum)
         if value not in self.enum:
             self.error('Invalid option', value)
-        value = super().parse(value)
         return value
 
 class Boolean(SmallInt):

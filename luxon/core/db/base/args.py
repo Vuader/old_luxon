@@ -44,7 +44,7 @@ named_re_match = re.compile(named_re, re.IGNORECASE)
 numeric_re_match = re.compile(numeric_re, re.IGNORECASE)
 pyformat_re_match = re.compile(pyformat_re, re.IGNORECASE)
 
-def _parse_param(value):
+def _parse_param(value, cast_map):
     """Parse SQL paramters provided to query.
     """
     if isinstance(value, bool):
@@ -52,9 +52,14 @@ def _parse_param(value):
             return 1
         else:
             return 0
+
+    for cast in cast_map:
+        if isinstance(value, cast[0]):
+            return cast[1](value)
+
     return value
 
-def args_to(query, args, to='qmark'):
+def args_to(query, args, to='qmark', cast=None):
     if isinstance(args, tuple):
         args = list(args)
     if not isinstance(args, (list, dict)):
@@ -84,34 +89,34 @@ def args_to(query, args, to='qmark'):
             if to == "qmark":
                 query = query.replace(expr, '?', 1)
                 if isinstance(args, dict):
-                    new_args.append(_parse_param(args[column]))
+                    new_args.append(_parse_param(args[column], cast))
                 else:
-                    new_args.append(_parse_param(args.pop(0)))
+                    new_args.append(_parse_param(args.pop(0), cast))
             elif to == "numeric":
                 query = query.replace(expr, ':%s' % counter, 1)
                 if isinstance(args, dict):
-                    new_args.append(_parse_param(args[column]))
+                    new_args.append(_parse_param(args[column], cast))
                 else:
-                    new_args.append(_parse_param(args.pop(0)))
+                    new_args.append(_parse_param(args.pop(0), cast))
                 counter += 1
             elif to == "named":
                 query = query.replace(expr, ':%s' % column, 1)
                 if isinstance(args, dict):
-                    new_args.append(_parse_param(args[column]))
+                    new_args.append(_parse_param(args[column], cast))
                 else:
-                    new_args.append(_parse_param(args.pop(0)))
+                    new_args.append(_parse_param(args.pop(0), cast))
             elif to == "format":
                 query = query.replace(expr, '%s', 1)
                 if isinstance(args, dict):
-                    new_args.append(_parse_param(args[column]))
+                    new_args.append(_parse_param(args[column], cast))
                 else:
-                    new_args.append(_parse_param(args.pop(0)))
+                    new_args.append(_parse_param(args.pop(0), cast))
             elif to == "pyformat":
                 query = query.replace(expr, '%' + '(%s)s' % column, 1)
                 if isinstance(args, dict):
-                    new_args.append(_parse_param(args[column]))
+                    new_args.append(_parse_param(args[column], cast))
                 else:
-                    new_args.append(_parse_param(args.pop(0)))
+                    new_args.append(_parse_param(args.pop(0), cast))
             else:
                 raise ValueError("Unknown type '%s'" % type) from None
         except KeyError:

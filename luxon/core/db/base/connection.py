@@ -76,15 +76,17 @@ paramstyle = "qmark"
 
 log = GetLogger(__name__)
 
-error_map = {
-
-}
+error_map = (
+)
+cast_map = (
+)
 
 class Connection(BaseExeptions):
     DB_API = None
     CHARSET = 'utf-8'
     DEST_FORMAT=None
     ERROR_MAP=error_map
+    CAST_MAP=cast_map
     _crsr_cls_args = []
     THREADSAFETY = threadsafety
     _instances = {}
