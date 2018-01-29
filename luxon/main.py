@@ -32,12 +32,15 @@ import os
 import sys
 import argparse
 import hashlib
+import site
 from pkg_resources import (resource_stream, resource_listdir,
                            resource_isdir, resource_exists)
 
 from luxon import metadata
+from luxon import g
 from luxon.core.servers.web import server as web_server
 from luxon.utils.imports import import_module
+from luxon.core.config import Config
 
 def _create_dir(path, new):
     new = os.path.normpath('%s%s' % (path, new))
@@ -106,6 +109,18 @@ def setup(args):
 def server(args):
     web_server(app_root=args.path, ip=args.ip, port=args.port)
 
+def db(args):
+    app_root = os.path.abspath(args.path)
+    site.addsitedir(os.path.abspath(os.path.curdir))
+    os.chdir(app_root)
+    with open(app_root.rstrip('/') + '/wsgi.py', 'r') as wsgi_file:
+        exec_g = {}
+        exec(wsgi_file.read(), exec_g, exec_g)
+
+    for Model in g.models:
+        model = Model()
+        model.sync_db()
+
 def main(argv):
     description = metadata.description + ' ' + metadata.version
     print("%s\n" % description)
@@ -116,6 +131,12 @@ def main(argv):
     parser.add_argument('path',
                         help='Application root path')
 
+    group.add_argument('-d',
+                       dest='funcs',
+                       action='append_const',
+                       const=db,
+                       help='Create/Update Database')
+
     group.add_argument('-i',
                        dest='pkg',
                        help='Install/Update application in path specified')
@@ -125,9 +146,11 @@ def main(argv):
                        action='append_const',
                        const=server,
                        help='Start Internal Testing Server (requires gunicorn)')
+
     parser.add_argument('--ip',
                        help='Binding IP Address (127.0.0.1)',
                        default='127.0.0.1')
+
     parser.add_argument('--port',
                         help='Binding Port (8080)',
                         default='8080')
