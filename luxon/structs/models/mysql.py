@@ -75,6 +75,7 @@ class Mysql(object):
                 max_length = model_fields[field].max_length
                 enum = model_fields[field].enum
                 null = model_fields[field].null
+                signed = model_fields[field].signed
 
                 if isinstance(model_fields[field], fields.Double):
                     if m is not None and d is not None:
@@ -162,6 +163,9 @@ class Mysql(object):
                     enum = ','.join(enum)
 
                     sql_field = " %s enum(%s)" % (column, enum)
+
+                if signed is False:
+                    sql_field += ' UNSIGNED'
 
                 if isinstance(model_fields[field], fields.Integer):
                     if self._primary_key.name == field:
