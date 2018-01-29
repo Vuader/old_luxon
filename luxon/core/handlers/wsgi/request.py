@@ -369,11 +369,16 @@ class Request(RequestBase):
     @property
     def app_uri(self):
         if self._cached_app_uri is None:
-            self._cached_app_uri = (
-                self.env['wsgi.url_scheme'] + '://' +
-                self.netloc +
-                self.app
-            )
+            if g.config.get('application', 'use_forwarded') is True:
+                self._cached_app_uri = (self.forwarded_scheme + '://' +
+                                        self.forwarded_host +
+                                        self.app)
+            else:
+                self._cached_app_uri = (
+                    self.env['wsgi.url_scheme'] + '://' +
+                    self.netloc +
+                    self.app
+                )
 
         return self._cached_app_uri
 
@@ -391,13 +396,16 @@ class Request(RequestBase):
     @property
     def uri(self):
         if self._cached_uri is None:
-            scheme = self.env['wsgi.url_scheme']
+            if g.config.get('application', 'use_forwarded') is True:
+                self._cached_uri = self.forwarded_uri
+            else:
+                scheme = self.env['wsgi.url_scheme']
 
-            value = (scheme + '://' +
-                     self.netloc +
-                     self.relative_uri)
+                value = (scheme + '://' +
+                         self.netloc +
+                         self.relative_uri)
 
-            self._cached_uri = value
+                self._cached_uri = value
 
         return self._cached_uri
 
