@@ -64,11 +64,11 @@ class BaseField(object):
         null (bool): If value is allowed to NULL.
         default: Default value for field.
         on_update: Default value for field on update..
-        db (bool): Wether to store value in db column.
+        db (bool): Whether to store value in db column.
         label (str): Human friendly name for field.
         placeholder (str): Example to display in field.
-        readonly (bool): Wether field can be updated.
-        prefix (str): Text placed infront of field input.
+        readonly (bool): Whether field can be updated.
+        prefix (str): Text placed in front of field input.
         suffix (str): Text placed after field input.
         columns (int): Number of columns to display for text field.
         hidden (bool): To hide field from forms.
@@ -145,11 +145,11 @@ class String(BaseField):
         null (bool): If value is allowed to NULL.
         default: Default value for field.
         on_update: Default value for field on update..
-        db (bool): Wether to store value in db column.
+        db (bool): Whether to store value in db column.
         label (str): Human friendly name for field.
         placeholder (str): Example to display in field.
-        readonly (bool): Wether field can be updated.
-        prefix (str): Text placed infront of field input.
+        readonly (bool): Whether field can be updated.
+        prefix (str): Text placed in front of field input.
         suffix (str): Text placed after field input.
         hidden (bool): To hide field from forms.
     """
@@ -163,6 +163,10 @@ class String(BaseField):
 class Integer(BaseField):
     """Integer Field.
 
+    4 Octet Integer
+    Minimum value -2147483648
+    Maximum value 2147483648
+
     Keyword Args:
         length (int): Length of field value.
         min_length (int): Minimum Length of field value.
@@ -171,14 +175,35 @@ class Integer(BaseField):
         null (bool): If value is allowed to NULL.
         default: Default value for field.
         on_update: Default value for field on update..
-        db (bool): Wether to store value in db column.
+        db (bool): Whether to store value in db column.
         label (str): Human friendly name for field.
         placeholder (str): Example to display in field.
-        readonly (bool): Wether field can be updated.
-        prefix (str): Text placed infront of field input.
+        readonly (bool): Whether field can be updated.
+        prefix (str): Text placed in front of field input.
         suffix (str): Text placed after field input.
         hidden (bool): To hide field from forms.
     """
+
+    def __init__(self, length=None,
+                 null=True, default=None, db=True, label=None,
+                 placeholder=None, readonly=False, prefix=None,
+                 suffix=None, columns=None, hidden=False,
+                 enum=[], on_update=None, password=False,
+                 signed=True):
+
+        if signed is True:
+            mmin = -2147483648
+            mmax = 2147483648
+        else:
+            mmin = 0
+            mmax = 4294967295
+
+        super().__init__(length=None, min_length=mmin, max_length=mmax,
+                     null=True, default=None, db=True, label=None,
+                     placeholder=None, readonly=False, prefix=None,
+                     suffix=None, columns=None, hidden=False,
+                     enum=[], on_update=None, password=False)
+
     def parse(self, value):
         try:
             value = int(value)
@@ -286,11 +311,11 @@ class TinyInt(Integer):
         null (bool): If value is allowed to NULL.
         default: Default value for field.
         on_update: Default value for field on update..
-        db (bool): Wether to store value in db column.
+        db (bool): Whether to store value in db column.
         label (str): Human friendly name for field.
         placeholder (str): Example to display in field.
-        readonly (bool): Wether field can be updated.
-        prefix (str): Text placed infront of field input.
+        readonly (bool): Whether field can be updated.
+        prefix (str): Text placed in front of field input.
         suffix (str): Text placed after field input.
         hidden (bool): To hide field from forms.
     """
@@ -327,11 +352,11 @@ class SmallInt(Integer):
         null (bool): If value is allowed to NULL.
         default: Default value for field.
         on_update: Default value for field on update..
-        db (bool): Wether to store value in db column.
+        db (bool): Whether to store value in db column.
         label (str): Human friendly name for field.
         placeholder (str): Example to display in field.
-        readonly (bool): Wether field can be updated.
-        prefix (str): Text placed infront of field input.
+        readonly (bool): Whether field can be updated.
+        prefix (str): Text placed in front of field input.
         suffix (str): Text placed after field input.
         hidden (bool): To hide field from forms.
     """
@@ -368,11 +393,11 @@ class MediumInt(Integer):
         null (bool): If value is allowed to NULL.
         default: Default value for field.
         on_update: Default value for field on update..
-        db (bool): Wether to store value in db column.
+        db (bool): Whether to store value in db column.
         label (str): Human friendly name for field.
         placeholder (str): Example to display in field.
-        readonly (bool): Wether field can be updated.
-        prefix (str): Text placed infront of field input.
+        readonly (bool): Whether field can be updated.
+        prefix (str): Text placed in front of field input.
         suffix (str): Text placed after field input.
         hidden (bool): To hide field from forms.
     """
@@ -398,8 +423,46 @@ class MediumInt(Integer):
 
 class BigInt(Integer):
     """Big Integer Field.
+
+    4 Octet Integer
+    Minimum value -9223372036854775808
+    Maximum value 9223372036854775808
+
+    Keyword Args:
+        length (int): Length of field value.
+        min_length (int): Minimum Length of field value.
+        max_length (int): Maximum Length of field value others length value.
+        signed (bool): If Integer value is signed or un-signed.
+        null (bool): If value is allowed to NULL.
+        default: Default value for field.
+        on_update: Default value for field on update..
+        db (bool): Whether to store value in db column.
+        label (str): Human friendly name for field.
+        placeholder (str): Example to display in field.
+        readonly (bool): Whether field can be updated.
+        prefix (str): Text placed in front of field input.
+        suffix (str): Text placed after field input.
+        hidden (bool): To hide field from forms.
     """
-    pass
+    def __init__(self, length=None,
+                 null=True, default=None, db=True, label=None,
+                 placeholder=None, readonly=False, prefix=None,
+                 suffix=None, columns=None, hidden=False,
+                 enum=[], on_update=None, password=False,
+                 signed=True):
+
+        if signed is True:
+            mmin = 	-9223372036854775808
+            mmax = 	9223372036854775808
+        else:
+            mmin = 0
+            mmax = 18446744073709551615
+
+        super().__init__(length=None, min_length=mmin, max_length=mmax,
+                     null=True, default=None, db=True, label=None,
+                     placeholder=None, readonly=False, prefix=None,
+                     suffix=None, columns=None, hidden=False,
+                     enum=[], on_update=None, password=False)
 
 class DateTime(BaseField):
     """DateTime Field.
@@ -430,44 +493,316 @@ class PyObject(BaseField):
 
 class Blob(BaseField):
     """Blob Field.
+
+    64 KB field
+    65535 Octets
+
+
+    Keyword Args:
+        length (int): Length of field value.
+        null (bool): If value is allowed to NULL.
+        default: Default value for field.
+        on_update: Default value for field on update..
+        db (bool): Whether to store value in db column.
+        label (str): Human friendly name for field.
+        placeholder (str): Example to display in field.
+        readonly (bool): Whether field can be updated.
+        prefix (str): Text placed in front of field input.
+        suffix (str): Text placed after field input.
+        hidden (bool): To hide field from forms.
     """
+
+    def __init__(self, length=None,
+                 null=True, default=None, db=True, label=None,
+                 placeholder=None, readonly=False, prefix=None,
+                 suffix=None, columns=None, hidden=False,
+                 enum=[], on_update=None, password=False):
+
+
+        mmin = 0
+        mmax = 65535
+
+        super().__init__(length=None, min_length=mmin, max_length=mmax,
+                     null=True, default=None, db=True, label=None,
+                     placeholder=None, readonly=False, prefix=None,
+                     suffix=None, columns=None, hidden=False,
+                     enum=[], on_update=None, password=False)
+
     def parse(self, value):
         value = super().parse(value)
         return value
 
 class TinyBlob(Blob):
     """Tiny Blob Field.
+
+    255 Octets
+
+
+    Keyword Args:
+        length (int): Length of field value.
+        null (bool): If value is allowed to NULL.
+        default: Default value for field.
+        on_update: Default value for field on update..
+        db (bool): Whether to store value in db column.
+        label (str): Human friendly name for field.
+        placeholder (str): Example to display in field.
+        readonly (bool): Whether field can be updated.
+        prefix (str): Text placed in front of field input.
+        suffix (str): Text placed after field input.
+        hidden (bool): To hide field from forms.
     """
+
+    def __init__(self, length=None,
+                 null=True, default=None, db=True, label=None,
+                 placeholder=None, readonly=False, prefix=None,
+                 suffix=None, columns=None, hidden=False,
+                 enum=[], on_update=None, password=False):
+
+
+        mmin = 0
+        mmax = 255
+
+        super().__init__(length=None, min_length=mmin, max_length=mmax,
+                     null=True, default=None, db=True, label=None,
+                     placeholder=None, readonly=False, prefix=None,
+                     suffix=None, columns=None, hidden=False,
+                     enum=[], on_update=None, password=False)
+
     pass
 
 class MediumBlob(Blob):
     """Medium Blob Field.
+
+    16 MB field
+    16777215 Octets
+
+
+    Keyword Args:
+        length (int): Length of field value.
+        null (bool): If value is allowed to NULL.
+        default: Default value for field.
+        on_update: Default value for field on update..
+        db (bool): Whether to store value in db column.
+        label (str): Human friendly name for field.
+        placeholder (str): Example to display in field.
+        readonly (bool): Whether field can be updated.
+        prefix (str): Text placed in front of field input.
+        suffix (str): Text placed after field input.
+        hidden (bool): To hide field from forms.
     """
+
+    def __init__(self, length=None,
+                 null=True, default=None, db=True, label=None,
+                 placeholder=None, readonly=False, prefix=None,
+                 suffix=None, columns=None, hidden=False,
+                 enum=[], on_update=None, password=False):
+
+
+        mmin = 0
+        mmax = 16777215
+
+        super().__init__(length=None, min_length=mmin, max_length=mmax,
+                     null=True, default=None, db=True, label=None,
+                     placeholder=None, readonly=False, prefix=None,
+                     suffix=None, columns=None, hidden=False,
+                     enum=[], on_update=None, password=False)
+
+
     pass
 
 class LongBlob(Blob):
     """Long Blob Field.
+
+    4 GB field
+    4294967295 Octets
+
+
+    Keyword Args:
+        length (int): Length of field value.
+        null (bool): If value is allowed to NULL.
+        default: Default value for field.
+        on_update: Default value for field on update..
+        db (bool): Whether to store value in db column.
+        label (str): Human friendly name for field.
+        placeholder (str): Example to display in field.
+        readonly (bool): Whether field can be updated.
+        prefix (str): Text placed in front of field input.
+        suffix (str): Text placed after field input.
+        hidden (bool): To hide field from forms.
     """
+
+    def __init__(self, length=None,
+                 null=True, default=None, db=True, label=None,
+                 placeholder=None, readonly=False, prefix=None,
+                 suffix=None, columns=None, hidden=False,
+                 enum=[], on_update=None, password=False):
+
+
+        mmin = 0
+        mmax = 4294967295
+
+        super().__init__(length=None, min_length=mmin, max_length=mmax,
+                     null=True, default=None, db=True, label=None,
+                     placeholder=None, readonly=False, prefix=None,
+                     suffix=None, columns=None, hidden=False,
+                     enum=[], on_update=None, password=False)
+
     pass
 
 class Text(String):
     """Text Field.
+
+    64 KB field
+    65535 Octets
+
+
+    Keyword Args:
+        length (int): Length of field value.
+        null (bool): If value is allowed to NULL.
+        default: Default value for field.
+        on_update: Default value for field on update..
+        db (bool): Whether to store value in db column.
+        label (str): Human friendly name for field.
+        placeholder (str): Example to display in field.
+        readonly (bool): Whether field can be updated.
+        prefix (str): Text placed in front of field input.
+        suffix (str): Text placed after field input.
+        hidden (bool): To hide field from forms.
     """
+
+    def __init__(self, length=None,
+                 null=True, default=None, db=True, label=None,
+                 placeholder=None, readonly=False, prefix=None,
+                 suffix=None, columns=None, hidden=False,
+                 enum=[], on_update=None, password=False):
+
+
+        mmin = 0
+        mmax = 65535
+
+        super().__init__(length=None, min_length=mmin, max_length=mmax,
+                     null=True, default=None, db=True, label=None,
+                     placeholder=None, readonly=False, prefix=None,
+                     suffix=None, columns=None, hidden=False,
+                     enum=[], on_update=None, password=False)
+
     pass
 
 class TinyText(String):
     """Tiny Text Field.
+
+    255 Octets
+
+
+    Keyword Args:
+        length (int): Length of field value.
+        null (bool): If value is allowed to NULL.
+        default: Default value for field.
+        on_update: Default value for field on update..
+        db (bool): Whether to store value in db column.
+        label (str): Human friendly name for field.
+        placeholder (str): Example to display in field.
+        readonly (bool): Whether field can be updated.
+        prefix (str): Text placed in front of field input.
+        suffix (str): Text placed after field input.
+        hidden (bool): To hide field from forms.
     """
+
+    def __init__(self, length=None,
+                 null=True, default=None, db=True, label=None,
+                 placeholder=None, readonly=False, prefix=None,
+                 suffix=None, columns=None, hidden=False,
+                 enum=[], on_update=None, password=False):
+
+
+        mmin = 0
+        mmax = 255
+
+        super().__init__(length=None, min_length=mmin, max_length=mmax,
+                     null=True, default=None, db=True, label=None,
+                     placeholder=None, readonly=False, prefix=None,
+                     suffix=None, columns=None, hidden=False,
+                     enum=[], on_update=None, password=False)
+
+
     pass
 
 class MediumText(String):
     """Medium Text Field.
+
+    16 MB field
+    16777215 Octets
+
+
+    Keyword Args:
+        length (int): Length of field value.
+        null (bool): If value is allowed to NULL.
+        default: Default value for field.
+        on_update: Default value for field on update..
+        db (bool): Whether to store value in db column.
+        label (str): Human friendly name for field.
+        placeholder (str): Example to display in field.
+        readonly (bool): Whether field can be updated.
+        prefix (str): Text placed in front of field input.
+        suffix (str): Text placed after field input.
+        hidden (bool): To hide field from forms.
     """
+
+    def __init__(self, length=None,
+                 null=True, default=None, db=True, label=None,
+                 placeholder=None, readonly=False, prefix=None,
+                 suffix=None, columns=None, hidden=False,
+                 enum=[], on_update=None, password=False):
+
+
+        mmin = 0
+        mmax = 16777215
+
+        super().__init__(length=None, min_length=mmin, max_length=mmax,
+                     null=True, default=None, db=True, label=None,
+                     placeholder=None, readonly=False, prefix=None,
+                     suffix=None, columns=None, hidden=False,
+                     enum=[], on_update=None, password=False)
+
     pass
 
 class LongText(String):
     """Long Text Field.
+
+    4 GB field
+    4294967295 Octets
+
+
+    Keyword Args:
+        length (int): Length of field value.
+        null (bool): If value is allowed to NULL.
+        default: Default value for field.
+        on_update: Default value for field on update..
+        db (bool): Whether to store value in db column.
+        label (str): Human friendly name for field.
+        placeholder (str): Example to display in field.
+        readonly (bool): Whether field can be updated.
+        prefix (str): Text placed in front of field input.
+        suffix (str): Text placed after field input.
+        hidden (bool): To hide field from forms.
     """
+
+    def __init__(self, length=None,
+                 null=True, default=None, db=True, label=None,
+                 placeholder=None, readonly=False, prefix=None,
+                 suffix=None, columns=None, hidden=False,
+                 enum=[], on_update=None, password=False):
+
+
+        mmin = 0
+        mmax = 4294967295
+
+        super().__init__(length=None, min_length=mmin, max_length=mmax,
+                     null=True, default=None, db=True, label=None,
+                     placeholder=None, readonly=False, prefix=None,
+                     suffix=None, columns=None, hidden=False,
+                     enum=[], on_update=None, password=False)
+
     pass
 
 class Enum(String):
