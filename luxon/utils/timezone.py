@@ -142,8 +142,11 @@ def TimezoneApp():
     if _cached_time_zone_app is None:
         app_timezone = g.app.config.get('application',
                                                 'timezone')
-        _cached_time_zone_app = pytz.timezone(app_timezone)
-        # TODO IF FAILS LOG AND FALL BACK TO SYSTEM
+
+        if app_timezone == 'local' or app_timezone == 'server':
+            _cached_time_zone_app = get_localzone()
+        else:
+            _cached_time_zone_app = pytz.timezone(app_timezone)
 
     return _cached_time_zone_app
 

@@ -35,7 +35,7 @@ defaults = {
         'static': '/static',
         'session_timeout': '3600',
         'use_forwarded': 'false',
-        'user_timezone': 'local',
+        'timezone': 'local',
         'default_theme': 'default',
         'restapi': 'http://localhost/api',
         'log_stdout': True,
