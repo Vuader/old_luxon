@@ -39,6 +39,7 @@ from luxon.utils.encoding import if_bytes_to_unicode
 from luxon.exceptions import FieldError
 from luxon.utils.timezone import to_utc
 from luxon.utils.timezone import TimezoneUTC
+from luxon.utils.length_calc import length_calc
 
 EMAIL_RE = r'[^@]+@[^@]+\.[^@]+'
 
@@ -189,21 +190,22 @@ class Integer(BaseField):
         hidden (bool): To hide field from forms.
     """
 
-    def __init__(self, length=None,
+    def __init__(self, length=None, min_length=None, max_length=None,
                  null=True, default=None, db=True, label=None,
                  placeholder=None, readonly=False, prefix=None,
                  suffix=None, columns=None, hidden=False,
                  enum=[], on_update=None, password=False,
                  signed=True):
 
-        if signed is True:
-            mmin = -2147483648
-            mmax = 2147483648
-        else:
-            mmin = 0
-            mmax = 4294967295
 
-        super().__init__(length=None, min_length=mmin, max_length=mmax,
+        try:
+            min_length, max_length = length_calc(min_length, max_length, signed,4)
+        except ValueError as e:
+            error(e, value)
+
+
+
+        super().__init__(length=None, min_length=min_length, max_length=max_length,
                      null=True, default=None, db=True, label=None,
                      placeholder=None, readonly=False, prefix=None,
                      suffix=None, columns=None, hidden=False,
@@ -324,21 +326,20 @@ class TinyInt(Integer):
         suffix (str): Text placed after field input.
         hidden (bool): To hide field from forms.
     """
-    def __init__(self, length=None,
+    def __init__(self, length=None, min_length=None, max_length=None,
                  null=True, default=None, db=True, label=None,
                  placeholder=None, readonly=False, prefix=None,
                  suffix=None, columns=None, hidden=False,
                  enum=[], on_update=None, password=False,
                  signed=True):
 
-        if signed is True:
-            mmin = -128
-            mmax = 127
-        else:
-            mmin = 0
-            mmax = 255
+        try:
+            min_length, max_length = length_calc(min_length, max_length, signed,1)
+        except ValueError as e:
+            error(e, value)
 
-        super().__init__(length=None, min_length=mmin, max_length=mmax,
+
+        super().__init__(length=None, min_length=min_length, max_length=max_length,
                      null=True, default=None, db=True, label=None,
                      placeholder=None, readonly=False, prefix=None,
                      suffix=None, columns=None, hidden=False,
@@ -365,21 +366,19 @@ class SmallInt(Integer):
         suffix (str): Text placed after field input.
         hidden (bool): To hide field from forms.
     """
-    def __init__(self, length=None,
+    def __init__(self, length=None, min_length=None, max_length=None,
                  null=True, default=None, db=True, label=None,
                  placeholder=None, readonly=False, prefix=None,
                  suffix=None, columns=None, hidden=False,
                  enum=[], on_update=None, password=False,
                  signed=True):
 
-        if signed is True:
-            mmin = -32768
-            mmax = 32767
-        else:
-            mmin = 0
-            mmax = 65535
+        try:
+            min_length, max_length = length_calc(min_length, max_length, signed,2)
+        except ValueError as e:
+            error(e, value)
 
-        super().__init__(length=None, min_length=mmin, max_length=mmax,
+        super().__init__(length=None, min_length=min_length, max_length=max_length,
                      null=True, default=None, db=True, label=None,
                      placeholder=None, readonly=False, prefix=None,
                      suffix=None, columns=None, hidden=False,
@@ -406,22 +405,22 @@ class MediumInt(Integer):
         suffix (str): Text placed after field input.
         hidden (bool): To hide field from forms.
     """
-    def __init__(self, length=None,
+    def __init__(self, length=None, min_length=None, max_length=None,
                  null=True, default=None, db=True, label=None,
                  placeholder=None, readonly=False, prefix=None,
                  suffix=None, columns=None, hidden=False,
                  enum=[], on_update=None, password=False,
                  signed=True):
 
-        if signed is True:
-            mmin = -8388608
-            mmax = 8388607
-        else:
-            mmin = 0
-            mmax = 16777215
+        try:
+            min_length, max_length = length_calc(min_length, max_length, signed,3)
+        except ValueError as e:
+            error(e, value)
 
-        super().__init__(length=None, min_length=mmin, max_length=mmax,
-                     null=True, default=None, db=True, label=None,
+
+
+        super().__init__(length=length, min_length=min_length, max_length=max_length,
+                     null=null, default=None, db=True, label=None,
                      placeholder=None, readonly=False, prefix=None,
                      suffix=None, columns=None, hidden=False,
                      enum=[], on_update=None, password=False)
@@ -449,21 +448,20 @@ class BigInt(Integer):
         suffix (str): Text placed after field input.
         hidden (bool): To hide field from forms.
     """
-    def __init__(self, length=None,
+    def __init__(self, length=None, min_length=None, max_length=None,
                  null=True, default=None, db=True, label=None,
                  placeholder=None, readonly=False, prefix=None,
                  suffix=None, columns=None, hidden=False,
                  enum=[], on_update=None, password=False,
                  signed=True):
 
-        if signed is True:
-            mmin = 	-9223372036854775808
-            mmax = 	9223372036854775808
-        else:
-            mmin = 0
-            mmax = 18446744073709551615
+        try:
+            min_length, max_length = length_calc(min_length, max_length, signed, 4)
+        except ValueError as e:
+            error(e, value)
 
-        super().__init__(length=None, min_length=mmin, max_length=mmax,
+
+        super().__init__(length=None, min_length=min_length, max_length=max_length,
                      null=True, default=None, db=True, label=None,
                      placeholder=None, readonly=False, prefix=None,
                      suffix=None, columns=None, hidden=False,
@@ -525,17 +523,20 @@ class Blob(BaseField):
         hidden (bool): To hide field from forms.
     """
 
-    def __init__(self, length=None,
+    def __init__(self, length=None, min_length=None, max_length=None,
                  null=True, default=None, db=True, label=None,
                  placeholder=None, readonly=False, prefix=None,
                  suffix=None, columns=None, hidden=False,
                  enum=[], on_update=None, password=False):
 
+        try:
+            min_length, max_length = length_calc(min_length, max_length, False,65535)
+        except ValueError as e:
+            error(e, value)
 
-        mmin = 0
-        mmax = 65535
 
-        super().__init__(length=None, min_length=mmin, max_length=mmax,
+
+        super().__init__(length=None, min_length=min_length, max_length=max_length,
                      null=True, default=None, db=True, label=None,
                      placeholder=None, readonly=False, prefix=None,
                      suffix=None, columns=None, hidden=False,
@@ -565,17 +566,19 @@ class TinyBlob(Blob):
         hidden (bool): To hide field from forms.
     """
 
-    def __init__(self, length=None,
+    def __init__(self, length=None, min_length=None, max_length=None,
                  null=True, default=None, db=True, label=None,
                  placeholder=None, readonly=False, prefix=None,
                  suffix=None, columns=None, hidden=False,
                  enum=[], on_update=None, password=False):
 
+        try:
+            min_length, max_length = length_calc(min_length, max_length, False, 255)
+        except ValueError as e:
+            error(e, value)
 
-        mmin = 0
-        mmax = 255
 
-        super().__init__(length=None, min_length=mmin, max_length=mmax,
+        super().__init__(length=None, min_length=min_length, max_length=max_length,
                      null=True, default=None, db=True, label=None,
                      placeholder=None, readonly=False, prefix=None,
                      suffix=None, columns=None, hidden=False,
@@ -604,17 +607,19 @@ class MediumBlob(Blob):
         hidden (bool): To hide field from forms.
     """
 
-    def __init__(self, length=None,
+    def __init__(self, length=None, min_length=None, max_length=None,
                  null=True, default=None, db=True, label=None,
                  placeholder=None, readonly=False, prefix=None,
                  suffix=None, columns=None, hidden=False,
                  enum=[], on_update=None, password=False):
 
 
-        mmin = 0
-        mmax = 16777215
+        try:
+            min_length, max_length = length_calc(min_length, max_length, False,16777215)
+        except ValueError as e:
+            error(e, value)
 
-        super().__init__(length=None, min_length=mmin, max_length=mmax,
+        super().__init__(length=None, min_length=min_length, max_length=max_length,
                      null=True, default=None, db=True, label=None,
                      placeholder=None, readonly=False, prefix=None,
                      suffix=None, columns=None, hidden=False,
@@ -644,17 +649,19 @@ class LongBlob(Blob):
         hidden (bool): To hide field from forms.
     """
 
-    def __init__(self, length=None,
+    def __init__(self, length=None, min_length=None, max_length=None,
                  null=True, default=None, db=True, label=None,
                  placeholder=None, readonly=False, prefix=None,
                  suffix=None, columns=None, hidden=False,
                  enum=[], on_update=None, password=False):
 
 
-        mmin = 0
-        mmax = 4294967295
+        try:
+            min_length, max_length = length_calc(min_length, max_length, False, 4294967295)
+        except ValueError as e:
+            error(e, value)
 
-        super().__init__(length=None, min_length=mmin, max_length=mmax,
+        super().__init__(length=None, min_length=min_length, max_length=max_length,
                      null=True, default=None, db=True, label=None,
                      placeholder=None, readonly=False, prefix=None,
                      suffix=None, columns=None, hidden=False,
@@ -683,17 +690,18 @@ class Text(String):
         hidden (bool): To hide field from forms.
     """
 
-    def __init__(self, length=None,
+    def __init__(self, length=None, min_length=None, max_length=None,
                  null=True, default=None, db=True, label=None,
                  placeholder=None, readonly=False, prefix=None,
                  suffix=None, columns=None, hidden=False,
                  enum=[], on_update=None, password=False):
 
+        try:
+            min_length, max_length = length_calc(min_length, max_length, False, 65535)
+        except ValueError as e:
+            error(e, value)
 
-        mmin = 0
-        mmax = 65535
-
-        super().__init__(length=None, min_length=mmin, max_length=mmax,
+        super().__init__(length=None, min_length=min_length, max_length=max_length,
                      null=True, default=None, db=True, label=None,
                      placeholder=None, readonly=False, prefix=None,
                      suffix=None, columns=None, hidden=False,
@@ -721,17 +729,19 @@ class TinyText(String):
         hidden (bool): To hide field from forms.
     """
 
-    def __init__(self, length=None,
+    def __init__(self, length=None, min_length=None, max_length=None,
                  null=True, default=None, db=True, label=None,
                  placeholder=None, readonly=False, prefix=None,
                  suffix=None, columns=None, hidden=False,
                  enum=[], on_update=None, password=False):
 
 
-        mmin = 0
-        mmax = 255
+        try:
+            min_length, max_length = length_calc(min_length, max_length, False, 255)
+        except ValueError as e:
+            error(e, value)
 
-        super().__init__(length=None, min_length=mmin, max_length=mmax,
+        super().__init__(length=None, min_length=min_length, max_length=max_length,
                      null=True, default=None, db=True, label=None,
                      placeholder=None, readonly=False, prefix=None,
                      suffix=None, columns=None, hidden=False,
@@ -761,17 +771,19 @@ class MediumText(String):
         hidden (bool): To hide field from forms.
     """
 
-    def __init__(self, length=None,
+    def __init__(self, length=None, min_length=None, max_length=None,
                  null=True, default=None, db=True, label=None,
                  placeholder=None, readonly=False, prefix=None,
                  suffix=None, columns=None, hidden=False,
                  enum=[], on_update=None, password=False):
 
 
-        mmin = 0
-        mmax = 16777215
+        try:
+            min_length, max_length = length_calc(min_length, max_length, False, 16777215)
+        except ValueError as e:
+            error(e, value)
 
-        super().__init__(length=None, min_length=mmin, max_length=mmax,
+        super().__init__(length=None, min_length=min_length, max_length=max_length,
                      null=True, default=None, db=True, label=None,
                      placeholder=None, readonly=False, prefix=None,
                      suffix=None, columns=None, hidden=False,
@@ -800,17 +812,18 @@ class LongText(String):
         hidden (bool): To hide field from forms.
     """
 
-    def __init__(self, length=None,
+    def __init__(self, length=None, min_length=None, max_length=None,
                  null=True, default=None, db=True, label=None,
                  placeholder=None, readonly=False, prefix=None,
                  suffix=None, columns=None, hidden=False,
                  enum=[], on_update=None, password=False):
 
+        try:
+            min_length, max_length = length_calc(min_length, max_length, False, 4294967295)
+        except ValueError as e:
+            error(e, value)
 
-        mmin = 0
-        mmax = 4294967295
-
-        super().__init__(length=None, min_length=mmin, max_length=mmax,
+        super().__init__(length=None, min_length=min_length, max_length=max_length,
                      null=True, default=None, db=True, label=None,
                      placeholder=None, readonly=False, prefix=None,
                      suffix=None, columns=None, hidden=False,
