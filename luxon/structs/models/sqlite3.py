@@ -63,10 +63,10 @@ class Sqlite3(object):
                 null = model_fields[field].null
 
                 if isinstance(model_fields[field], fields.Float):
-                    sql_field = " %s REAL"
+                    sql_field = " %s REAL" % column
 
                 if isinstance(model_fields[field], fields.Decimal):
-                    sql_field = " %s REAL"
+                    sql_field = " %s REAL" % column
 
                 if isinstance(model_fields[field], fields.String):
                     sql_field = " %s TEXT" % column

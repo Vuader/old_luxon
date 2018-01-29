@@ -160,7 +160,7 @@ def parse_datetime(datetime):
     datetime = splitted_datetime[0]
     try:
         datetime += '+' + splitted_datetime[1].replace(':', '')
-    except KeyError:
+    except IndexError:
         pass
 
     for time_format in TIME_FORMATS:

@@ -27,33 +27,37 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
+from collections import OrderedDict
 
-from luxon import g
-from luxon.utils.pool import Pool
+from luxon.structs.models.fields import BaseField
 
-_cached_pool = None
+def declared_fields(cls):
+    """Return fields in object.
 
-def _get_conn():
-    # #PERFORMANCE - ONLY IMPORT HERE!
-    kwargs = g.config.kwargs('database')
-    if kwargs.get('type') == 'mysql':
-        from luxon.core.db.mysql import connect
-        return connect(kwargs.get('host', '127.0.0.1'),
-                       kwargs.get('username', 'tachyonic'),
-                       kwargs.get('password', 'password'),
-                       kwargs.get('database', 'tachyonic'))
+    global_counter() function used in class to set creation_counter property
+    on object for class. The creation_counter() keeps a global state of when
+    each field is defined in a model. The purpose is primarily for html forms.
 
-def db():
-    kwargs = g.config.kwargs('database')
-    global _cached_pool
-    if kwargs.get('type') == 'mysql':
-        if _cached_pool is None:
-            _cached_pool = Pool(_get_conn,
-                                pool_size=kwargs.get('pool_size', 10),
-                                max_overflow=kwargs.get('max_overflow', 0))
-        return _cached_pool()
-    elif kwargs.get('type') == 'sqlite3':
-        from luxon.core.db.sqlite import connect
-        return connect(kwargs.get('database'))
-    else:
-        raise TypeError('Unknown Database type defined in configuration')
+    Returns Ordered Dictionary as per when fields are defined.
+
+    The key is the name of the field with value as the field object.
+    """
+    current_fields = []
+
+    for name in dir(cls):
+        # NOTE(cfrademan): Hack, dir() shows '__slots__', so it breaks if
+        # attribue is not there while doing getattr. once again, its faster
+        # to ask for forgiveness than permission.
+        try:
+            prop = getattr(cls, name)
+        except AttributeError:
+            prop = None
+
+        if name != 'primary_key':
+            if isinstance(prop, BaseField):
+                current_fields.append((name, prop))
+                prop._name = name
+
+    current_fields.sort(key=lambda x: x[1]._creation_counter)
+
+    return OrderedDict(current_fields)
