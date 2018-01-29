@@ -60,6 +60,7 @@ class BaseField(object):
         length (int): Length of field value.
         min_length (int): Minimum Length of field value.
         max_length (int): Maximum Length of field value others length value.
+        signed (bool): If Integer value is signed or un-signed.
         null (bool): If value is allowed to NULL.
         default: Default value for field.
         on_update: Default value for field on update..
@@ -72,37 +73,19 @@ class BaseField(object):
         columns (int): Number of columns to display for text field.
         hidden (bool): To hide field from forms.
         enum (list): List of possible values. Only for ENUM.
-
-    Properties:
-        name (str): Name of field.
-        length (int): Length of field value.
-        min_length (int): Minimum Length of field value.
-        max_length (int): Maximum Length of field value others length value.
-        null (bool): If value is allowed to NULL.
-        default: Default value for field.
-        on_update: Default value for field on update..
-        db (bool): Wether to store value in db column.
-        label (str): Human friendly name for field.
-        placeholder (str): Example to display in field.
-        readonly (bool): Wether field can be updated.
-        prefix (str): Text placed infront of field input.
-        suffix (str): Text placed after field input.
-        columns (int): Number of columns to display for text field.
-        hidden (bool): To hide field from forms.
-        enum (list): List of possible values. Only for ENUM.
-
     """
     __slots__ = ('length', 'min_length', 'max_length', 'null', 'default',
                  'db', 'label', 'placeholder', 'readonly', 'prefix',
                  'suffix', 'columns' ,'hidden', 'enum', '_name', '_table',
                  '_value', '_creation_counter', 'm', 'd', 'on_update',
-                 'password')
+                 'password', 'signed')
 
     def __init__(self, length=None, min_length=None, max_length=None,
                  null=True, default=None, db=True, label=None,
                  placeholder=None, readonly=False, prefix=None,
                  suffix=None, columns=None, hidden=False,
-                 enum=[], on_update=None, password=False):
+                 enum=[], on_update=None, password=False,
+                 signed=True):
         self._creation_counter = global_counter()
         self._value = None
 
@@ -112,6 +95,7 @@ class BaseField(object):
             self.max_length = length
         else:
             self.max_length = max_length
+        self.signed = signed
         self.null = null
         self.default = default
         self.on_update = on_update
@@ -151,6 +135,24 @@ class BaseField(object):
         return value
 
 class String(BaseField):
+    """String Field.
+
+    Keyword Args:
+        length (int): Length of field value.
+        min_length (int): Minimum Length of field value.
+        max_length (int): Maximum Length of field value others length value.
+        columns (int): Number of columns to display for text field.
+        null (bool): If value is allowed to NULL.
+        default: Default value for field.
+        on_update: Default value for field on update..
+        db (bool): Wether to store value in db column.
+        label (str): Human friendly name for field.
+        placeholder (str): Example to display in field.
+        readonly (bool): Wether field can be updated.
+        prefix (str): Text placed infront of field input.
+        suffix (str): Text placed after field input.
+        hidden (bool): To hide field from forms.
+    """
     def parse(self, value):
         value = if_bytes_to_unicode(value)
         if not isinstance(value, str):
@@ -159,6 +161,24 @@ class String(BaseField):
         return value
 
 class Integer(BaseField):
+    """Integer Field.
+
+    Keyword Args:
+        length (int): Length of field value.
+        min_length (int): Minimum Length of field value.
+        max_length (int): Maximum Length of field value others length value.
+        signed (bool): If Integer value is signed or un-signed.
+        null (bool): If value is allowed to NULL.
+        default: Default value for field.
+        on_update: Default value for field on update..
+        db (bool): Wether to store value in db column.
+        label (str): Human friendly name for field.
+        placeholder (str): Example to display in field.
+        readonly (bool): Wether field can be updated.
+        prefix (str): Text placed infront of field input.
+        suffix (str): Text placed after field input.
+        hidden (bool): To hide field from forms.
+    """
     def parse(self, value):
         try:
             value = int(value)
@@ -170,9 +190,20 @@ class Integer(BaseField):
 class Float(BaseField):
     """Float Field.
 
-    The FLOAT and DOUBLE types represent approximate numeric data values. MySQL
-    uses four bytes for single-precision values and eight bytes for
-    double-precision values.
+    The FLOAT type represent approximate numeric data values. MySQL uses four
+    bytes for single-precision values. Keep in mind SQLLite uses REAL numbers
+    with double floating points.
+
+    For values which are more artefacts of nature which can't really be measured
+    exactly anyway, float/double are more appropriate. For example, scientific data
+    would usually be represented in this form. Here, the original values won't be
+    "decimally accurate" to start with, so it's not important for the expected
+    results to maintain the "decimal accuracy". Floating binary point types are
+    much faster to work with than decimals.
+
+    Keyword Args:
+        m (int): Values can be stored with up to M digits in total.
+        d (int): Digits that may be after the decimal point.
     """
     def __init__(self, m, d):
         self.m = m
@@ -190,9 +221,23 @@ class Float(BaseField):
 class Double(Float):
     """Double Field.
 
-    The FLOAT and DOUBLE types represent approximate numeric data values. MySQL
-    uses four bytes for single-precision values and eight bytes for
-    double-precision values.
+    The DOUBLE type represent approximate numeric data values. MySQL
+    uses eight bytes for double-precision values. Keep in mind SQLLite uses
+    REAL numbers with double floating points.
+
+    For values which are more artefacts of nature which can't really be measured
+    exactly anyway, float/double are more appropriate. For example, scientific data
+    would usually be represented in this form. Here, the original values won't be
+    "decimally accurate" to start with, so it's not important for the expected
+    results to maintain the "decimal accuracy". Floating binary point types are
+    much faster to work with than decimals.
+
+    Doubles provide more accuracy vs floats. However in Python floats are
+    doubles.
+
+    Keyword Args:
+        m (int): Values can be stored with up to M digits in total.
+        d (int): Digits that may be after the decimal point.
     """
     def parse(self, value):
         try:
@@ -203,6 +248,19 @@ class Double(Float):
         return value
 
 class Decimal(BaseField):
+    """Decimal Field.
+
+    For values which are "naturally exact decimals" it's good to use decimal.
+    This is usually suitable for any concepts invented by humans: financial
+    values are the most obvious example, but there are others too. Consider the
+    score given to divers or ice skaters, for example.
+
+    Keep in mind in SQLite this is REAL numbers with double floating points.
+
+    Keyword Args:
+        m (int): Values can be stored with up to M digits in total.
+        d (int): Digits that may be after the decimal point.
+    """
     def __init__(self, m, d):
         super().__init__()
 
@@ -216,18 +274,136 @@ class Decimal(BaseField):
 
 
 class TinyInt(Integer):
-    pass
+    """Tiny Integer Field.
+
+    1 Octet Integer
+    Minimum value -128
+    Maximum value 127
+
+    Keyword Args:
+        length (int): Length of field value.
+        signed (bool): If Integer value is signed or un-signed.
+        null (bool): If value is allowed to NULL.
+        default: Default value for field.
+        on_update: Default value for field on update..
+        db (bool): Wether to store value in db column.
+        label (str): Human friendly name for field.
+        placeholder (str): Example to display in field.
+        readonly (bool): Wether field can be updated.
+        prefix (str): Text placed infront of field input.
+        suffix (str): Text placed after field input.
+        hidden (bool): To hide field from forms.
+    """
+    def __init__(self, length=None,
+                 null=True, default=None, db=True, label=None,
+                 placeholder=None, readonly=False, prefix=None,
+                 suffix=None, columns=None, hidden=False,
+                 enum=[], on_update=None, password=False,
+                 signed=True):
+
+        if signed is True:
+            mmin = -128
+            mmax = 127
+        else:
+            mmin = 0
+            mmax = 255
+
+        super().__init__(length=None, min_length=mmin, max_length=mmax,
+                     null=True, default=None, db=True, label=None,
+                     placeholder=None, readonly=False, prefix=None,
+                     suffix=None, columns=None, hidden=False,
+                     enum=[], on_update=None, password=False)
 
 class SmallInt(Integer):
-    pass
+    """Small Integer Field.
+
+    2 Octet Integer
+    Minimum value -32768
+    Maximum value 32767
+
+    Keyword Args:
+        length (int): Length of field value.
+        signed (bool): If Integer value is signed or un-signed.
+        null (bool): If value is allowed to NULL.
+        default: Default value for field.
+        on_update: Default value for field on update..
+        db (bool): Wether to store value in db column.
+        label (str): Human friendly name for field.
+        placeholder (str): Example to display in field.
+        readonly (bool): Wether field can be updated.
+        prefix (str): Text placed infront of field input.
+        suffix (str): Text placed after field input.
+        hidden (bool): To hide field from forms.
+    """
+    def __init__(self, length=None,
+                 null=True, default=None, db=True, label=None,
+                 placeholder=None, readonly=False, prefix=None,
+                 suffix=None, columns=None, hidden=False,
+                 enum=[], on_update=None, password=False,
+                 signed=True):
+
+        if signed is True:
+            mmin = -32768
+            mmax = 32767
+        else:
+            mmin = 0
+            mmax = 65535
+
+        super().__init__(length=None, min_length=mmin, max_length=mmax,
+                     null=True, default=None, db=True, label=None,
+                     placeholder=None, readonly=False, prefix=None,
+                     suffix=None, columns=None, hidden=False,
+                     enum=[], on_update=None, password=False)
 
 class MediumInt(Integer):
-    pass
+    """Medium Integer Field.
+
+    3 Octet Integer
+    Minimum value -8388608
+    Maximum value 8388607
+
+    Keyword Args:
+        length (int): Length of field value.
+        signed (bool): If Integer value is signed or un-signed.
+        null (bool): If value is allowed to NULL.
+        default: Default value for field.
+        on_update: Default value for field on update..
+        db (bool): Wether to store value in db column.
+        label (str): Human friendly name for field.
+        placeholder (str): Example to display in field.
+        readonly (bool): Wether field can be updated.
+        prefix (str): Text placed infront of field input.
+        suffix (str): Text placed after field input.
+        hidden (bool): To hide field from forms.
+    """
+    def __init__(self, length=None,
+                 null=True, default=None, db=True, label=None,
+                 placeholder=None, readonly=False, prefix=None,
+                 suffix=None, columns=None, hidden=False,
+                 enum=[], on_update=None, password=False,
+                 signed=True):
+
+        if signed is True:
+            mmin = -8388608
+            mmax = 8388607
+        else:
+            mmin = 0
+            mmax = 16777215
+
+        super().__init__(length=None, min_length=mmin, max_length=mmax,
+                     null=True, default=None, db=True, label=None,
+                     placeholder=None, readonly=False, prefix=None,
+                     suffix=None, columns=None, hidden=False,
+                     enum=[], on_update=None, password=False)
 
 class BigInt(Integer):
+    """Big Integer Field.
+    """
     pass
 
 class DateTime(BaseField):
+    """DateTime Field.
+    """
     def parse(self, value):
         try:
             if isinstance(value, py_datetime):
@@ -243,6 +419,8 @@ class DateTime(BaseField):
         return value
 
 class PyObject(BaseField):
+    """Python Object Field.
+    """
     def __init__(self):
         super().__init__()
         self.db = False
@@ -251,43 +429,74 @@ class PyObject(BaseField):
         return value
 
 class Blob(BaseField):
+    """Blob Field.
+    """
     def parse(self, value):
         value = super().parse(value)
         return value
 
 class TinyBlob(Blob):
+    """Tiny Blob Field.
+    """
     pass
 
 class MediumBlob(Blob):
+    """Medium Blob Field.
+    """
     pass
 
 class LongBlob(Blob):
+    """Long Blob Field.
+    """
     pass
 
 class Text(String):
+    """Text Field.
+    """
     pass
 
 class TinyText(String):
+    """Tiny Text Field.
+    """
     pass
 
 class MediumText(String):
+    """Medium Text Field.
+    """
     pass
 
 class LongText(String):
+    """Long Text Field.
+    """
     pass
 
 class Enum(String):
+    """Enum Field.
+    """
     def __init__(self, *args):
         super().__init__()
         self.enum = args
 
     def parse(self, value):
-        print(self.enum)
         if value not in self.enum:
             self.error('Invalid option', value)
         return value
 
+class Uuid(String):
+    """UUID Field.
+    """
+    def __init__(self, *args):
+        super().__init__()
+        self.length = 36
+        self.enum = args
+
+    def parse(self, value):
+        value = super().parse(value)
+        return value
+
 class Boolean(SmallInt):
+    """Boolean Field.
+    """
     def parse(self, value):
         if value is None:
             value = False
@@ -301,11 +510,15 @@ class Boolean(SmallInt):
         return value
 
 class UniqueIndex(BaseField):
+    """Unique Index.
+    """
     def __init__(self, *args):
         self._index = args
         super().__init__()
 
 class ForeignKey(BaseField):
+    """Foreign Key.
+    """
     def __init__(self, foreign_keys, reference_fields,
                  on_delete='CASCADE', on_update='CASCADE'):
         on = [ 'NO ACTION', 'RESTRICT', 'SET NULL', 'SET DEFAULT' , 'CASCADE' ]

@@ -55,7 +55,40 @@ from luxon.helpers.redis import strict as redis
 from luxon.helpers.db import db
 from luxon.structs.models.model import Models
 from luxon.structs.models.model import Model
-from luxon.structs.models import fields
+
+# Fields
+from luxon.structs.models.fields import String
+from luxon.structs.models.fields import Integer
+from luxon.structs.models.fields import Float
+from luxon.structs.models.fields import Double
+from luxon.structs.models.fields import Decimal
+from luxon.structs.models.fields import TinyInt
+from luxon.structs.models.fields import SmallInt
+from luxon.structs.models.fields import MediumInt
+from luxon.structs.models.fields import BigInt
+from luxon.structs.models.fields import DateTime
+from luxon.structs.models.fields import PyObject
+from luxon.structs.models.fields import Blob
+from luxon.structs.models.fields import TinyBlob
+from luxon.structs.models.fields import MediumBlob
+from luxon.structs.models.fields import LongBlob
+from luxon.structs.models.fields import Text
+from luxon.structs.models.fields import TinyText
+from luxon.structs.models.fields import MediumText
+from luxon.structs.models.fields import LongText
+from luxon.structs.models.fields import Enum
+from luxon.structs.models.fields import Boolean
+from luxon.structs.models.fields import Uuid
+from luxon.structs.models.fields import UniqueIndex
+from luxon.structs.models.fields import ForeignKey
+
+
+
+
+
+
+
+
 from luxon.core.config import Config
 
 __version__ = metadata.version

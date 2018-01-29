@@ -98,8 +98,11 @@ def test_model():
     global test1, test2
 
     with db() as conn:
-        conn.execute('DROP TABLE %s' % 'Model_Test1')
-        conn.execute('DROP TABLE %s' % 'Model_Test2')
+        try:
+            conn.execute('DROP TABLE %s' % 'Model_Test1')
+            conn.execute('DROP TABLE %s' % 'Model_Test2')
+        except:
+            pass
 
     test1 = Model_Test1()
     test2 = Model_Test2()

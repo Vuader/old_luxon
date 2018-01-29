@@ -14,7 +14,8 @@ Core Application features
     * Global (Configuration, App Object, Router, Current Request is all accessible via global known as 'g' preserving context)
     * Middleware. (Register Pre request, after routing before resource and post request methods from classes)
     * HTML. (Generate HTML Menus and content)
-    * MetaClasses - Classes that create singletons, per thread singletons, named singletons etc.
+    * MetaClasses - (Classes that create singletons, per thread singletons, named singletons etc.)
+    * DB API - Python PEP DB-API 2 complaint interface for SQLLite3 and MySQL/MariaDB.
 
 Structs
     * Container (Case Insensitive hash table providing dict and object interface, it preserves the case stored for keys)
@@ -22,8 +23,10 @@ Structs
     * ThreadList (List that only has key value pairs for the current thread)
     * CiDict (Simple case insensitive key dictionary)
     * HTMLDoc (HTML Document parser and creation - Provides minimal validation)
+    * Models (ORM with field validation and integration to Luxon DB API)
 
 Helpers
+    * db (Provide Connection for database as per settings.ini)
     * render_template (Find and Render template in oneline)
     * redis (Return strict redis connection based on settings.ini configuration)
 
