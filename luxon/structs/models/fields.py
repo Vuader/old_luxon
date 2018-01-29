@@ -27,8 +27,11 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
+import re
 from datetime import datetime as py_datetime
 from decimal import Decimal as PyDecimal
+
+import phonenumbers
 
 from luxon.utils.global_counter import global_counter
 from luxon.utils.cast import to_tuple
@@ -36,6 +39,8 @@ from luxon.utils.encoding import if_bytes_to_unicode
 from luxon.exceptions import FieldError
 from luxon.utils.timezone import to_utc
 from luxon.utils.timezone import TimezoneUTC
+
+EMAIL_RE = r'[^@]+@[^@]+\.[^@]+'
 
 def parse_defaults(value):
     if hasattr(value, '__call__'):
@@ -403,6 +408,11 @@ class BigInt(Integer):
 
 class DateTime(BaseField):
     """DateTime Field.
+
+    Accepts datetime values from strings and datetime objects.
+
+    Supports timezones and naive, however all datetimes are converted to
+    UTC/GMT +00:00.
     """
     def parse(self, value):
         try:
@@ -420,6 +430,9 @@ class DateTime(BaseField):
 
 class PyObject(BaseField):
     """Python Object Field.
+
+    This object cannot be stored in database, however can be any object within
+    python.
     """
     def __init__(self):
         super().__init__()
@@ -472,6 +485,12 @@ class LongText(String):
 
 class Enum(String):
     """Enum Field.
+
+    An ENUM is a string object with a value chosen from a list of permitted
+    values that are enumerated explicitly in the column specification at table
+    creation time.
+
+    Provide arguements as individual permitted values.
     """
     def __init__(self, *args):
         super().__init__()
@@ -484,14 +503,51 @@ class Enum(String):
 
 class Uuid(String):
     """UUID Field.
+
+    For example: 827C7CCC-F9BD-47AC-A674-ABBBED665008
     """
-    def __init__(self, *args):
+    def __init__(self):
         super().__init__()
         self.length = 36
-        self.enum = args
+        self.min_length = 36
+        self.max_length = 36
 
     def parse(self, value):
         value = super().parse(value)
+        return value
+
+class Email(String):
+    """Email Field.
+    """
+    def parse(self, value):
+        value = super().parse(value)
+        if not EMAIL_RE.match(value):
+            self.error("Invalid email '%s'" % value, value)
+
+        return value
+
+class Phone(String):
+    """Phone Number Field.
+    """
+    def parse(self, value):
+        value = value.strip()
+
+        try:
+            value = int(value)
+        except ValueError:
+            self.error("Invalid phone number '%s'" % value, value)
+
+        if value[0] != '+':
+            self.error("Invalid phone number '%s'" % value, value)
+
+        try:
+            x = phonenumbers.parse(value, None)
+        except Exception:
+            self.error("Invalid phone number '%s'" % value, value)
+
+        if not phonenumbers.is_valid_number(x):
+            self.error("Invalid phone number '%s'" % value, value)
+
         return value
 
 class Boolean(SmallInt):
@@ -511,6 +567,18 @@ class Boolean(SmallInt):
 
 class UniqueIndex(BaseField):
     """Unique Index.
+
+    UNIQUE refers to an index where all rows of the index must be unique. That
+    is, the same row may not have identical non-NULL values for all columns in
+    this index as another row. As well as being used to speed up queries,
+    UNIQUE indexes can be used to enforce restraints on data, because the
+    database system does not allow this distinct values rule to be broken when
+    inserting or updating data.
+
+    Provide arguements as individual permitted fields. These should be
+    reference to another model field.
+
+    SQLLite3 + MySQL support this functionality.
     """
     def __init__(self, *args):
         self._index = args
@@ -518,6 +586,53 @@ class UniqueIndex(BaseField):
 
 class ForeignKey(BaseField):
     """Foreign Key.
+
+    Foreign Keys let you cross-reference related data across tables, and
+    foreign key constraints, which help keep this spread-out data consistent.
+
+    SQLLite3 + MySQL support this functionality.
+
+    Args:
+        forgein_keys (list): List values should be reference to fields within
+            this model.
+
+        reference_fields (list): List values should be reference to fields within
+            the remote table in same order as per foreign_keys.
+
+        on_delete (str): Delete action affecting foreign key row.
+            default 'cascade'
+
+        on_update (str): Update action affecting foreign key row.
+            default 'cascade'
+
+    Valid values for actions:
+        * NO ACTION: Configuring "NO ACTION" means just that: when a parent key
+            is modified or deleted from the database, no special action is taken.
+        * RESTRICT: The "RESTRICT" action means that the application is
+            prohibited from deleting (for ON DELETE RESTRICT) or modifying (for
+            ON UPDATE RESTRICT) a parent key when there exists one or more child
+            keys mapped to it. The difference between the effect of a RESTRICT
+            action and normal foreign key constraint enforcement is that the
+            RESTRICT action processing happens as soon as the field is updated
+            - not at the end of the current statement as it would with an
+            immediate constraint, or at the end of the current transaction as
+            it would with a deferred Even if the foreign key constraint it is
+            attached to is deferred, configuring a RESTRICT action causes
+            to return an error immediately if a parent key with dependent child
+            keys is deleted or modified.
+        * SET NULL: If the configured action is "SET NULL", then when a parent
+            key is deleted (for ON DELETE SET NULL) or modified (for ON UPDATE
+            SET NULL), the child key columns of all rows in the child table
+            that mapped to the parent key are set to contain SQL NULL values.
+        * SET DEFAULT: The "SET DEFAULT" actions are similar to "SET NULL",
+            except that each of the child key columns is set to contain the
+            columns default value instead of NULL.
+        * CASCADE: A "CASCADE" action propagates the delete or update operation
+            on the parent key to each dependent child key. For an "ON DELETE
+            CASCADE" action, this means that each row in the child table that
+            was associated with the deleted parent row is also deleted. For an
+            "ON UPDATE CASCADE" action, it means that the values stored in each
+            dependent child key are modified to match the new parent key values.
     """
     def __init__(self, foreign_keys, reference_fields,
                  on_delete='CASCADE', on_update='CASCADE'):
