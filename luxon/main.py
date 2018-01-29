@@ -28,6 +28,7 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
+
 import os
 import sys
 import argparse
@@ -35,6 +36,10 @@ import hashlib
 import site
 from pkg_resources import (resource_stream, resource_listdir,
                            resource_isdir, resource_exists)
+
+if not sys.version_info >= (3,5):
+    print('Requires python version 3.5 or higher')
+    exit()
 
 from luxon import metadata
 from luxon import g

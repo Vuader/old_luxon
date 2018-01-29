@@ -43,6 +43,10 @@ from setuptools import find_packages
 from setuptools.command.test import test as TestCommand
 from distutils import spawn
 
+if not sys.version_info >= (3,5):
+    print('Requires python version 3.5 or higher')
+    exit()
+
 try:
     import colorama
     colorama.init()  # Initialize colorama on Windows
