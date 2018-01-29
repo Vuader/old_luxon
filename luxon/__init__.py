@@ -27,7 +27,10 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
-import builtins
+import sys
+
+if not sys.version_info >= (3,5):
+    raise RuntimeError('Requires python version 3.5 or higher')
 
 from luxon import metadata
 
@@ -81,13 +84,8 @@ from luxon.structs.models.fields import Boolean
 from luxon.structs.models.fields import Uuid
 from luxon.structs.models.fields import UniqueIndex
 from luxon.structs.models.fields import ForeignKey
-
-
-
-
-
-
-
+from luxon.structs.models.fields import Email
+from luxon.structs.models.fields import Phone
 
 from luxon.core.config import Config
 
