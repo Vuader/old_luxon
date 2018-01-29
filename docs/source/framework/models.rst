@@ -119,3 +119,11 @@ Fields
 .. autoclass:: luxon.ForeignKey
     :members:
     :inherited-members:
+
+.. autoclass:: luxon.Email
+    :members:
+    :inherited-members:
+
+.. autoclass:: luxon.Phone
+    :members:
+    :inherited-members:
