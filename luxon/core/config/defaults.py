@@ -34,9 +34,8 @@ defaults = {
         'name': 'Application',
         'static': '/static',
         'session_timeout': '3600',
-        'use_x_forwarded_host': 'false',
-        'use_x_forwarded_port': 'false',
-        'user_timezone': 'local',
+        'use_forwarded': 'false',
+        'timezone': 'local',
         'default_theme': 'default',
         'restapi': 'http://localhost/api',
         'log_stdout': True,
@@ -49,5 +48,8 @@ defaults = {
     'tenants': {
         'driver': 'luxon.core.tenant.example:ExampleDriver',
     },
-
+    'database': {
+        'type': 'sqlite3',
+        'database': 'sqlite3.db',
+    },
 }
