@@ -854,8 +854,9 @@ class Uuid(String):
 
     For example: 827C7CCC-F9BD-47AC-A674-ABBBED665008
     """
-    def __init__(self):
+    def __init__(self, default=None):
         super().__init__()
+        self.default = default
         self.length = 36
         self.min_length = 36
         self.max_length = 36

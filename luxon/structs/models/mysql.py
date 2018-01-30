@@ -183,6 +183,13 @@ class Mysql(object):
                     index += ')'
                     sql_field = index
 
+                if sql_field is not None:
+                    sql_fields.append(sql_field)
+
+            for field in model_fields:
+                sql_field = None
+
+                column = model_fields[field].name
                 if isinstance(model_fields[field], fields.ForeignKey):
                     foreign_keys = []
                     references = []
