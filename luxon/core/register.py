@@ -38,23 +38,10 @@ log = GetLogger(__name__)
 def model(*args, **kwargs):
     def model_wrapper(cls):
         cls._sql = True
-        """
-        for name in dir(cls):
-            try:
-                prop = getattr(cls, name)
-            except AttributeError:
-                prop = None
-
-            if isinstance(prop, BaseField):
-                if name != 'primary_key':
-                    prop._table = cls.__name__
-                    prop._name = name
-        """
         g.models.append(cls)
         return cls
 
     return model_wrapper
-
 
 def resources(*args, name=None, **kwargs):
     def resource_wrapper(cls):
@@ -88,3 +75,6 @@ def middleware(middleware_class, *args, **kwargs):
         trace = str(traceback.format_exc())
         log.critical("%s" % trace)
         raise
+
+def error_template(template):
+    g.error_template = template

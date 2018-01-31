@@ -32,11 +32,11 @@ class Constants(object):
     class ConstError(TypeError):
         pass
 
-    def __setitem__(self, attr, value):
-        self.__setattr__(attr, value)
+    def __setitem__(self, key, value):
+        self.__setattr__(key, value)
 
-    def __getitem__(self, attr):
-        return self.__dict__[attr]
+    def __getitem__(self, key):
+        return self.__dict__[key]
 
     def __setattr__(self, attr, value):
         if attr in self.__dict__:
@@ -59,3 +59,10 @@ class Constants(object):
 
     def __str__(self):
         return 'Constants' + str(tuple(self.__dict__.items()))
+
+    def __contains__(self, key):
+        if key in self.__dict__:
+            return True
+        else:
+            return False
+
