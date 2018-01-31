@@ -159,6 +159,16 @@ class ClientError(RestClientError):
     def __init__(self, message):
         super().__init__(message)
 
+class JSONDecodeError(Error):
+    """JSON Decode Error.
+
+    Args:
+        message (str): Reason for error.
+    """
+    def __init__(self, message):
+        super().__init__("JSON Decode; " + str(message))
+
+
 class PoolExhausted(Error):
     """Pool Exhausted Error.
 

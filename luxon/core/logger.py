@@ -45,7 +45,7 @@ from luxon.utils.encoding import is_text, if_bytes_to_unicode
 
 
 log_format = logging.Formatter('%(asctime)s%(app_name)s'
-                               ' %(name)s[' + str(os.getpid()) + ']' +
+                               ' %(name)s[%(pid)s]' +
                                ' <%(levelname)s>: %(message)s %(request)s',
                                datefmt='%b %d %H:%M:%S')
 
@@ -114,6 +114,7 @@ class _TachyonFilter(logging.Filter):
         logging.Filter.__init__(self)
 
     def filter(self, record):
+        record.pid = str(os.getpid())
         try:
             if hasattr(g.app, 'config'):
                 record.app_name = ' ' + g.app.config.application.name

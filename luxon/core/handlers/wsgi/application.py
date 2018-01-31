@@ -28,10 +28,15 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
 
+from luxon import g
 from luxon.core.application import ApplicationBase
 from luxon.core.handlers.wsgi.request import Request
 from luxon.core.handlers.wsgi.response import Response
-from luxon.exceptions import NotFound, AccessDenied
+from luxon.exceptions import (Error, NotFound,
+                              AccessDenied, JSONDecodeError)
+from luxon.constants import HTTP_STATUS_CODES
+from luxon.structs.htmldoc import HTMLDoc
+from luxon import render_template
 
 class Application(ApplicationBase):
     """This class is part of the main entry point into the application.
@@ -56,14 +61,59 @@ class Application(ApplicationBase):
     _RESPONSE_CLASS = Response
 
     def handle_error(self, req, resp, exception, traceback):
-        if isinstance(exception, AccessDenied):
-            resp.status = 403
-        elif isinstance(exception, NotFound):
-            resp.status = 404
 
         try:
             resp.status = exception.status
         except AttributeError:
+            if isinstance(exception, AccessDenied):
+                resp.status = 403
+            elif isinstance(exception, NotFound):
+                resp.status = 404
+            elif isinstance(exception, JSONDecodeError):
+                resp.status = 400
+            else:
+                resp.status = 500
+
+        try:
+            title = exception.title
+        except AttributeError:
+            if resp.status in HTTP_STATUS_CODES:
+                title = str(resp.status) + ' ' +  HTTP_STATUS_CODES[resp.status]
+            else:
+                title = exception.__class__.__name__
+
+        try:
+            description = exception.description
+        except AttributeError:
+            description = str(exception)
+
+        try:
+            for header in exception.headers:
+                resp.set_header(header, exception.headers[header])
+        except AttributeError:
             pass
 
-        return str(exception)
+        if 'error_template' in g:
+            return render_template(g, title, description)
+        elif resp.content_type is None or 'json' in resp.content_type.lower():
+            to_return = {}
+            to_return['error'] = {}
+            to_return['error']['title'] = title
+            to_return['error']['description'] = description
+
+            return to_return
+
+        elif 'html' in resp.content_type.lower():
+            dom = HTMLDoc()
+            html = dom.create_element('html')
+            head = html.create_element('head')
+            t = head.create_element('title')
+            t.append(resp.status)
+            body = html.create_element('body')
+            h1 = body.create_element('h1')
+            h1.append(title)
+            h2 = body.create_element('h2')
+            h2.append(description)
+            return dom.get()
+        else:
+            return title + ' ' + description
