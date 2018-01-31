@@ -82,10 +82,11 @@ from luxon.structs.models.fields import LongText
 from luxon.structs.models.fields import Enum
 from luxon.structs.models.fields import Boolean
 from luxon.structs.models.fields import Uuid
-from luxon.structs.models.fields import UniqueIndex
-from luxon.structs.models.fields import ForeignKey
 from luxon.structs.models.fields import Email
 from luxon.structs.models.fields import Phone
+from luxon.structs.models.fields import Index
+from luxon.structs.models.fields import UniqueIndex
+from luxon.structs.models.fields import ForeignKey
 
 from luxon.core.config import Config
 

@@ -32,25 +32,20 @@ from luxon.structs.models import fields
 
 class Mysql(object):
     def __init__(self, model):
-        self._table = model.__class__.__name__
-        self._fields = model._declared_fields
+        self._table = model.table
+        self._fields = model.fields
         self._primary_key = model.primary_key
         self._db_engine = model.db_engine
         self._db_charset = model.db_charset
+        self._db_default_rows = model.db_default_rows
 
     # Backup, Drop, Create, Restore.
-    def bdcr(self):
-        backup = None
+    def create(self):
         table = self._table
         model_fields = self._fields
 
         with db() as conn:
             if conn.has_table(self._table):
-                # NOTE(cfrademan): Backup table..
-                backup = conn.execute("SELECT * FROM %s" % table)
-                backup = backup.fetchall()
-                conn.commit()
-
                 # NOTE(cfrademan): Drop exisiting table..
                 conn.execute("DROP TABLE %s" % table)
 
@@ -73,89 +68,12 @@ class Mysql(object):
                     d = None
 
                 max_length = model_fields[field].max_length
-                enum = model_fields[field].enum
+                if isinstance(model_fields[field], fields.Integer):
+                    max_length = len(str(max_length))
+
+                enum = list(model_fields[field].enum)
                 null = model_fields[field].null
                 signed = model_fields[field].signed
-
-                if isinstance(model_fields[field], fields.Double):
-                    if m is not None and d is not None:
-                        sql_field = " %s double(%s,%s)" % (m, d)
-                    else:
-                        sql_field = " %s double"
-
-                if isinstance(model_fields[field], fields.Float):
-                    if m is not None and d is not None:
-                        sql_field = " %s float(%s,%s)" % (m, d)
-                    else:
-                        sql_field = " %s float"
-
-                if isinstance(model_fields[field], fields.Decimal):
-                    if m is not None and d is not None:
-                        sql_field = " %s decimal(%s,%s)" % (m, d)
-                    else:
-                        sql_field = " %s decimal"
-
-                if isinstance(model_fields[field], fields.String):
-                    if max_length is None:
-                        max_length = '255'
-                    sql_field = " %s varchar(%s)" % (column, max_length)
-
-                if isinstance(model_fields[field], fields.TinyInt):
-                    if max_length is None:
-                        sql_field = " %s tinyint" % column
-                    else:
-                        sql_field = " %s tinyint(%s)" % (column, max_length)
-
-                if isinstance(model_fields[field], fields.SmallInt):
-                    if max_length is None:
-                        sql_field = " %s smallint" % column
-                    else:
-                        sql_field = " %s smallint(%s)" % (column, max_length)
-
-                if isinstance(model_fields[field], fields.MediumInt):
-                    if max_length is None:
-                        sql_field = " %s mediumint" % column
-                    else:
-                        sql_field = " %s mediumint(%s)" % (column, max_length)
-
-                if isinstance(model_fields[field], fields.Integer):
-                    if max_length is None:
-                        sql_field = " %s integer" % column
-                    else:
-                        sql_field = " %s integer(%s)" % (column, max_length)
-
-                if isinstance(model_fields[field], fields.BigInt):
-                    if max_length is None:
-                        sql_field = " %s bigint" % column
-                    else:
-                        sql_field = " %s bigint(%s)" % (column, max_length)
-
-                if isinstance(model_fields[field], fields.DateTime):
-                    sql_field = " %s datetime" % column
-
-                if isinstance(model_fields[field], fields.Blob):
-                    sql_field = " %s blob" % column
-
-                if isinstance(model_fields[field], fields.TinyBlob):
-                    sql_field = " %s tinyblob" % column
-
-                if isinstance(model_fields[field], fields.MediumBlob):
-                    sql_field = " %s mediumblob" % column
-
-                if isinstance(model_fields[field], fields.LongBlob):
-                    sql_field = " %s longblob" % column
-
-                if isinstance(model_fields[field], fields.TinyText):
-                    sql_field = " %s tinytext " % column
-
-                if isinstance(model_fields[field], fields.Text):
-                    sql_field = " %s Text" % column
-
-                if isinstance(model_fields[field], fields.MediumText):
-                    sql_field = " %s MediumText" % column
-
-                if isinstance(model_fields[field], fields.LongText):
-                    sql_field = " %s MediumText" % column
 
                 if isinstance(model_fields[field], fields.Enum):
                     for no, val in enumerate(enum):
@@ -164,16 +82,112 @@ class Mysql(object):
 
                     sql_field = " %s enum(%s)" % (column, enum)
 
-                if signed is False:
-                    sql_field += ' UNSIGNED'
+                elif isinstance(model_fields[field], fields.Double):
+                    if m is not None and d is not None:
+                        sql_field = " %s double(%s,%s)" % (m, d)
+                    else:
+                        sql_field = " %s double"
 
-                if isinstance(model_fields[field], fields.Integer):
+                elif isinstance(model_fields[field], fields.Float):
+                    if m is not None and d is not None:
+                        sql_field = " %s float(%s,%s)" % (m, d)
+                    else:
+                        sql_field = " %s float"
+
+                elif isinstance(model_fields[field], fields.Decimal):
+                    if m is not None and d is not None:
+                        sql_field = " %s decimal(%s,%s)" % (m, d)
+                    else:
+                        sql_field = " %s decimal"
+
+                elif isinstance(model_fields[field], fields.TinyInt):
+                    if max_length is None:
+                        sql_field = " %s tinyint" % column
+                    else:
+                        sql_field = " %s tinyint(%s)" % (column, max_length)
+
+                elif isinstance(model_fields[field], fields.SmallInt):
+                    if max_length is None:
+                        sql_field = " %s smallint" % column
+                    else:
+                        sql_field = " %s smallint(%s)" % (column, max_length)
+
+                elif isinstance(model_fields[field], fields.MediumInt):
+                    if max_length is None:
+                        sql_field = " %s mediumint" % column
+                    else:
+                        sql_field = " %s mediumint(%s)" % (column, max_length)
+
+                elif isinstance(model_fields[field], fields.BigInt):
+                    if max_length is None:
+                        sql_field = " %s bigint" % column
+                    else:
+                        sql_field = " %s bigint(%s)" % (column, max_length)
+
+                elif isinstance(model_fields[field], fields.DateTime):
+                    sql_field = " %s datetime" % column
+
+                elif isinstance(model_fields[field], fields.Blob):
+                    sql_field = " %s blob" % column
+
+                elif isinstance(model_fields[field], fields.TinyBlob):
+                    sql_field = " %s tinyblob" % column
+
+                elif isinstance(model_fields[field], fields.MediumBlob):
+                    sql_field = " %s mediumblob" % column
+
+                elif isinstance(model_fields[field], fields.LongBlob):
+                    sql_field = " %s longblob" % column
+
+                elif isinstance(model_fields[field], fields.TinyText):
+                    sql_field = " %s tinytext " % column
+
+                elif isinstance(model_fields[field], fields.Text):
+                    sql_field = " %s Text" % column
+
+                elif isinstance(model_fields[field], fields.MediumText):
+                    sql_field = " %s MediumText" % column
+
+                elif isinstance(model_fields[field], fields.LongText):
+                    sql_field = " %s MediumText" % column
+
+                elif isinstance(model_fields[field], fields.String):
+                    if max_length is None:
+                        max_length = '255'
+                    sql_field = " %s varchar(%s)" % (column, max_length)
+
+                elif isinstance(model_fields[field], fields.Integer):
+                    if max_length is None:
+                        sql_field = " %s integer" % column
+                    else:
+                        sql_field = " %s integer(%s)" % (column, max_length)
+
+                    if signed is False:
+                        sql_field += ' UNSIGNED'
+
                     if self._primary_key.name == field:
                         sql_field += " auto_increment"
+
                 if null is False:
                     sql_field += ' NOT NULL'
 
-                if isinstance(model_fields[field], fields.UniqueIndex):
+                if sql_field is not None:
+                    sql_fields.append(sql_field)
+
+            for field in model_fields:
+                sql_field = None
+                column = model_fields[field].name
+                if isinstance(model_fields[field], fields.Index):
+                    index = 'INDEX'
+                    index += ' `%s` (' % column
+                    index_fields = []
+                    for index_field in model_fields[field]._index:
+                        index_fields.append('`%s`' % index_field.name)
+                    index += ",".join(index_fields)
+                    index += ')'
+                    sql_field = index
+
+                elif isinstance(model_fields[field], fields.UniqueIndex):
                     index = 'UNIQUE KEY'
                     index += ' `%s` (' % column
                     index_fields = []
@@ -183,14 +197,7 @@ class Mysql(object):
                     index += ')'
                     sql_field = index
 
-                if sql_field is not None:
-                    sql_fields.append(sql_field)
-
-            for field in model_fields:
-                sql_field = None
-
-                column = model_fields[field].name
-                if isinstance(model_fields[field], fields.ForeignKey):
+                elif isinstance(model_fields[field], fields.ForeignKey):
                     foreign_keys = []
                     references = []
                     ref_table = model_fields[field]._reference_fields[0]._table
@@ -220,20 +227,3 @@ class Mysql(object):
             create += ' ENGINE=%s CHARSET=%s;' \
                     % (self._db_engine, self._db_charset,)
             conn.execute(create)
-
-            # NOTE(cfrademan): Restore table..
-            if backup is not None:
-                for row in backup:
-                    query = "INSERT INTO %s (" % table
-                    query += ','.join(row.keys())
-                    query += ')'
-                    query += ' VALUES'
-                    query += ' ('
-                    placeholders = []
-                    for ph in range(len(row)):
-                        placeholders.append('%s')
-                    query += ','.join(placeholders)
-                    query += ')'
-                    conn.execute(query, list(row.values()))
-                conn.commit()
-

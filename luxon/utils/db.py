@@ -27,37 +27,30 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
-from collections import OrderedDict
 
-from luxon.structs.models.fields import BaseField
+from luxon import g
 
-def declared_fields(cls):
-    """Return fields in object.
+def backup_tables(conn):
+    models = {}
+    for Model in reversed(g.models):
+        if conn.has_table(Model.table):
+            crsr = conn.execute("SELECT * FROM %s" % Model.table)
+            models[Model.table] = crsr.fetchall()
+            conn.commit()
+    return models
 
-    global_counter() function used in class to set creation_counter property
-    on object for class. The creation_counter() keeps a global state of when
-    each field is defined in a model. The purpose is primarily for html forms.
+def drop_tables(conn):
+    for Model in reversed(g.models):
+        if conn.has_table(Model.table):
+            conn.execute('DROP TABLE %s' % Model.table)
 
-    Returns Ordered Dictionary as per when fields are defined.
+def create_tables():
+    for Model in g.models:
+        Model.create_table()
 
-    The key is the name of the field with value as the field object.
-    """
-    current_fields = []
-
-    for name in dir(cls):
-        # NOTE(cfrademan): Hack, dir() shows '__slots__', so it breaks if
-        # attribue is not there while doing getattr. once again, its faster
-        # to ask for forgiveness than permission.
-        try:
-            prop = getattr(cls, name)
-        except AttributeError:
-            prop = None
-
-        if name != 'primary_key':
-            if isinstance(prop, BaseField):
-                current_fields.append((name, prop))
-                prop._name = name
-
-    current_fields.sort(key=lambda x: x[1]._creation_counter)
-
-    return OrderedDict(current_fields)
+def restore_tables(conn, backup):
+    for Model in g.models:
+        if Model.table in backup:
+            conn.insert(Model.table, backup[Model.table])
+        else:
+            conn.insert(Model.table, Model.db_default_rows)

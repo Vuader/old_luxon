@@ -27,6 +27,7 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
+import uuid
 import re
 from datetime import datetime as py_datetime
 from decimal import Decimal as PyDecimal
@@ -162,7 +163,7 @@ class String(BaseField):
     def parse(self, value):
         value = if_bytes_to_unicode(value)
         if not isinstance(value, str):
-            self.error('Text value required)', value)
+            self.error('Text/String value required)', value)
         value = super().parse(value)
         return value
 
@@ -201,7 +202,7 @@ class Integer(BaseField):
         try:
             min_length, max_length = length_calc(min_length, max_length, signed,4)
         except ValueError as e:
-            error(e, value)
+            self.error(e)
 
 
 
@@ -334,9 +335,10 @@ class TinyInt(Integer):
                  signed=True):
 
         try:
-            min_length, max_length = length_calc(min_length, max_length, signed,1)
+            min_length, max_length = length_calc(min_length, max_length,
+                                                 signed, 1)
         except ValueError as e:
-            error(e, value)
+            self.error(e)
 
 
         super().__init__(length=None, min_length=min_length, max_length=max_length,
@@ -374,9 +376,10 @@ class SmallInt(Integer):
                  signed=True):
 
         try:
-            min_length, max_length = length_calc(min_length, max_length, signed,2)
+            min_length, max_length = length_calc(min_length, max_length,
+                                                 signed, 2)
         except ValueError as e:
-            error(e, value)
+            self.error(e)
 
         super().__init__(length=None, min_length=min_length, max_length=max_length,
                      null=True, default=None, db=True, label=None,
@@ -413,11 +416,10 @@ class MediumInt(Integer):
                  signed=True):
 
         try:
-            min_length, max_length = length_calc(min_length, max_length, signed,3)
+            min_length, max_length = length_calc(min_length, max_length,
+                                                 signed, 3)
         except ValueError as e:
-            error(e, value)
-
-
+            self.error(e)
 
         super().__init__(length=length, min_length=min_length, max_length=max_length,
                      null=null, default=None, db=True, label=None,
@@ -458,8 +460,7 @@ class BigInt(Integer):
         try:
             min_length, max_length = length_calc(min_length, max_length, signed, 4)
         except ValueError as e:
-            error(e, value)
-
+            self.error(e)
 
         super().__init__(length=None, min_length=min_length, max_length=max_length,
                      null=True, default=None, db=True, label=None,
@@ -508,7 +509,6 @@ class Blob(BaseField):
     64 KB field
     65535 Octets
 
-
     Keyword Args:
         length (int): Length of field value.
         null (bool): If value is allowed to NULL.
@@ -530,11 +530,10 @@ class Blob(BaseField):
                  enum=[], on_update=None, password=False):
 
         try:
-            min_length, max_length = length_calc(min_length, max_length, False,65535)
+            min_length, max_length = length_calc(min_length, max_length,
+                                                 False,65535, bytes)
         except ValueError as e:
-            error(e, value)
-
-
+            self.error(e)
 
         super().__init__(length=None, min_length=min_length, max_length=max_length,
                      null=True, default=None, db=True, label=None,
@@ -551,7 +550,6 @@ class TinyBlob(Blob):
 
     255 Octets
 
-
     Keyword Args:
         length (int): Length of field value.
         null (bool): If value is allowed to NULL.
@@ -573,9 +571,10 @@ class TinyBlob(Blob):
                  enum=[], on_update=None, password=False):
 
         try:
-            min_length, max_length = length_calc(min_length, max_length, False, 255)
+            min_length, max_length = length_calc(min_length, max_length, False,
+                                                 256, bytes)
         except ValueError as e:
-            error(e, value)
+            self.error(e)
 
 
         super().__init__(length=None, min_length=min_length, max_length=max_length,
@@ -583,8 +582,6 @@ class TinyBlob(Blob):
                      placeholder=None, readonly=False, prefix=None,
                      suffix=None, columns=None, hidden=False,
                      enum=[], on_update=None, password=False)
-
-    pass
 
 class MediumBlob(Blob):
     """Medium Blob Field.
@@ -592,7 +589,6 @@ class MediumBlob(Blob):
     16 MB field
     16777215 Octets
 
-
     Keyword Args:
         length (int): Length of field value.
         null (bool): If value is allowed to NULL.
@@ -615,18 +611,16 @@ class MediumBlob(Blob):
 
 
         try:
-            min_length, max_length = length_calc(min_length, max_length, False,16777215)
+            min_length, max_length = length_calc(min_length, max_length,
+                                                 False, 16777216, bytes)
         except ValueError as e:
-            error(e, value)
+            self.error(e)
 
         super().__init__(length=None, min_length=min_length, max_length=max_length,
                      null=True, default=None, db=True, label=None,
                      placeholder=None, readonly=False, prefix=None,
                      suffix=None, columns=None, hidden=False,
                      enum=[], on_update=None, password=False)
-
-
-    pass
 
 class LongBlob(Blob):
     """Long Blob Field.
@@ -634,7 +628,6 @@ class LongBlob(Blob):
     4 GB field
     4294967295 Octets
 
-
     Keyword Args:
         length (int): Length of field value.
         null (bool): If value is allowed to NULL.
@@ -655,19 +648,17 @@ class LongBlob(Blob):
                  suffix=None, columns=None, hidden=False,
                  enum=[], on_update=None, password=False):
 
-
         try:
-            min_length, max_length = length_calc(min_length, max_length, False, 4294967295)
+            min_length, max_length = length_calc(min_length, max_length, False,
+                                                 4294967296, bytes)
         except ValueError as e:
-            error(e, value)
+            self.error(e)
 
         super().__init__(length=None, min_length=min_length, max_length=max_length,
                      null=True, default=None, db=True, label=None,
                      placeholder=None, readonly=False, prefix=None,
                      suffix=None, columns=None, hidden=False,
                      enum=[], on_update=None, password=False)
-
-    pass
 
 class Text(String):
     """Text Field.
@@ -675,7 +666,6 @@ class Text(String):
     64 KB field
     65535 Octets
 
-
     Keyword Args:
         length (int): Length of field value.
         null (bool): If value is allowed to NULL.
@@ -697,24 +687,22 @@ class Text(String):
                  enum=[], on_update=None, password=False):
 
         try:
-            min_length, max_length = length_calc(min_length, max_length, False, 65535)
+            min_length, max_length = length_calc(min_length, max_length, False,
+                                                 65536, str)
         except ValueError as e:
-            error(e, value)
+            self.error(e)
 
         super().__init__(length=None, min_length=min_length, max_length=max_length,
                      null=True, default=None, db=True, label=None,
                      placeholder=None, readonly=False, prefix=None,
                      suffix=None, columns=None, hidden=False,
                      enum=[], on_update=None, password=False)
-
-    pass
 
 class TinyText(String):
     """Tiny Text Field.
 
     255 Octets
 
-
     Keyword Args:
         length (int): Length of field value.
         null (bool): If value is allowed to NULL.
@@ -737,18 +725,16 @@ class TinyText(String):
 
 
         try:
-            min_length, max_length = length_calc(min_length, max_length, False, 255)
+            min_length, max_length = length_calc(min_length, max_length, False,
+                                                 256, str)
         except ValueError as e:
-            error(e, value)
+            self.error(e)
 
         super().__init__(length=None, min_length=min_length, max_length=max_length,
                      null=True, default=None, db=True, label=None,
                      placeholder=None, readonly=False, prefix=None,
                      suffix=None, columns=None, hidden=False,
                      enum=[], on_update=None, password=False)
-
-
-    pass
 
 class MediumText(String):
     """Medium Text Field.
@@ -756,7 +742,6 @@ class MediumText(String):
     16 MB field
     16777215 Octets
 
-
     Keyword Args:
         length (int): Length of field value.
         null (bool): If value is allowed to NULL.
@@ -779,17 +764,16 @@ class MediumText(String):
 
 
         try:
-            min_length, max_length = length_calc(min_length, max_length, False, 16777215)
+            min_length, max_length = length_calc(min_length, max_length, False,
+                                                 16777216, str)
         except ValueError as e:
-            error(e, value)
+            self.error(e)
 
         super().__init__(length=None, min_length=min_length, max_length=max_length,
                      null=True, default=None, db=True, label=None,
                      placeholder=None, readonly=False, prefix=None,
                      suffix=None, columns=None, hidden=False,
                      enum=[], on_update=None, password=False)
-
-    pass
 
 class LongText(String):
     """Long Text Field.
@@ -797,7 +781,6 @@ class LongText(String):
     4 GB field
     4294967295 Octets
 
-
     Keyword Args:
         length (int): Length of field value.
         null (bool): If value is allowed to NULL.
@@ -819,17 +802,16 @@ class LongText(String):
                  enum=[], on_update=None, password=False):
 
         try:
-            min_length, max_length = length_calc(min_length, max_length, False, 4294967295)
+            min_length, max_length = length_calc(min_length, max_length, False,
+                                                 4294967296, str)
         except ValueError as e:
-            error(e, value)
+            self.error(e)
 
         super().__init__(length=None, min_length=min_length, max_length=max_length,
                      null=True, default=None, db=True, label=None,
                      placeholder=None, readonly=False, prefix=None,
                      suffix=None, columns=None, hidden=False,
                      enum=[], on_update=None, password=False)
-
-    pass
 
 class Enum(String):
     """Enum Field.
@@ -862,6 +844,8 @@ class Uuid(String):
         self.max_length = 36
 
     def parse(self, value):
+        if isinstance(value, uuid.UUID):
+            value = str(value)
         value = super().parse(value)
         return value
 
@@ -923,6 +907,26 @@ class UniqueIndex(BaseField):
     UNIQUE indexes can be used to enforce restraints on data, because the
     database system does not allow this distinct values rule to be broken when
     inserting or updating data.
+
+    Provide arguements as individual permitted fields. These should be
+    reference to another model field.
+
+    SQLLite3 + MySQL support this functionality.
+    """
+    def __init__(self, *args):
+        self._index = args
+        super().__init__()
+
+class Index(BaseField):
+    """Index.
+
+    Indexes are used to find rows with specific column values quickly. Without
+    an index, SQL must begin with the first row and then read through the
+    entire table to find the relevant rows. The larger the table, the more this
+    costs. If the table has an index for the columns in question, SQL can
+    quickly determine the position to seek to in the middle of the data file
+    without having to look at all the data. This is much faster than reading
+    every row sequentially.
 
     Provide arguements as individual permitted fields. These should be
     reference to another model field.

@@ -38,6 +38,7 @@ log = GetLogger(__name__)
 def model(*args, **kwargs):
     def model_wrapper(cls):
         cls._sql = True
+        """
         for name in dir(cls):
             try:
                 prop = getattr(cls, name)
@@ -48,7 +49,7 @@ def model(*args, **kwargs):
                 if name != 'primary_key':
                     prop._table = cls.__name__
                     prop._name = name
-
+        """
         g.models.append(cls)
         return cls
 
