@@ -32,10 +32,7 @@
 import os
 import sys
 import argparse
-import hashlib
 import site
-from pkg_resources import (resource_stream, resource_listdir,
-                           resource_isdir, resource_exists)
 
 if not sys.version_info >= (3,5):
     print('Requires python version 3.5 or higher')
@@ -44,56 +41,12 @@ if not sys.version_info >= (3,5):
 from luxon import metadata
 from luxon import g
 from luxon.core.servers.web import server as web_server
-from luxon.utils.imports import import_module
 from luxon.core.config import Config
+from luxon import db
+from luxon.utils.luxon import create_dir, copy_file, recursive_copy
 
-def _create_dir(path, new):
-    new = os.path.normpath('%s%s' % (path, new))
-    if not os.path.exists(new):
-        os.makedirs(new)
-        print('Created directory: %s' % new)
-
-def _copy_file(module, path, src, dst, update=True):
-    try:
-        import_module(module)
-    except ImportError as e:
-        print("Import Error %s\n%s" % (module, e))
-        exit()
-
-    dst = os.path.normpath("%s/%s" % (path, dst))
-    if resource_exists(module, src):
-        src_file = resource_stream(module, src).read()
-        if not os.path.exists(dst):
-            with open(dst, 'wb') as handle:
-                handle.write(src_file)
-                print("Created %s" % dst)
-        else:
-            if update is False:
-                dst = "%s.default" % (dst,)
-                if not os.path.exists(dst):
-                    with open(dst, 'wb') as handle:
-                        handle.write(src_file)
-                        print("Created %s" % dst)
-            else:
-                src_sig = hashlib.md5(src_file)
-                dst_file = open(dst, 'rb').read()
-                dst_sig = hashlib.md5(dst_file)
-                if src_sig.hexdigest() != dst_sig.hexdigest():
-                    with open(dst, 'wb') as handle:
-                        handle.write(src_file)
-                        print("Updated %s" % dst)
-
-def _recursive_copy(local, module, path):
-    if resource_isdir(module, path):
-        for filename in resource_listdir(module, path):
-            fullname = path + '/' + filename
-            if resource_isdir(module, fullname):
-                _create_dir(local, '/%s' % filename)
-                _recursive_copy("%s/%s" % (local, filename), module, fullname)
-            else:
-                _copy_file(module, local, fullname, filename)
-
-
+from luxon.utils.db import (backup_tables, drop_tables,
+                            create_tables, restore_tables)
 
 def setup(args):
     path = os.path.abspath(args.path)
@@ -103,18 +56,17 @@ def setup(args):
         print("Your suppose to install luxon applications not luxon itself")
         exit()
 
-    _copy_file(pkg, path, 'settings.ini', 'settings.ini', False)
-    _copy_file(pkg, path, 'wsgi.py', 'wsgi.py', False)
-    _create_dir('', '%s/static' % path)
-    _create_dir('', '%s/static/%s' % (path, pkg))
-    _create_dir('', '%s/templates/%s' % (path, pkg))
-    _recursive_copy('%s/static' % path, pkg, 'static')
-
+    copy_file(pkg, path, 'settings.ini', 'settings.ini', False)
+    copy_file(pkg, path, 'wsgi.py', 'wsgi.py', False)
+    create_dir('', '%s/static' % path)
+    create_dir('', '%s/static/%s' % (path, pkg))
+    create_dir('', '%s/templates/%s' % (path, pkg))
+    recursive_copy('%s/static' % path, pkg, 'static')
 
 def server(args):
     web_server(app_root=args.path, ip=args.ip, port=args.port)
 
-def db(args):
+def db_crud(args):
     app_root = os.path.abspath(args.path)
     site.addsitedir(os.path.abspath(os.path.curdir))
     os.chdir(app_root)
@@ -122,9 +74,22 @@ def db(args):
         exec_g = {}
         exec(wsgi_file.read(), exec_g, exec_g)
 
-    for Model in g.models:
-        model = Model()
-        model.sync_db()
+    # Backup Database model tables.
+    backups = {}
+    with db() as conn:
+        # Backup Tables.
+        backups = backup_tables(conn)
+
+        # Drop Tables.
+        drop_tables(conn)
+
+        # Create Tables.
+        create_tables()
+
+        # Restore data.
+        restore_tables(conn, backups)
+
+
 
 def main(argv):
     description = metadata.description + ' ' + metadata.version
@@ -139,7 +104,7 @@ def main(argv):
     group.add_argument('-d',
                        dest='funcs',
                        action='append_const',
-                       const=db,
+                       const=db_crud,
                        help='Create/Update Database')
 
     group.add_argument('-i',

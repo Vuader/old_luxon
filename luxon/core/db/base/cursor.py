@@ -258,7 +258,7 @@ class Cursor(BaseExeptions):
             row = dict(self._crsr.fetchone())
             self._rownumber += 1
             return row
-        except TypeError:
+        except TypeError as e:
             return None
 
     def fetchmany(self, size=None):
@@ -428,6 +428,42 @@ class Cursor(BaseExeptions):
                 except AttributeError:
                     self._conn._conn.rollback()
             _log(self, "Rollback", elapsed())
+
+
+    def insert(self, table, data):
+        """Insert data into table.
+
+        Args:
+            table (str): Table name.
+            data (list): List of rows containing values.
+        """
+        if data is not None:
+            for row in data:
+                if isinstance(row, dict):
+                    query = "INSERT INTO %s (" % table
+                    query += ','.join(row.keys())
+                    query += ')'
+                    query += ' VALUES'
+                    query += ' ('
+                    placeholders = []
+                    for ph in range(len(row)):
+                        placeholders.append('%s')
+                    query += ','.join(placeholders)
+                    query += ')'
+                    self.execute(query, list(row.values()))
+                elif isinstance(row, (list, tuple)):
+                    query = "INSERT INTO %s" % table
+                    query += ' VALUES'
+                    query += ' ('
+                    placeholders = []
+                    for ph in range(len(row)):
+                        placeholders.append('%s')
+                    query += ','.join(placeholders)
+                    query += ')'
+                    self.execute(query, list(row))
+                else:
+                    pass
+            self.commit()
 
     def __enter__(self):
         return self

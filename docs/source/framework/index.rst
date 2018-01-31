@@ -9,6 +9,7 @@ Framework Guide
     license
     structure
     features
+    command
     globals
     routing
     responders
