@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2018 Hieronymus Crouse.
+# Copyright (c) 2018 Christiaan Frans Rademan.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,26 +28,30 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
 
+class ClassPropertyDescriptor(object):
+    def __init__(self, fget, fset=None):
+        self.fget = fget
+        self.fset = fset
 
-import pytest
-from luxon.utils.length_calc import length_calc
+    def __get__(self, obj, klass=None):
+        if klass is None:
+            klass = type(obj)
+        return self.fget.__get__(obj, klass)()
 
-def test_length_calc_1():
+    def __set__(self, obj, value):
+        if not self.fset:
+            raise AttributeError("can't set attribute")
+        type_ = type(obj)
+        return self.fset.__get__(obj, type_)(value)
 
-    a,b = length_calc(-6482,325,True, 2 )
-    assert a == -6482
-    assert b == 325
+    def setter(self, func):
+        if not isinstance(func, (classmethod, staticmethod)):
+            func = classmethod(func)
+        self.fset = func
+        return self
 
-    try:
-        a,b = length_calc(-32768, 32768, True, 2)
-        assert False
-    except ValueError:
-        assert True
+def classproperty(func):
+    if not isinstance(func, (classmethod, staticmethod)):
+        func = classmethod(func)
 
-    a,b = length_calc(None,None,False, 4 )
-    assert a == 0
-    assert b == 4294967295
-
-    a,b = length_calc(None,None,True, 4 )
-    assert a == -2147483648
-    assert b == 2147483647
+    return ClassPropertyDescriptor(func)

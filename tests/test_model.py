@@ -106,8 +106,8 @@ def test_model():
 
     test1 = Model_Test1()
     test2 = Model_Test2()
-    test2.sync_db()
-    test1.sync_db()
+    test2.create_table()
+    test1.create_table()
     new = test2.new()
     new['stringcol'] = 'String Col'
     new['floatcol'] = 123.22

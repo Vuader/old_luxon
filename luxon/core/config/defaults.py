@@ -33,7 +33,6 @@ defaults = {
     'application': {
         'name': 'Application',
         'static': '/static',
-        'session_timeout': '3600',
         'use_forwarded': 'false',
         'timezone': 'local',
         'default_theme': 'default',
