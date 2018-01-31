@@ -40,6 +40,7 @@ from luxon.utils.middleware import middleware
 from luxon.core.register import resource as register_resource
 from luxon.core.register import resources as register_resources
 from luxon.core.register import middleware as register_middleware
+from luxon.core.register import error_template
 from luxon.core.register import model as database_model
 
 # We must start the logger before anything else.

@@ -32,6 +32,8 @@ import json
 import datetime
 from decimal import Decimal
 
+from luxon.exceptions import JSONDecodeError
+
 class _JsonEncoder(json.JSONEncoder):
     def default(self, o):
         if isinstance(o, Decimal):
@@ -52,10 +54,10 @@ def loads(json_text, **kwargs):
     if isinstance(json_text, bytes):
         # JSON requires str not bytes hence decode.
         json_text = json_text.decode('UTF-8')
-
-    return json.loads(json_text, **kwargs)
+    try:
+        return json.loads(json_text, **kwargs)
+    except json.decoder.JSONDecodeError as e:
+        raise JSONDecodeError(e) from None
 
 def dumps(obj):
     return json.dumps(obj, indent=4, cls=_JsonEncoder)
-
-
