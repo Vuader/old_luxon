@@ -28,7 +28,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
 
-from urllib import parse as uriparse
+from urllib import parse
 import re
 
 _HEX_DIGITS = '0123456789ABCDEFabcdef'
@@ -84,10 +84,10 @@ def clean_uri(uri):
 
     Returns formatted uri str.
     """
-    parsed = list(uriparse.uriparse(uri))
+    parsed = list(parse.urlparse(uri))
     parsed[2] = re.sub("/{2,}", "/", parsed[2]).strip('/') # replace two or more / with one
 
-    cleaned = uriparse.uriunparse(parsed)
+    cleaned = parse.urlunparse(parsed)
 
     return cleaned
 
@@ -103,7 +103,7 @@ def host_from_uri(uri):
     Returns
         str: Value for scheme + host + port as str.
     """
-    uri = uriparse.uriparse(uri)
+    uri = parse.urlparse(uri)
 
     return "%s://%s" % (uri.scheme, uri.netloc)
 

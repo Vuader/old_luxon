@@ -27,39 +27,46 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
-import os
+import pickle
 
-from luxon import g
-from luxon.utils.pool import Pool
+from luxon.helpers.redis import strict
 
-_cached_pool = None
+class Redis(object):
+    __slots__ = ( '_redis', '_expire', )
+    def __init__(self, expire=None):
+        self._redis = strict()
+        self._expire = expire
 
-def _get_conn():
-    # #PERFORMANCE - ONLY IMPORT HERE!
-    kwargs = g.config.kwargs('database')
-    if kwargs.get('type') == 'mysql':
-        from luxon.core.db.mysql import connect
-        return connect(kwargs.get('host', '127.0.0.1'),
-                       kwargs.get('username', 'tachyonic'),
-                       kwargs.get('password', 'password'),
-                       kwargs.get('database', 'tachyonic'))
+    def __setatrr__(self, attr, value):
+        value = pickle.dumps(value)
+        self._redis.set(attr, value, ex=self._expire)
 
-def db():
-    kwargs = g.config.kwargs('database')
-    global _cached_pool
-    if kwargs.get('type') == 'mysql':
-        if _cached_pool is None:
-            _cached_pool = Pool(_get_conn,
-                                pool_size=kwargs.get('pool_size', 10),
-                                max_overflow=kwargs.get('max_overflow', 0))
-        return _cached_pool()
-    elif kwargs.get('type') == 'sqlite3':
-        from luxon.core.db.sqlite import connect
-        db = kwargs.get('database')
+    def __getattr__(self, attr):
+        value = self._redis.get(attr)
+        if value is not None:
+            return pickle.loads(value)
+        else:
+            return None
 
-        db = (os.path.abspath(os.path.join(
-                              g.app_root,
-                              db)))
-        return connect(db)
-    else:
-        raise TypeError('Unknown Database type defined in configuration')
+    def __delattr__(self, attr):
+        return self._redis.delete(attr)
+
+    def __setitem__(self, key, value):
+        value = pickle.dumps(value)
+        self._redis.set(key, value, ex=self._expire)
+
+    def __getitem__(self, key):
+        value = self._redis.get(key)
+        if value is not None:
+            return pickle.loads(value)
+        else:
+            return None
+
+    def __delitem__(self, key):
+        return self._redis.delete(key)
+
+    def __contains__(self, key):
+        return self._redis.exists(key)
+
+    def __iter__(self):
+        raise NotImplemented()

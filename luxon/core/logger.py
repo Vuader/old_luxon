@@ -116,8 +116,8 @@ class _TachyonFilter(logging.Filter):
     def filter(self, record):
         record.pid = str(os.getpid())
         try:
-            if hasattr(g.app, 'config'):
-                record.app_name = ' ' + g.app.config.application.name
+            if hasattr(g, 'config'):
+                record.app_name = ' ' + g.config.application.name
             else:
                 record.app_name = ''
         except NoContextError:
@@ -195,8 +195,8 @@ class GetLogger(metaclass=NamedSingleton):
             name = self.name
 
         try:
-            if hasattr(g.app, 'config') and name in g.app.config:
-                section = g.app.config[name]
+            if hasattr(g, 'config') and name in g.config:
+                section = g.config[name]
                 # SET LOG LEVEL FOR GLOBAL or MODULE
                 self.setLevel(section.get('log_level', fallback='DEBUG'))
 

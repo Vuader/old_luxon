@@ -35,7 +35,7 @@ from http.cookies import SimpleCookie, CookieError
 from luxon import g
 from luxon import exceptions as errors
 from luxon.core.request import RequestBase
-from luxon.core.http.headers import parse_forwarded_header
+from luxon.utils.http import parse_forwarded_header
 from luxon.utils.encoding import if_bytes_to_unicode
 from luxon.utils.files import CachedInput, FileObject
 from luxon.utils.uri import parse_qs, parse_host

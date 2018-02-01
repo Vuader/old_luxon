@@ -50,7 +50,7 @@ class BaseModel(object):
     """
     __slots__ = ( '_key_id', '_key_field',
                   '_db_api', '_lock', '_id', '_query',
-                  '_values',)
+                  '_values', '_default')
 
     primary_key = None
     _sql = False
@@ -60,11 +60,12 @@ class BaseModel(object):
     _declared_fields = None
 
     def __init__(self, id=None, query=None, values=None, lock=False,
-                 declared_fields=None):
+                 declared_fields=None, default=True):
         self._id = id
         self._query = query
         self._values = values
         self._lock = lock
+        self._default = default
 
         if declared_fields is not None:
             self.__class__._declared_fields = declared_fields
@@ -105,7 +106,8 @@ class BaseModel(object):
                                 row = result[0]
                                 for field in row.keys():
                                     if row[field] is not None:
-                                        self[field] = row[field]
+                                        val = self.fields[field].parse(row[field])
+                                        self._current[field] = val
                                 self._created = False
                                 self._updated = False
                                 self._current = model._new.copy()
@@ -115,9 +117,9 @@ class BaseModel(object):
                                 model = self.new()
                                 for field in row.keys():
                                     if row[field] is not None:
-                                        model[field] = row[field]
-                                model._current = model._new.copy()
-                                model._new.clear()
+                                        if field in self.fields:
+                                            val = self.fields[field].parse(row[field])
+                                            model._current[field] = val
                                 model._created = False
                                 model._updated = False
 

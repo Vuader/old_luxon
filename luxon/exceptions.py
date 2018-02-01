@@ -141,24 +141,6 @@ class MultipleOblectsReturned(ValidationError):
     def __init__(self, message):
         super().__init__(message)
 
-class RestClientError(Error):
-    """Raw Rest Client Error.
-
-    Args:
-        message (str): Reason for error.
-    """
-    def __init__(self, message):
-        super().__init__(message)
-
-class ClientError(RestClientError):
-    """Tachyonic API Client Error.
-
-    Args:
-        message (str): Reason for error.
-    """
-    def __init__(self, message):
-        super().__init__(message)
-
 class JSONDecodeError(Error):
     """JSON Decode Error.
 
@@ -205,6 +187,8 @@ class HTTPError(Error):
 
         if title is None:
             self.title = "%s %s" % (self.status, HTTP_STATUS_CODES[self.status])
+        else:
+            self.title = title
 
         if description is not None:
             self.description = ': ' + description
@@ -214,6 +198,14 @@ class HTTPError(Error):
         self.headers = headers
 
         super().__init__(self.title + self.description)
+
+class RestClientError(HTTPError):
+    """RESTful API Client Error.
+
+    Args:
+        message (str): Reason for error.
+    """
+    pass
 
 class HTTPBadRequest(HTTPError):
     """400 Bad Request.
