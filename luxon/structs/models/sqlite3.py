@@ -122,6 +122,7 @@ class Sqlite3(object):
             create += ",".join(sql_fields)
             create += ')'
             conn.execute(create)
+            conn.commit()
 
             for field in model_fields:
                 if isinstance(model_fields[field], fields.UniqueIndex):
@@ -133,3 +134,4 @@ class Sqlite3(object):
                     index += ",".join(index_fields)
                     index += ')'
                     conn.execute(index)
+                    conn.commit()
