@@ -101,6 +101,9 @@ class Response(ResponseBase):
 
         self._headers[name.title()] = value
 
+    def set_cache_max_age(self, seconds):
+        self.set_header('Cache-Control', 'max-age=%s' % seconds)
+
     def delete_header(self, name):
         """Delete a header that was previously set for this response.
 
