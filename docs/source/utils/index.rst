@@ -26,24 +26,3 @@ Utilities Guide
     constants
     middleware
     files
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-=======
->>>>>>> tempdoc
