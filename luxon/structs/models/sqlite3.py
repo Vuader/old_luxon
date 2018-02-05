@@ -32,24 +32,20 @@ from luxon.structs.models import fields
 
 class Sqlite3(object):
     def __init__(self, model):
-        self._table = model.__class__.__name__
-        self._fields = model._declared_fields
+        self._table = model.table
+        self._fields = model.fields
         self._primary_key = model.primary_key
         self._db_engine = model.db_engine
         self._db_charset = model.db_charset
+        self._db_default_rows = model.db_default_rows
 
-    # Backup, Drop, Create, Restore.
-    def bdcr(self):
-        backup = None
+    # Create Tables
+    def create(self):
         table = self._table
         model_fields = self._fields
 
         with db() as conn:
             if conn.has_table(self._table):
-                # NOTE(cfrademan): Backup table..
-                backup = conn.execute("SELECT * FROM %s" % table)
-                backup = backup.fetchall()
-
                 # NOTE(cfrademan): Drop exisiting table..
                 conn.execute("DROP TABLE %s" % table)
 
@@ -62,35 +58,43 @@ class Sqlite3(object):
                 column = model_fields[field].name
                 null = model_fields[field].null
 
-                if isinstance(model_fields[field], fields.Float):
-                    sql_field = " %s REAL" % column
-
-                if isinstance(model_fields[field], fields.Decimal):
-                    sql_field = " %s REAL" % column
-
-                if isinstance(model_fields[field], fields.String):
-                    sql_field = " %s TEXT" % column
-
-                if isinstance(model_fields[field], fields.Integer):
-                    sql_field = " %s INTEGER" % column
-
-                if isinstance(model_fields[field], fields.DateTime):
-                    sql_field = " %s TEXT" % column
-
-                if isinstance(model_fields[field], fields.Blob):
-                    sql_field = " %s BLOB" % column
-
                 if isinstance(model_fields[field], fields.Text):
                     sql_field = " %s TEXT" % column
 
-                if isinstance(model_fields[field], fields.Enum):
+                elif isinstance(model_fields[field], fields.Float):
+                    sql_field = " %s REAL" % column
+
+                elif isinstance(model_fields[field], fields.Decimal):
+                    sql_field = " %s REAL" % column
+
+                elif isinstance(model_fields[field], fields.Enum):
                     sql_field = " %s TEXT" % column
+
+                elif isinstance(model_fields[field], fields.String):
+                    sql_field = " %s TEXT" % column
+
+                elif isinstance(model_fields[field], fields.Integer):
+                    sql_field = " %s INTEGER" % column
+
+                elif isinstance(model_fields[field], fields.DateTime):
+                    sql_field = " %s INTEGER" % column
+
+                elif isinstance(model_fields[field], fields.Blob):
+                    sql_field = " %s BLOB" % column
 
                 if null is False:
                     sql_field += ' NOT NULL'
 
                 if self._primary_key.name == column:
                     sql_field += ' PRIMARY KEY'
+
+                if sql_field is not None:
+                    sql_fields.append(sql_field)
+
+            for field in model_fields:
+                sql_field = None
+
+                column = model_fields[field].name
 
                 if isinstance(model_fields[field], fields.ForeignKey):
                     foreign_keys = []
@@ -118,6 +122,7 @@ class Sqlite3(object):
             create += ",".join(sql_fields)
             create += ')'
             conn.execute(create)
+            conn.commit()
 
             for field in model_fields:
                 if isinstance(model_fields[field], fields.UniqueIndex):
@@ -129,21 +134,4 @@ class Sqlite3(object):
                     index += ",".join(index_fields)
                     index += ')'
                     conn.execute(index)
-
-
-            # NOTE(cfrademan): Restore table..
-            if backup is not None:
-                for row in backup:
-                    query = "INSERT INTO %s (" % table
-                    query += ','.join(row.keys())
-                    query += ')'
-                    query += ' VALUES'
-                    query += ' ('
-                    placeholders = []
-                    for ph in range(len(row)):
-                        placeholders.append('%s')
-                    query += ','.join(placeholders)
-                    query += ')'
-                    conn.execute(query, list(row.values()))
-                conn.commit()
-
+                    conn.commit()

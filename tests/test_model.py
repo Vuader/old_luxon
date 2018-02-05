@@ -36,19 +36,19 @@ from luxon import database_model
 
 from luxon import Model
 from luxon import Models
-from luxon.structs.models.fields import String
-from luxon.structs.models.fields import Integer
-from luxon.structs.models.fields import Float
-from luxon.structs.models.fields import Double
-from luxon.structs.models.fields import Decimal
-from luxon.structs.models.fields import DateTime
-from luxon.structs.models.fields import PyObject
-from luxon.structs.models.fields import Blob
-from luxon.structs.models.fields import Text
-from luxon.structs.models.fields import Enum
-from luxon.structs.models.fields import Boolean
-from luxon.structs.models.fields import UniqueIndex
-from luxon.structs.models.fields import ForeignKey
+from luxon import String
+from luxon import Integer
+from luxon import Float
+from luxon import Double
+from luxon import Decimal
+from luxon import DateTime
+from luxon import PyObject
+from luxon import Blob
+from luxon import Text
+from luxon import Enum
+from luxon import Boolean
+from luxon import UniqueIndex
+from luxon import ForeignKey
 
 from luxon import g
 from luxon import Config
@@ -106,8 +106,8 @@ def test_model():
 
     test1 = Model_Test1()
     test2 = Model_Test2()
-    test2.sync_db()
-    test1.sync_db()
+    test2.create_table()
+    test1.create_table()
     new = test2.new()
     new['stringcol'] = 'String Col'
     new['floatcol'] = 123.22

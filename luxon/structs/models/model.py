@@ -27,14 +27,16 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
+from collections import OrderedDict
+
 from luxon import g
 from luxon import exceptions
 from luxon import GetLogger
 from luxon import db
 from luxon import js
 from luxon.utils.imports import get_class
-from luxon.structs.models.helpers import declared_fields as df
-from luxon.structs.models.fields import Integer, parse_defaults
+from luxon.utils.classproperty import classproperty
+from luxon.structs.models.fields import BaseField, Integer, parse_defaults
 
 log = GetLogger(__name__)
 
@@ -46,25 +48,27 @@ class BaseModel(object):
         query (str): Raw SQL query for Luxon DB API.
         values (dict): Raw parameters for SQL Query.
     """
-    __slots__ = ( '_key_id', '_key_field', '_declared_fields',
+    __slots__ = ( '_key_id', '_key_field',
                   '_db_api', '_lock', '_id', '_query',
-                  '_values',)
+                  '_values', '_default')
 
     primary_key = None
     _sql = False
     db_charset = 'UTF8'
     db_engine = 'innodb'
+    db_default_rows = []
+    _declared_fields = None
 
     def __init__(self, id=None, query=None, values=None, lock=False,
-                 declared_fields=None):
+                 declared_fields=None, default=True):
         self._id = id
         self._query = query
         self._values = values
         self._lock = lock
-        if declared_fields is None:
-            self._declared_fields = df(self)
-        else:
-            self._declared_fields = declared_fields
+        self._default = default
+
+        if declared_fields is not None:
+            self.__class__._declared_fields = declared_fields
 
         table = self.table
         result = None
@@ -102,7 +106,8 @@ class BaseModel(object):
                                 row = result[0]
                                 for field in row.keys():
                                     if row[field] is not None:
-                                        self[field] = row[field]
+                                        val = self.fields[field].parse(row[field])
+                                        self._current[field] = val
                                 self._created = False
                                 self._updated = False
                                 self._current = model._new.copy()
@@ -112,9 +117,9 @@ class BaseModel(object):
                                 model = self.new()
                                 for field in row.keys():
                                     if row[field] is not None:
-                                        model[field] = row[field]
-                                model._current = model._new.copy()
-                                model._new.clear()
+                                        if field in self.fields:
+                                            val = self.fields[field].parse(row[field])
+                                            model._current[field] = val
                                 model._created = False
                                 model._updated = False
 
@@ -137,27 +142,56 @@ class BaseModel(object):
     def __len__(self):
         return len(self.transaction)
 
-    @property
-    def table(self):
-        return self.__class__.__name__
+    @classproperty
+    def table(cls):
+        return cls.__name__.split('.')[-1]
 
-    def sync_db(self):
-        self._validate_sql_model()
+    @classmethod
+    def create_table(cls):
+        cls._validate_sql_model()
 
-        if self.primary_key is None:
-            raise KeyError("Model %s:" % self.table +
+        if cls.primary_key is None:
+            raise KeyError("Model %s:" % cls.table +
                            " No primary key") from None
 
         api = g.config.get('database', 'type')
-        cls = api.title()
-        driver = get_class('luxon.structs.models.%s:%s' % (api, cls,))(self)
-        driver.bdcr()
+        driver_cls = api.title()
+        driver = get_class('luxon.structs.models.%s:%s' % (api,
+                                                           driver_cls,))(cls)
+        driver.create()
 
+    @classmethod
     def _validate_sql_model(self):
         if self._sql is False:
             raise TypeError("Model '%s' Not decorated with 'luxon.database_model'"
                            % self.table)
 
+    @classproperty
+    def fields(cls):
+        if cls._declared_fields is None:
+            ignore = ('primary_key', 'fields')
+            current_fields = []
+
+            for name in dir(cls):
+                if name not in ignore:
+                    # NOTE(cfrademan): Hack, dir() shows '__slots__', so it breaks if
+                    # attribue is not there while doing getattr. once again, its faster
+                    # to ask for forgiveness than permission.
+                    try:
+                        prop = getattr(cls, name)
+                    except AttributeError:
+                        prop = None
+
+                    if isinstance(prop, BaseField):
+                        current_fields.append((name, prop))
+                        prop._table = cls.table
+                        prop._name = name
+
+            current_fields.sort(key=lambda x: x[1]._creation_counter)
+
+            cls._declared_fields = OrderedDict(current_fields)
+
+        return cls._declared_fields
 
 class Models(BaseModel):
     __slots__ = ( '_current', '_new', '_deleted', '_args', '_kwargs' )
@@ -209,7 +243,7 @@ class Models(BaseModel):
         NewModel.primary_key = self.primary_key
         NewModel.db_charset = self.db_charset
         NewModel.db_engine = self.db_engine
-        model = NewModel(declared_fields=self._declared_fields)
+        model = NewModel(declared_fields=self.fields)
         self._new.append(model)
         return model
 
@@ -292,12 +326,12 @@ class Model(BaseModel):
         super().__init__(*args, **kwargs)
 
         # NOTE(cfrademan): Set default values for model object.
-        for field in self._declared_fields:
-            default = self._declared_fields[field].default
-            on_update = self._declared_fields[field].on_update
+        for field in self.fields:
+            default = self.fields[field].default
+            on_update = self.fields[field].on_update
             if default is not None and field not in self._transaction:
                 default = parse_defaults(default)
-                default = self._declared_fields[field].parse(default)
+                default = self.fields[field].parse(default)
                 if (field not in self._transaction or
                         self._transaction[field] is None):
                     self._current[field] = default
@@ -312,14 +346,14 @@ class Model(BaseModel):
             raise AttributeError(e) from None
 
     def __setitem__(self, key, value):
-        if key in self._declared_fields:
+        if key in self.fields:
             if (self.primary_key is not None and
                         self[key] is not None and
                         key == self.primary_key.name):
                     raise ValueError("Model %s:" % self.table +
                                      " Cannot alter primary key '%s'"
                                      % key) from None
-            self._new[key] = self._declared_fields[key].parse(value)
+            self._new[key] = self.fields[key].parse(value)
 
             if self._created is False:
                 self._updated = True
@@ -328,7 +362,7 @@ class Model(BaseModel):
                            " No such field '%s'" % key) from None
 
     def __getitem__(self, key):
-        if key in self._declared_fields:
+        if key in self.fields:
             try:
                 return self._transaction[key]
             except KeyError:
@@ -384,21 +418,21 @@ class Model(BaseModel):
             return None
 
         transaction = {}
-        for field in self._declared_fields:
+        for field in self.fields:
             if field not in self._new:
-                on_update = self._declared_fields[field].on_update
+                on_update = self.fields[field].on_update
 
                 if on_update is not None and self._updated:
                     on_update = parse_defaults(on_update)
-                    on_update = self._declared_fields[field].parse(on_update)
+                    on_update = self.fields[field].parse(on_update)
                     self._new[field] = on_update
 
             if (field in self.transaction and
-                    self._declared_fields[field].null is False):
-                self._declared_fields[field].error('required field')
+                    self.fields[field].null is False):
+                self.fields[field].error('required field')
 
             if (field in self._transaction and
-                    self._declared_fields[field].db):
+                    self.fields[field].db):
                 transaction[field] = self._transaction[field]
 
         try:
@@ -434,9 +468,9 @@ class Model(BaseModel):
                     args = []
                     for field in self._new:
                         if self.primary_key.name != field:
-                            if self._declared_fields[field].readonly:
+                            if self.fields[field].readonly:
                                 self._new[field].error('readonly value')
-                            if self._declared_fields[field].db:
+                            if self.fields[field].db:
                                 sets.append('%s' % field +
                                            ' = %s')
                                 args.append(self._new[field])

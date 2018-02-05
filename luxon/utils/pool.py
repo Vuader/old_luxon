@@ -35,10 +35,12 @@ from luxon.utils.objects import object_name
 
 log = GetLogger(__name__)
 
+
 def _log(msg, obj, pool):
     log.info('%s: %s (COUNT: %s, MAX_POOL_SIZE: %s, MAX_OVERFLOW %s' %
              (msg, object_name(obj), pool._count,
               pool._pool_size, pool._max_overflow))
+
 
 class ProxyObject(object):
     """ Class ProxyObject
@@ -63,6 +65,10 @@ class ProxyObject(object):
         self._pool = pool
 
     def __getattr__(self, attr):
+        if self._obj is None:
+            raise ReferenceError('Object already returned to pool %s'
+                                 % self._pool)
+
         if attr[0] == '_':
             return self.__dict__[attr]
         else:
@@ -97,6 +103,10 @@ class ProxyObject(object):
             # for one more instance.
             self._pool._count -= 1
 
+        # In order to prevent the use of the connector object after
+        # its returned, the proxied object is deleted.
+        self._obj = None
+
     def close(self):
         """ Method close()
 
@@ -112,9 +122,6 @@ class ProxyObject(object):
     def __exit__(self, type, value, traceback):
         # When exiting the with statement.
         self._close_or_return()
-        # In order to prevent the use of the connector object after
-        # its returned, the proxied object is deleted.
-        del self._obj
 
 
 class Pool(object):

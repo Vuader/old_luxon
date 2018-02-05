@@ -27,7 +27,10 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
-import builtins
+import sys
+
+if not sys.version_info >= (3,5):
+    raise RuntimeError('Requires python version 3.5 or higher')
 
 from luxon import metadata
 
@@ -37,6 +40,7 @@ from luxon.utils.middleware import middleware
 from luxon.core.register import resource as register_resource
 from luxon.core.register import resources as register_resources
 from luxon.core.register import middleware as register_middleware
+from luxon.core.register import error_template
 from luxon.core.register import model as database_model
 
 # We must start the logger before anything else.
@@ -79,10 +83,11 @@ from luxon.structs.models.fields import LongText
 from luxon.structs.models.fields import Enum
 from luxon.structs.models.fields import Boolean
 from luxon.structs.models.fields import Uuid
-from luxon.structs.models.fields import UniqueIndex
-from luxon.structs.models.fields import ForeignKey
 from luxon.structs.models.fields import Email
 from luxon.structs.models.fields import Phone
+from luxon.structs.models.fields import Index
+from luxon.structs.models.fields import UniqueIndex
+from luxon.structs.models.fields import ForeignKey
 
 from luxon.core.config import Config
 

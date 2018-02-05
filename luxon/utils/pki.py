@@ -34,20 +34,22 @@ import base64
 
 
 def sign(key_file, data, passphrase=None, digest='sha512'):
-    '''Signature Generator
-    
+    """Signature Generator
+
+
     Creates signature form a public key and signes a piece of data with it
 
 
     Args:
-        key_file (file): Private key to sign with 
+        key_file (file): Private key to sign with
+
         data (file): data to be signed
         passphrase (str): optional passhrase
         digest (str): message digest, sha512 by default
 
     returns:
-        b64encoded signature 
-    '''
+        b64encoded signature
+    """
 
     with open(key_file, "r") as key_file:
         key = key_file.read()
@@ -62,8 +64,10 @@ def sign(key_file, data, passphrase=None, digest='sha512'):
     signature = OpenSSL.crypto.sign(pkey, data, digest)
     return base64.b64encode(signature)
 
+
 def verify(cert_file, signature, data, digest='sha512'):
-    '''Verify Signature
+
+    """Verify Signature
 
     Use public key to verify signature on signed data
 
@@ -75,7 +79,7 @@ def verify(cert_file, signature, data, digest='sha512'):
 
     Return:
         True if verified
-    '''
+    """
     signature = base64.b64decode(signature)
     with open(cert_file, "r") as cert_file:
         cert = cert_file.read()
@@ -89,4 +93,3 @@ def verify(cert_file, signature, data, digest='sha512'):
         return False
 
     return True
-

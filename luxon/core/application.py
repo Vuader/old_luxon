@@ -183,6 +183,8 @@ class ApplicationBase(object):
                     # Process the middleware 'post' at the end
                     for middleware in g.middleware_post:
                         middleware(request, response)
+            # Return response object.
+            return response
 
         except HTTPError as exception:
             trace = str(traceback.format_exc())
@@ -193,6 +195,8 @@ class ApplicationBase(object):
                                        exception.__class__.__module__,
                                        exception))
             self._proxy_handle_error(request, response, exception, trace)
+            # Return response object.
+            return response
         except Error as exception:
             trace = str(traceback.format_exc())
             if log.debug_mode():
@@ -202,6 +206,8 @@ class ApplicationBase(object):
                                          exception.__class__.__module__,
                                          exception))
             self._proxy_handle_error(request, response, exception, trace)
+            # Return response object.
+            return response
         except Exception as exception:
             trace = str(traceback.format_exc())
             if log.debug_mode():
@@ -211,20 +217,17 @@ class ApplicationBase(object):
                                          exception.__class__.__module__,
                                          exception))
             self._proxy_handle_error(request, response, exception, trace)
+            # Return response object.
+            return response
         finally:
             # Completed Request
             log.info('Completed Request',
                       timer=elapsed())
-            # Return response object.
-            return response
 
     def _proxy_handle_error(self, request, response, exception, traceback):
         if hasattr(self, 'handle_error'):
-            try:
-                view = self.handle_error(request, response, exception, traceback)
-                if view is not None:
-                    response.body(view)
-            except Exception:
-                raise
+            view = self.handle_error(request, response, exception, traceback)
+            if view is not None:
+                response.body(view)
         else:
             raise

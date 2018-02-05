@@ -30,9 +30,7 @@
 
 
 class MiddlewareWrapper(object):
-
-
-    __slots__ = ( '_middleware', '_func' )
+    __slots__ = ('_middleware', '_func')
 
     def __init__(self, middleware, func):
         self._middleware = middleware
@@ -46,8 +44,9 @@ class MiddlewareWrapper(object):
         self._middleware(*args, **kwargs)
         return self._func(*args, **kwargs)
 
+
 def middleware(middleware):
-    '''Middleware Decorator
+    """Middleware Decorator
 
     Args:
         middleware(obj): middleware to be used
@@ -57,7 +56,7 @@ def middleware(middleware):
 
     Example:
         .. code:: python
-            
+
             #middleware to be used
             def blah():
                 print('doef')
@@ -74,10 +73,9 @@ def middleware(middleware):
 
             doef
             koek
-    '''
+    """
+
     def func_wrapper(func):
         return MiddlewareWrapper(middleware, func)
 
     return func_wrapper
-
-

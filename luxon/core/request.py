@@ -38,11 +38,9 @@ from luxon.structs.container import Container
 
 log = GetLogger(__name__)
 
-# Request Counter.. read further down.
-req_c = random.randint(1000*1000, 1000*1000*1000)
-
-# Process ID.
-proc_id = string_id(6)
+req_c = None
+proc_ids = {}
+pid = None
 
 def request_id():
     # Using random is pretty slow. This is way quicker.
@@ -50,7 +48,16 @@ def request_id():
     # Then only does this append a counter.
     # It may not be as unique, but highly unlikely to collide
     # with recent requet ids.
-    global req_c
+    global req_c, pid
+    if req_c is None:
+        req_c = random.randint(1000*1000, 1000*1000*1000)
+
+    if pid is None:
+        pid = str(os.getpid())
+    try:
+        proc_id = proc_ids[pid]
+    except KeyError:
+        proc_id = proc_ids[pid] = string_id(6)
 
     req_id = req_c = req_c + 1
     req_id = hex(req_id)[2:].zfill(8)[-8:]

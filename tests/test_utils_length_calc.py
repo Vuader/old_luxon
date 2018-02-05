@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 # Copyright (c) 2018 Hieronymus Crouse.
 # All rights reserved.
@@ -39,16 +38,16 @@ def test_length_calc_1():
     assert a == -6482
     assert b == 325
 
-try:
-    a,b = length_calc(-6468451, 548481661, True, 2)
-    assert False
-except ValueError:
-    assert True
+    try:
+        a,b = length_calc(-32768, 32768, True, 2)
+        assert False
+    except ValueError:
+        assert True
 
-a,b = length_calc(None,None,False, 4 )
-assert a == 0
-assert b == 4294967295
+    a,b = length_calc(None,None,False, 4 )
+    assert a == 0
+    assert b == 4294967295
 
-a,b = length_calc(None,None,True, 4 )
-assert a == -2147483648
-assert b == 2147483647
+    a,b = length_calc(None,None,True, 4 )
+    assert a == -2147483648
+    assert b == 2147483647

@@ -30,6 +30,7 @@
 
 import datetime
 
+
 def format_ms(ms):
     """Format milliseconds to string.
 

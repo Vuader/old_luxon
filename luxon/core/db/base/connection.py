@@ -195,6 +195,15 @@ class Connection(BaseExeptions):
             # MYSQL USES THIS ONE
             return False
 
+    def insert(self, table, data):
+        """Insert data into table.
+
+        Args:
+            table (str): Table name.
+            data (list): List of rows containing values.
+        """
+        self._crsr.insert(table, data)
+
     def clean_up(self):
         """Cleanup server Session.
 
@@ -226,6 +235,7 @@ class Connection(BaseExeptions):
 
         try:
             self._lock.release()
+            self._cached_crsr = self.cursor()
         except AttributeError:
             # NOTE(cfrademan) Its not got locking so close it..
             # locking objects are singleton object.

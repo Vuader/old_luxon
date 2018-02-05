@@ -28,16 +28,17 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
 
+
 class Constants(object):
-    '''Simulates Constant variables in python
+    """Simulates Constant variables in python
 
     Create new variable attribute in a constants object that can't be rewritten.
     Used in the constants module to list all the constants (HTTP status codes etc.)
-    that are needed 
+    that are needed
+
 
     Example:
         .. code:: python
-
 
             _const = Constants()
 
@@ -52,22 +53,22 @@ class Constants(object):
             _const.APPLICATION_OCTET_STREAM = 'application/octet-stream'
             _const.APPLICATION_FORM_DATA = 'application/x-www-form-urlencoded'
             _const.APPLICATION_PDF = 'application/pdf'
-    '''
+    """
 
     class ConstError(TypeError):
         pass
 
-    def __setitem__(self, attr, value):
-        self.__setattr__(attr, value)
+    def __setitem__(self, key, value):
+        self.__setattr__(key, value)
 
-    def __getitem__(self, attr):
-        return self.__dict__[attr]
+    def __getitem__(self, key):
+        return self.__dict__[key]
 
     def __setattr__(self, attr, value):
         if attr in self.__dict__:
             raise self.ConstError("Can't rebind constant(%s)" % attr)
 
-        if isinstance(value, ( str, tuple, int, float )):
+        if isinstance(value, (str, tuple, int, float)):
             self.__dict__[attr] = value
         elif isinstance(value, list):
             self.__dict__[attr] = tuple(value)
@@ -84,3 +85,9 @@ class Constants(object):
 
     def __str__(self):
         return 'Constants' + str(tuple(self.__dict__.items()))
+
+    def __contains__(self, key):
+        if key in self.__dict__:
+            return True
+        else:
+            return False

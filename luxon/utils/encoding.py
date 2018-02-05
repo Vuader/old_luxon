@@ -28,11 +28,13 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
 
+
 def if_unicode_to_bytes(string, codec='UTF-8'):
     """Encode if Unicode to Bytes UTF8.
 
     Args:
         string (bytes): Bytes String
+        codec (str): codec type
     Returns:
         UTF8 encoded string
     """
@@ -41,11 +43,13 @@ def if_unicode_to_bytes(string, codec='UTF-8'):
     else:
         return string
 
+
 def if_bytes_to_unicode(string, codec='UTF-8'):
     """Decode UTF-8 Bytes to string UTF8.
 
     Args:
         string (bytes): Bytes String
+        codec (str): Codec type
     Returns:
         Unicode string
     """
@@ -53,6 +57,7 @@ def if_bytes_to_unicode(string, codec='UTF-8'):
         return string.decode(codec)
     else:
         return string
+
 
 def is_text(text):
     """Is Text?
@@ -63,12 +68,13 @@ def is_text(text):
         True if text.
     """
     if isinstance(text, str):
-            return True
+        return True
     elif isinstance(text, bytes):
         if is_binary(text):
             return False
         return True
     return False
+
 
 def is_binary(data):
     """Is Binary?
@@ -95,11 +101,13 @@ def is_binary(data):
     else:
         return False
 
+
 def is_ascii(string):
     """Check if argument encodes to ascii without error.
-    
+
     Args:
-        string (str): string of bytes 
+        string (str): string of bytes
+
     Returns:
         True if string can successfully be encoded
     """
@@ -113,11 +121,13 @@ def is_ascii(string):
         return False
     return True
 
+
 def is_utf8(string):
     """Check if argument encodes to UTF8 without error.
-    
+
     Args:
-        string(str): string of bytes 
+        string(str): string of bytes
+
     Returns:
         True if string can be successfully encoded
     """

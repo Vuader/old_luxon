@@ -35,6 +35,7 @@ from luxon.core.logger import GetLogger
 
 log = GetLogger(__name__)
 
+
 def import_module(module):
     """Import module.
 
@@ -51,10 +52,11 @@ def import_module(module):
             __import__(module)
 
             log.info('Importing module: %s (Completed)' %
-                      module,
-                      timer=elapsed())
+                     module,
+                     timer=elapsed())
 
     return sys.modules[module]
+
 
 def import_modules(modules):
     """Import modules.
@@ -75,6 +77,7 @@ def import_modules(modules):
 
     return loaded
 
+
 def get_class(path):
     """Return class in module.
 
@@ -83,7 +86,7 @@ def get_class(path):
     Args:
         path (str): package.module:class definition.
 
-    Return: 
+    Return:
         The class at given path
     """
     if path is None:
@@ -97,6 +100,7 @@ def get_class(path):
     module = import_module(module)
 
     return getattr(module, cls_name)
+
 
 def get_classes(classes):
     """Initilize Classes.

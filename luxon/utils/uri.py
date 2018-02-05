@@ -28,13 +28,14 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
 
-from urllib import parse as uriparse
+from urllib import parse
 import re
 
 _HEX_DIGITS = '0123456789ABCDEFabcdef'
 _HEX_TO_BYTE = dict(((a + b).encode(), bytes([int(a + b, 16)]))
                     for a in _HEX_DIGITS
                     for b in _HEX_DIGITS)
+
 
 def decode(encoded_uri):
     """Decodes percent-encoded characters in a URI or query string.
@@ -71,6 +72,7 @@ def decode(encoded_uri):
     # return str
     return decoded_uri.decode('utf-8', 'replace')
 
+
 def clean_uri(uri):
     """Clean URL.
 
@@ -85,12 +87,13 @@ def clean_uri(uri):
     Returns:
     Formatted uri str.
     """
-    parsed = list(uriparse.uriparse(uri))
-    parsed[2] = re.sub("/{2,}", "/", parsed[2]).strip('/') # replace two or more / with one
+    parsed = list(parse.urlparse(uri))
+    parsed[2] = re.sub("/{2,}", "/", parsed[2]).strip('/')  # replace two or more / with one
 
-    cleaned = uriparse.uriunparse(parsed)
+    cleaned = parse.urlunparse(parsed)
 
     return cleaned
+
 
 def host_from_uri(uri):
     """Return only scheme + host + port from uri.
@@ -104,9 +107,10 @@ def host_from_uri(uri):
     Returns
         Value for scheme + host + port as str.
     """
-    uri = uriparse.uriparse(uri)
+    uri = parse.urlparse(uri)
 
     return "%s://%s" % (uri.scheme, uri.netloc)
+
 
 def parse_host(host, default_port=None):
     """Parse a canonical 'host:port' string into parts.
@@ -119,8 +123,6 @@ def parse_host(host, default_port=None):
     Args:
         host (str): Host string to parse, optionally containing a
             port number.
-
-    Keyword Arguments:
         default_port (int): Port number to return when the host string
             does not contain one (default 'None').
 

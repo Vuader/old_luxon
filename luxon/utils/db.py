@@ -27,54 +27,34 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
-import traceback
 
 from luxon import g
-from luxon.core.logger import GetLogger
-from luxon.structs.models.fields import BaseField
 
-log = GetLogger(__name__)
 
-def model(*args, **kwargs):
-    def model_wrapper(cls):
-        cls._sql = True
-        g.models.append(cls)
-        return cls
+def backup_tables(conn):
+    models = {}
+    for Model in reversed(g.models):
+        if conn.has_table(Model.table):
+            crsr = conn.execute("SELECT * FROM %s" % Model.table)
+            models[Model.table] = crsr.fetchall()
+            conn.commit()
+    return models
 
-    return model_wrapper
 
-def resources(*args, name=None, **kwargs):
-    def resource_wrapper(cls):
-        if name is not None:
-            cls._resources_name = name
-        obj = cls(*args, **kwargs)
-        return obj
+def drop_tables(conn):
+    for Model in reversed(g.models):
+        if conn.has_table(Model.table):
+            conn.execute('DROP TABLE %s' % Model.table)
 
-    return resource_wrapper
 
-def resource(method, route, tag=None):
-    def resource_wrapper(func):
-        g.router.add(method, route, func, tag)
-        return func
+def create_tables():
+    for Model in g.models:
+        Model.create_table()
 
-    return resource_wrapper
 
-def middleware(middleware_class, *args, **kwargs):
-    try:
-        middleware_obj = middleware_class(*args, **kwargs)
-
-        if hasattr(middleware_obj, 'pre'):
-            g.middleware_pre.append(middleware_obj.pre)
-
-        if hasattr(middleware_obj, 'resource'):
-            g.middleware_resource.append(middleware_obj.resource)
-
-        if hasattr(middleware_obj, 'post'):
-            g.middleware_post.append(middleware_obj.post)
-    except Exception:
-        trace = str(traceback.format_exc())
-        log.critical("%s" % trace)
-        raise
-
-def error_template(template):
-    g.error_template = template
+def restore_tables(conn, backup):
+    for Model in g.models:
+        if Model.table in backup:
+            conn.insert(Model.table, backup[Model.table])
+        else:
+            conn.insert(Model.table, Model.db_default_rows)

@@ -27,20 +27,22 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
+import os
 
 from luxon import g
 from luxon.utils.pool import Pool
 
 _cached_pool = None
 
+
 def _get_conn():
-    '''_get_conn function for internal use
+    """_get_conn function for internal use
 
     Imports connect module if required.
     i.e. the database type in settings.ini is mysql
     Returns a connect object populated with the information under the 'database' section
 
-    '''
+    """
     # #PERFORMANCE - ONLY IMPORT HERE!
     kwargs = g.config.kwargs('database')
     if kwargs.get('type') == 'mysql':
@@ -51,9 +53,8 @@ def _get_conn():
                        kwargs.get('database', 'tachyonic'))
 
 
-
 def db():
-    '''Function db - returns a Database Connection object from pool.
+    """Function db - returns a Database Connection object from pool.
 
     A Connection pool is created if one does not exist yet.
 
@@ -66,7 +67,7 @@ def db():
 
     Returns:
          Database Connection object
-    '''
+    """
     kwargs = g.config.kwargs('database')
     global _cached_pool
     if kwargs.get('type') == 'mysql':
@@ -77,6 +78,11 @@ def db():
         return _cached_pool()
     elif kwargs.get('type') == 'sqlite3':
         from luxon.core.db.sqlite import connect
-        return connect(kwargs.get('database'))
+        db = kwargs.get('database')
+
+        db = (os.path.abspath(os.path.join(
+            g.app_root,
+            db)))
+        return connect(db)
     else:
         raise TypeError('Unknown Database type defined in configuration')

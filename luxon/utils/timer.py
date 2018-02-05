@@ -38,6 +38,7 @@ log = GetLogger(__name__)
 
 debug_mode = log.debug_mode
 
+
 class Timer():
     """Code Execution Timer.
 
@@ -55,6 +56,7 @@ class Timer():
             time.sleep(3)
         print(elapsed())
     """
+
     # NOTE(cfrademan): Yes this is pretty strange way going about it.
     # However good performance is gained over using yield with contextlib.
     # In this case the pattern wins since we use timers in many parts of

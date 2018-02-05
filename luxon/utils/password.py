@@ -35,6 +35,7 @@ from luxon.exceptions import Error
 
 log = GetLogger(__name__)
 
+
 def hash(password, algo=const.BLOWFISH, rounds=12):
     """Hash Password.
 
@@ -44,7 +45,8 @@ def hash(password, algo=const.BLOWFISH, rounds=12):
     Args:
         password (str): Clear Text Password
         algo(str): algorithm (defined in luxon.constants)\n
-            * CLEARTEXT 
+
+            * CLEARTEXT
             * BLOWFISH
             * SHA256
             * SHA512
@@ -106,10 +108,10 @@ def valid(password, hashed):
     Args:
         password (str): Clear Text Password
         hashed (str): Hashed value of Password
-        plaintext (bool): Wether plaintext or not.
 
     Return:
-        Bool wether password matches.
+
+        True if password matches.
     """
     # PASSLIB slow to import... so only when neccessary.
     import passlib.hash
@@ -122,9 +124,9 @@ def valid(password, hashed):
     try:
         pwd_context
     except Exception:
-        schemes=["md5_crypt", "bcrypt", "sha256_crypt", "sha512_crypt",
-                 "ldap_md5", "ldap_salted_md5", "ldap_sha1", "ldap_salted_sha1",
-                 "ldap_bcrypt", "ldap_sha256_crypt", "ldap_sha512_crypt"]
+        schemes = ["md5_crypt", "bcrypt", "sha256_crypt", "sha512_crypt",
+                   "ldap_md5", "ldap_salted_md5", "ldap_sha1", "ldap_salted_sha1",
+                   "ldap_bcrypt", "ldap_sha256_crypt", "ldap_sha512_crypt"]
         pwd_context = passlib.context.CryptContext(schemes=schemes)
 
     # If Password is Clear-Text

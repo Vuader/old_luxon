@@ -28,19 +28,22 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
 
+
 def try_lower(string):
     # Ask for, forgiveness seems faster, perhaps better :-)
-    '''Converts string to lower case
+    """Converts string to lower case
 
     Args:
-        string(str): ascii string 
+        string(str): ascii string
+
     Returns:
         converted string
-    '''
+    """
     try:
         return string.lower()
     except Exception:
         return string
+
 
 def indent(text, indent):
     """Indent Text.
@@ -61,6 +64,7 @@ def indent(text, indent):
     else:
         text = text.splitlines(True)
         return indent.join(text)
+
 
 def unquote_string(quoted):
     """Unquote an "quoted-string".

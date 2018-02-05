@@ -5,7 +5,7 @@ Database
 
 .. autofunction:: luxon.helpers.db.db()
 
-.. __get_conn:
+.. _get_conn:
 
 Get Connection
 ==============

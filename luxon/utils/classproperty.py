@@ -27,37 +27,33 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
-from collections import OrderedDict
 
-from luxon.structs.models.fields import BaseField
 
-def declared_fields(cls):
-    """Return fields in object.
+class ClassPropertyDescriptor(object):
+    def __init__(self, fget, fset=None):
+        self.fget = fget
+        self.fset = fset
 
-    global_counter() function used in class to set creation_counter property
-    on object for class. The creation_counter() keeps a global state of when
-    each field is defined in a model. The purpose is primarily for html forms.
+    def __get__(self, obj, klass=None):
+        if klass is None:
+            klass = type(obj)
+        return self.fget.__get__(obj, klass)()
 
-    Returns Ordered Dictionary as per when fields are defined.
+    def __set__(self, obj, value):
+        if not self.fset:
+            raise AttributeError("can't set attribute")
+        type_ = type(obj)
+        return self.fset.__get__(obj, type_)(value)
 
-    The key is the name of the field with value as the field object.
-    """
-    current_fields = []
+    def setter(self, func):
+        if not isinstance(func, (classmethod, staticmethod)):
+            func = classmethod(func)
+        self.fset = func
+        return self
 
-    for name in dir(cls):
-        # NOTE(cfrademan): Hack, dir() shows '__slots__', so it breaks if
-        # attribue is not there while doing getattr. once again, its faster
-        # to ask for forgiveness than permission.
-        try:
-            prop = getattr(cls, name)
-        except AttributeError:
-            prop = None
 
-        if name != 'primary_key':
-            if isinstance(prop, BaseField):
-                current_fields.append((name, prop))
-                prop._name = name
+def classproperty(func):
+    if not isinstance(func, (classmethod, staticmethod)):
+        func = classmethod(func)
 
-    current_fields.sort(key=lambda x: x[1]._creation_counter)
-
-    return OrderedDict(current_fields)
+    return ClassPropertyDescriptor(func)

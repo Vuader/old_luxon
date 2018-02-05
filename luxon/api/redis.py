@@ -27,54 +27,46 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
-import traceback
+import pickle
 
-from luxon import g
-from luxon.core.logger import GetLogger
-from luxon.structs.models.fields import BaseField
+from luxon.helpers.redis import strict
 
-log = GetLogger(__name__)
+class Redis(object):
+    __slots__ = ( '_redis', '_expire', )
+    def __init__(self, expire=None):
+        self._redis = strict()
+        self._expire = expire
 
-def model(*args, **kwargs):
-    def model_wrapper(cls):
-        cls._sql = True
-        g.models.append(cls)
-        return cls
+    def __setatrr__(self, attr, value):
+        value = pickle.dumps(value)
+        self._redis.set(attr, value, ex=self._expire)
 
-    return model_wrapper
+    def __getattr__(self, attr):
+        value = self._redis.get(attr)
+        if value is not None:
+            return pickle.loads(value)
+        else:
+            return None
 
-def resources(*args, name=None, **kwargs):
-    def resource_wrapper(cls):
-        if name is not None:
-            cls._resources_name = name
-        obj = cls(*args, **kwargs)
-        return obj
+    def __delattr__(self, attr):
+        return self._redis.delete(attr)
 
-    return resource_wrapper
+    def __setitem__(self, key, value):
+        value = pickle.dumps(value)
+        self._redis.set(key, value, ex=self._expire)
 
-def resource(method, route, tag=None):
-    def resource_wrapper(func):
-        g.router.add(method, route, func, tag)
-        return func
+    def __getitem__(self, key):
+        value = self._redis.get(key)
+        if value is not None:
+            return pickle.loads(value)
+        else:
+            return None
 
-    return resource_wrapper
+    def __delitem__(self, key):
+        return self._redis.delete(key)
 
-def middleware(middleware_class, *args, **kwargs):
-    try:
-        middleware_obj = middleware_class(*args, **kwargs)
+    def __contains__(self, key):
+        return self._redis.exists(key)
 
-        if hasattr(middleware_obj, 'pre'):
-            g.middleware_pre.append(middleware_obj.pre)
-
-        if hasattr(middleware_obj, 'resource'):
-            g.middleware_resource.append(middleware_obj.resource)
-
-        if hasattr(middleware_obj, 'post'):
-            g.middleware_post.append(middleware_obj.post)
-    except Exception:
-        trace = str(traceback.format_exc())
-        log.critical("%s" % trace)
-        raise
-
-def error_template(template):
-    g.error_template = template
+    def __iter__(self):
+        raise NotImplemented()

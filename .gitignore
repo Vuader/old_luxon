@@ -194,6 +194,7 @@ pip-log.txt
 pip-delete-this-directory.txt
 
 # Unit test / coverage reports
+test.db
 htmlcov/
 .tox/
 .coverage
@@ -310,6 +311,8 @@ Session.vim
 #####=== VirtualEnv ===#####
 # Virtualenv
 pythonenv
+venv
+.venv
 
 #####=== Windows ===#####
 # Windows image file caches

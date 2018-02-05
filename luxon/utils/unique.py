@@ -31,6 +31,7 @@
 import random
 import string
 
+
 def string_id(length=8):
     """ Generate Random ID.
 
@@ -40,6 +41,6 @@ def string_id(length=8):
         length (int): Character length of id.
 
     Returns: 
-    	Random id string.
+        Random id string.
     """
     return ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(length))

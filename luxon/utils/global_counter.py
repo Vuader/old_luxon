@@ -30,17 +30,18 @@
 
 from luxon import g
 
+
 def global_counter():
-	"""Global Application Counter
+    """Global Application Counter
 
-	Increments Global Counter by 1
-	
-	Returns:
-		global counter
+    Increments Global Counter by 1
+
+    Returns:
+        global counter
     """
-    
-	if 'global_counter' not in g:
-		g.global_counter = -1
 
-	g.global_counter += 1
-	return g.global_counter
+    if 'global_counter' not in g:
+        g.global_counter = -1
+
+    g.global_counter += 1
+    return g.global_counter
