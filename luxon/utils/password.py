@@ -43,7 +43,7 @@ def hash(password, algo=const.BLOWFISH, rounds=12):
 
     Args:
         password (str): Clear Text Password
-        algo (str): algorithm (defined in luxon.constants)
+        algo(str): algorithm (defined in luxon.constants)\n
             * CLEARTEXT
             * BLOWFISH
             * SHA256
@@ -58,7 +58,8 @@ def hash(password, algo=const.BLOWFISH, rounds=12):
             * LDAP_SHA512
         rounds (int): Hashing rounds...
 
-    Returns hashed value of password.
+    Returns:
+        Hashed value of password.
     """
     # PASSLIB slow to import... so only when neccessary.
     import passlib.hash
@@ -107,7 +108,8 @@ def valid(password, hashed):
         hashed (str): Hashed value of Password
         plaintext (bool): Wether plaintext or not.
 
-    Return bool wether password matches.
+    Return:
+        True if password matches.
     """
     # PASSLIB slow to import... so only when neccessary.
     import passlib.hash

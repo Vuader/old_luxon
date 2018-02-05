@@ -35,6 +35,12 @@ from io import BytesIO
 from luxon.core.cls.singleton import NamedSingleton
 
 class CachedInput(object):
+    '''Copies input into a buffer and performs operations on it
+
+    Args:
+        io(bytes): bytes object
+
+    '''
     def __init__(self, io):
         if io is not None:
             self._io = io
@@ -46,6 +52,16 @@ class CachedInput(object):
         self._cached_pos = 0
 
     def read(self, *args, **kwargs):
+        '''Copies content of io into a cache and then returns it (from the cache)
+
+        If this fucntion is called when the cache is empty, the contents of of io will
+        be copied into it and it (the cache) will be returned.
+
+        If the point in the cache has been shifted back from the end(via seek)
+        and this function is called, it will return the contents of the cache
+        from the point to the end.
+        Shifting the point is only possible after io has been cached
+        '''
         if self._cached_pos >= self._io_pos:
             io_read = self._io.read(*args, **kwargs)
             bytes_written = self._cached.write(io_read)
@@ -60,6 +76,11 @@ class CachedInput(object):
             return io_read
 
     def readline(self, *args, **kwargs):
+        '''Copies a line of content from io into a cache and returns it (from the cache)
+
+        Works the same as read()
+
+        '''
         if self._cached_pos >= self._io_pos:
             io_read = self._io.readline(*args, **kwargs)
             bytes_written = self._cached.write(io_read)
@@ -74,6 +95,12 @@ class CachedInput(object):
             return io_read
 
     def seek(self, pos):
+        '''Changes the point position in the cache
+
+        Args:
+            pos(int): new position of point
+
+        '''
         self._cached_pos = pos
         self._cached.seek(pos)
 
@@ -82,6 +109,12 @@ class CachedInput(object):
 
 
 class TrackFile(metaclass=NamedSingleton):
+    '''Tracks a given file
+
+    Args:
+        file(file): file to be tracked
+
+    '''
     def __init__(self, file):
         self._file = file
         if os.path.isfile(self._file):
@@ -93,6 +126,11 @@ class TrackFile(metaclass=NamedSingleton):
         return self.is_modified()
 
     def is_modified(self):
+        '''Checks if file was modified since tracking started
+
+        returns:
+            True if modified
+        '''
         # If there was never file... check for new file...
         if self._modified is None:
             # If there is now a file...
@@ -117,6 +155,12 @@ class TrackFile(metaclass=NamedSingleton):
             return False
 
     def is_deleted(self):
+        '''Checks if file was deleted since tracking started
+
+        Returns:
+            True if deleted
+
+        '''
         # If there was a file...
         if self._modified is not None:
             # if file still exisits...
@@ -133,10 +177,11 @@ class TrackFile(metaclass=NamedSingleton):
 def is_socket(socket):
     """Is Unix socket
 
-    Returns Bool wether file is unix socket.
-
     Args:
         socket (str): Socket path.
+
+    Retrurns:
+        Bool whether file is unix socket
     """
     try:
         mode = os.stat(socket).st_mode

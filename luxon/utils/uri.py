@@ -43,7 +43,7 @@ def decode(encoded_uri):
         encoded_uri (str): An encoded URI (full or partial).
 
     Returns:
-        str: A decoded URL. If the URL contains escaped non-ASCII
+        A decoded URL. If the URL contains escaped non-ASCII
         characters, UTF-8 is assumed per RFC 3986.
     """
     decoded_uri = encoded_uri
@@ -82,7 +82,8 @@ def clean_uri(uri):
     Args:
         uri (string): URL to parse.
 
-    Returns formatted uri str.
+    Returns:
+    Formatted uri str.
     """
     parsed = list(parse.urlparse(uri))
     parsed[2] = re.sub("/{2,}", "/", parsed[2]).strip('/') # replace two or more / with one
@@ -101,7 +102,7 @@ def host_from_uri(uri):
         uri (str): Standard URL as per RFC3986.
 
     Returns
-        str: Value for scheme + host + port as str.
+        Value for scheme + host + port as str.
     """
     uri = parse.urlparse(uri)
 

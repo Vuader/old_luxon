@@ -29,6 +29,30 @@
 # THE POSSIBILITY OF SUCH DAMAGE.
 
 class Constants(object):
+    '''Simulates Constant variables in python
+
+    Create new variable attribute in a constants object that can't be rewritten.
+    Used in the constants module to list all the constants (HTTP status codes etc.)
+    that are needed
+
+    Example:
+        .. code:: python
+
+
+            _const = Constants()
+
+            _const.TEXT_HTML = 'text/html; charset=utf-8'
+            _const.TEXT_PLAIN = 'text/plain; charset=utf-8'
+            _const.TEXT_CSS = 'text/css; charset=utf-8'
+            _const.IMAGE_JPEG = 'image/jpeg'
+            _const.IMAGE_GIF = 'image/gif'
+            _const.IMAGE_PNG = 'image/png'
+            _const.APPLICATION_XML = 'application/xml; charset=utf-8'
+            _const.APPLICATION_JSON = 'application/json; charset=utf-8'
+            _const.APPLICATION_OCTET_STREAM = 'application/octet-stream'
+            _const.APPLICATION_FORM_DATA = 'application/x-www-form-urlencoded'
+            _const.APPLICATION_PDF = 'application/pdf'
+    '''
     class ConstError(TypeError):
         pass
 

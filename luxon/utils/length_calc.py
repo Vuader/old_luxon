@@ -37,8 +37,8 @@ def length_calc(min_length, max_length, signed, octets, type=int):
     Args:
         min_length (int): min length given by user.
         max_length (int): max length given by user.
-        signed: whether or not field is signed
-        octets: size of field in octets
+        signed (bool): whether or not field is signed
+        octets (int): size of field in octets
         type (type): String or Integer type.
 
     Returns:

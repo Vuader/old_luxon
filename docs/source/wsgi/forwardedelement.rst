@@ -3,6 +3,6 @@
 ForwardedElement Class
 ----------------------
 
-.. autoclass:: luxon.core.http.headers.ForwardedElement
+.. autoclass:: luxon.utils.http.ForwardedElement
     :members: 
 

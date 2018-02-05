@@ -31,6 +31,13 @@
 from luxon import g
 
 def strict():
+    '''strict Function
+
+    Imports redis if required and returns a redis.StrictRedis object with the parameters from the 'redis' section in config file.
+
+    return:
+        redis.StrictRedis object
+    '''
     # #PERFORMANCE - ONLY IMPORT HERE!
     import redis
 
