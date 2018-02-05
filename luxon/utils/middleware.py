@@ -27,7 +27,11 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
+
+
 class MiddlewareWrapper(object):
+
+
     __slots__ = ( '_middleware', '_func' )
 
     def __init__(self, middleware, func):
@@ -43,7 +47,37 @@ class MiddlewareWrapper(object):
         return self._func(*args, **kwargs)
 
 def middleware(middleware):
+    '''Middleware Decorator
+
+    Args:
+        middleware(obj): middleware to be used
+
+    put @middleware("middleware")
+    before a function to wrap it with the given middleware
+
+    Example:
+        .. code:: python
+            
+            #middleware to be used
+            def blah():
+                print('doef')
+
+
+            #function to be wrapped
+            @middleware(blah)
+            def test():
+                print('koek')
+
+            test()
+
+            #Output:
+
+            doef
+            koek
+    '''
     def func_wrapper(func):
         return MiddlewareWrapper(middleware, func)
 
     return func_wrapper
+
+

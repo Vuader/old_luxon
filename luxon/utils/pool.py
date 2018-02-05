@@ -51,7 +51,7 @@ class ProxyObject(object):
     to the pool.
 
     Unless the pool limit has been reached, in which case the real
-    close() method wil be called on the object.
+    close() method will be called on the object.
 
     Args:
         obj (obj): original (proxied) object.

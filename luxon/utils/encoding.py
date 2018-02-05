@@ -33,6 +33,8 @@ def if_unicode_to_bytes(string, codec='UTF-8'):
 
     Args:
         string (bytes): Bytes String
+    Returns:
+        UTF8 encoded string
     """
     if isinstance(string, str):
         return string.encode(codec)
@@ -40,10 +42,12 @@ def if_unicode_to_bytes(string, codec='UTF-8'):
         return string
 
 def if_bytes_to_unicode(string, codec='UTF-8'):
-    """Decode UTF-8 Bytes to s UTF8.
+    """Decode UTF-8 Bytes to string UTF8.
 
     Args:
         string (bytes): Bytes String
+    Returns:
+        Unicode string
     """
     if isinstance(string, bytes):
         return string.decode(codec)
@@ -53,10 +57,10 @@ def if_bytes_to_unicode(string, codec='UTF-8'):
 def is_text(text):
     """Is Text?
 
-    Returns Bool wether text.
-
     Args:
         text (str/bytes): Socket path.
+    Returns:
+        True if text.
     """
     if isinstance(text, str):
             return True
@@ -69,10 +73,10 @@ def is_text(text):
 def is_binary(data):
     """Is Binary?
 
-    Returns Bool wether binary.
-
     Args:
         data (str/bytes): Possible binary or string.
+    Returns:
+        True if binary.
     """
     if isinstance(data, str):
         return False
@@ -92,7 +96,13 @@ def is_binary(data):
         return False
 
 def is_ascii(string):
-    """Check if argument encodes to ascii without error."""
+    """Check if argument encodes to ascii without error.
+    
+    Args:
+        string (str): string of bytes 
+    Returns:
+        True if string can successfully be encoded
+    """
     try:
         string.encode('ascii')
     except UnicodeEncodeError:
@@ -104,7 +114,13 @@ def is_ascii(string):
     return True
 
 def is_utf8(string):
-    """Check if argument encodes to ascii without error."""
+    """Check if argument encodes to UTF8 without error.
+    
+    Args:
+        string(str): string of bytes 
+    Returns:
+        True if string can be successfully encoded
+    """
     try:
         string.encode('utf-8')
     except UnicodeEncodeError:

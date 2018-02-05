@@ -33,7 +33,20 @@ import datetime
 from decimal import Decimal
 
 class _JsonEncoder(json.JSONEncoder):
+    '''Custom encoder
+
+    Overwrites default json.JSONEncoder to support luxon functionality
+    '''
     def default(self, o):
+        '''
+        parses data into usable form or encodes it using JSONEncoder.default if it is valid
+
+        Args:
+            o(obj): data to be parsed/encoded
+
+        Returns:
+            formatted data object
+        '''
         if isinstance(o, Decimal):
             # Parse Decimal Value
             return str(o)
@@ -49,6 +62,14 @@ class _JsonEncoder(json.JSONEncoder):
             return json.JSONEncoder.default(self, o)
 
 def loads(json_text, **kwargs):
+    '''Deserializes a json document to a python object
+
+    Args:
+        json_text (str/bytes): document to be deserialized
+    
+    Returns:
+        python object 
+    '''
     if isinstance(json_text, bytes):
         # JSON requires str not bytes hence decode.
         json_text = json_text.decode('UTF-8')
@@ -56,6 +77,15 @@ def loads(json_text, **kwargs):
     return json.loads(json_text, **kwargs)
 
 def dumps(obj):
+    '''Serializes an object as a JSON formatted stream (indented)
+
+    Args:
+        obj(obj): object to be serialized
+
+    Returns:
+        JSON formatted stream
+
+    '''
     return json.dumps(obj, indent=4, cls=_JsonEncoder)
 
 

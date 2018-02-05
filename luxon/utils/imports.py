@@ -39,9 +39,10 @@ def import_module(module):
     """Import module.
 
     Args:
-        module: Moodule import path definition.
+        module: Module import path definition.
 
-    Returns module.
+    Returns:
+        Module in given path.
     """
     if module not in sys.modules:
         with Timer() as elapsed:
@@ -63,7 +64,8 @@ def import_modules(modules):
     Args:
         modules (list,tuple): List of module path definitions.
 
-    Returns dict of imported modules. { 'name': module }
+    Returns:
+        A dict of imported modules. { 'name':: module }
     """
     loaded = {}
     for module in modules:
@@ -81,7 +83,8 @@ def get_class(path):
     Args:
         path (str): package.module:class definition.
 
-    Return class
+    Return: 
+        The class at given path
     """
     if path is None:
         raise ImportError("get_class: Cannot import 'None'")
@@ -103,7 +106,8 @@ def get_classes(classes):
     Args:
         classes (list,tuple): List of Class path definitions.
 
-    Returns list of objects.
+    Returns:
+        A list of objects.
     """
     loaded = []
 

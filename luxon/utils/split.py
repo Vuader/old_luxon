@@ -30,6 +30,13 @@
 
 def split_by_n(seq, n):
     """A generator to divide a sequence into chunks of n units.
+
+    Args: 
+        seq (any object): Sequence of objects to be split
+        n (int): number of objects per chunk
+
+    Returns:
+        Chunks of the sequence n units long, one at a time.
     """
     if len(seq) > n:
         while seq:
@@ -41,17 +48,16 @@ def split_by_n(seq, n):
 def list_of_lines(text):
     """Parse Text newlines into list.
 
-    Safely parses strings into list. Filters Binary.
+    Safely parses strings into list. 
+    Filters Binary.
+    If the text is in bytes it is decoded via UTF-8
 
     Args:
         string (str/bytes): Text
 
-    Returns list
+    Returns:
+        list of lines sepparated by new lines \n
     """
-    lst = []
-
     if isinstance(text, bytes):
         text = text.decode('UTF-8')
-    for line in text.split('\n'):
-        lst.append(line)
-    return lst
+    return text.split('\n')

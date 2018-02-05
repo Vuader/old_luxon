@@ -29,6 +29,15 @@
 # THE POSSIBILITY OF SUCH DAMAGE.
 
 def object_name(obj):
+    """Generates a name for an object from it's module and class 
+
+    Args:
+        obj (object): any object to be named
+
+    Returns:
+        String naming the object
+
+    """
     try:
         return obj.__module__ + '.' + obj.__name__
     except AttributeError:
