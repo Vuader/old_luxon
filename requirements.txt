@@ -10,3 +10,5 @@ tzlocal
 sphinxcontrib-napoleon
 sphinx-rtd-theme
 pyopenssl
+decorator
+requests
