@@ -32,7 +32,7 @@ from luxon.structs.models import fields
 
 class Sqlite3(object):
     def __init__(self, model):
-        self._table = model.table
+        self._name = model.model_name
         self._fields = model.fields
         self._primary_key = model.primary_key
         self._db_engine = model.db_engine
@@ -41,16 +41,16 @@ class Sqlite3(object):
 
     # Create Tables
     def create(self):
-        table = self._table
+        name = self._name
         model_fields = self._fields
 
         with db() as conn:
-            if conn.has_table(self._table):
-                # NOTE(cfrademan): Drop exisiting table..
-                conn.execute("DROP TABLE %s" % table)
+            if conn.has_table(name):
+                # NOTE(cfrademan): Drop exisiting name..
+                conn.execute("DROP TABLE %s" % name)
 
-            # NOTE(cfrademan): We need to create the table..
-            create = 'CREATE TABLE `%s` (' % table
+            # NOTE(cfrademan): We need to create the name..
+            create = 'CREATE TABLE `%s` (' % name
             sql_fields = []
             for field in model_fields:
                 sql_field = None
@@ -99,7 +99,7 @@ class Sqlite3(object):
                 if isinstance(model_fields[field], fields.ForeignKey):
                     foreign_keys = []
                     references = []
-                    ref_table = model_fields[field]._reference_fields[0]._table
+                    ref_name = model_fields[field]._reference_fields[0]._table
 
                     for fk in model_fields[field]._foreign_keys:
                         foreign_keys.append('`' + fk.name + '`')
@@ -110,7 +110,7 @@ class Sqlite3(object):
                     references = ",".join(references)
 
                     index = ' FOREIGN KEY (%s)' % foreign_keys
-                    index += ' REFERENCES %s' % ref_table
+                    index += ' REFERENCES %s' % ref_name
                     index += '(%s)' % references
                     index += ' ON DELETE %s' % model_fields[field]._on_delete
                     index += ' ON UPDATE %s' % model_fields[field]._on_update
@@ -127,7 +127,7 @@ class Sqlite3(object):
             for field in model_fields:
                 if isinstance(model_fields[field], fields.UniqueIndex):
                     index = 'CREATE UNIQUE INDEX'
-                    index += ' %s on %s (' % (field, table,)
+                    index += ' %s on %s (' % (field, name,)
                     index_fields = []
                     for index_field in model_fields[field]._index:
                         index_fields.append('%s' % index_field.name)

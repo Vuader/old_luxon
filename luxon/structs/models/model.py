@@ -30,105 +30,96 @@
 from collections import OrderedDict
 
 from luxon import g
-from luxon import exceptions
-from luxon import GetLogger
+from luxon.exceptions import ValidationError
 from luxon import db
 from luxon import js
 from luxon.utils.imports import get_class
 from luxon.utils.classproperty import classproperty
-from luxon.structs.models.fields import BaseField, Integer, parse_defaults
+from luxon.structs.models.fields import (BaseField,
+                                         Integer,
+                                         parse_defaults,
+                                         ForeignKey,
+                                         Index,
+                                         UniqueIndex,)
+from luxon.utils.cast import to_tuple
 
-log = GetLogger(__name__)
-
-class BaseModel(object):
-    """BaseModel.
-
-    Keyword Args:
-        id (str|int): ID to match otherwise all rows are selected.
-        query (str): Raw SQL query for Luxon DB API.
-        values (dict): Raw parameters for SQL Query.
-    """
-    __slots__ = ( '_key_id', '_key_field',
-                  '_db_api', '_lock', '_id', '_query',
-                  '_values', '_default')
-
+class Model(object):
+    _fields = None
     primary_key = None
-    _sql = False
-    db_charset = 'UTF8'
-    db_engine = 'innodb'
-    db_default_rows = []
-    _declared_fields = None
+    filter_fields = ( ForeignKey, Index, UniqueIndex, )
 
-    def __init__(self, id=None, query=None, values=None, lock=False,
-                 declared_fields=None, default=True):
-        self._id = id
-        self._query = query
-        self._values = values
-        self._lock = lock
-        self._default = default
+    __slots__ = ( '_current', '_new', '_updated', '_created', '_hide' )
 
-        if declared_fields is not None:
-            self.__class__._declared_fields = declared_fields
+    def __init__(self, model=list, hide=None):
+        if model != list and model != dict:
+            raise ValueError("Invalid model type '%s'" % model)
 
-        table = self.table
-        result = None
+        self._current = model()
+        self._new = model()
+        self._updated = False
+        self._created = True
+        self._hide = to_tuple(hide)
 
-        if self._sql:
-            with db() as conn:
-                if conn.has_table(table):
-                    if self._query is not None:
-                        result = conn.execute(self._query, self._values)
-                    elif self._id is not None:
-                        if self.primary_key is None:
-                            raise KeyError("Model %s:" % table +
-                                           " No primary key") from None
-                        result = conn.execute("SELECT * FROM %s" % table +
-                                            " WHERE %s" % self.primary_key.name +
-                                            " = %s",
-                                            self._id)
-                    elif not isinstance(self, Model):
-                        result = conn.execute("SELECT * FROM %s" % table)
+        if isinstance(self._current, dict):
+            # NOTE(cfrademan): Set default values for model object.
+            for field in self.fields:
+                default = self.fields[field].default
+                if default is not None:
+                    default = parse_defaults(default)
+                    default = self.fields[field]._parse(default)
+                    if (field not in self._transaction or
+                            self._transaction[field] is None):
+                        self._current[field] = default
+                elif field in ('domain_id', 'tenant_id',):
+                    self._new[field] = getattr(g.current_request, field)
+                elif not isinstance(self.fields[field], Model.filter_fields):
+                    self._current[field] = None
 
+    def __getitem__(self, key):
+        if isinstance(self._current, dict):
+            if key not in self.fields:
+                raise KeyError("Model %s:" % self.model_name +
+                               " No such field '%s'" % key) from None
+        try:
+            return self._transaction[key]
+        except KeyError:
+            return None
+        except IndexError:
+            raise IndexError("Model %s:" % self.model_name +
+                             " No such key '%s'" % key) from None
 
-                    if result is not None:
-                        if isinstance(self, Model):
-                            result = result.fetchall()
-                            if len(result) > 1:
-                                muerr = "Multiple rows for model"
-                                muerr += " '%s' returned" % table
-                                raise exceptions.MultipleOblectsReturned(muerr)
-                            if len(result) == 0 and (self._id is not None or
-                                                     self._query is not None):
-                                nferr = "Query for for model"
-                                nferr += " '%s' not found." % table
-                                raise exceptions.NotFound(nferr)
-                            if len(result) == 1:
-                                row = result[0]
-                                for field in row.keys():
-                                    if row[field] is not None:
-                                        val = self.fields[field].parse(row[field])
-                                        self._current[field] = val
-                                self._created = False
-                                self._updated = False
-                                self._current = model._new.copy()
-                                self._new.clear()
-                        else:
-                            for row in result:
-                                model = self.new()
-                                for field in row.keys():
-                                    if row[field] is not None:
-                                        if field in self.fields:
-                                            val = self.fields[field].parse(row[field])
-                                            model._current[field] = val
-                                model._created = False
-                                model._updated = False
+    def __setitem__(self, key, value):
+        if isinstance(self._current, dict):
+            try:
+                if (self.fields[key].readonly is True and
+                        self._transaction[key] is not None):
+                    raise ValidationError("Model %s:" % self.model_name +
+                                   " readonly field '%s'" % key) from None
+            except KeyError:
+                raise ValidationError("Model %s:" % self.model_name +
+                               " No such field '%s'" % key) from None
+            
+            if key in ('domain_id', 'tenant_id',):
+                raise ValidationError("Model %s:" % self.model_name +
+                               " readonly field '%s'" % key) from None
+            if self.fields[key].internal is True:
+                raise ValidationError("Model %s:" % self.model_name +
+                               " Internal only field '%s'" % key) from None
 
-    def __setattr__(self, attr, value):
-        if attr[0] == "_":
-            super().__setattr__(attr, value)
+            if (self.primary_key is not None and
+                        self[key] is not None and
+                        key == self.primary_key.name):
+                    raise ValueError("Model %s:" % self.model_name +
+                                     " Cannot alter primary key '%s'"
+                                     % key) from None
+
+            self._new[key] = self.fields[key]._parse(value)
+            self._updated = True
         else:
-            raise KeyError("Model %s:" % self.table +
-                           " No such attribute '%s'" % attr) from None
+            raise NotImplementedError()
+
+    def __delitem__(self, key):
+        raise NotImplementedError()
 
     def __iter__(self):
         return iter(self.transaction)
@@ -140,35 +131,37 @@ class BaseModel(object):
         return repr(self.transaction)
 
     def __len__(self):
-        return len(self.transaction)
+        return len(self._transaction)
+
+    @property
+    def transaction(self):
+        """Return current state.
+        """
+        if isinstance(self._current, list):
+            return self._current + self._new
+        elif isinstance(self._current, dict):
+            transaction = {**self._current, **self._new}
+            for field in transaction.copy():
+                if field in self._hide:
+                    del transaction[field]
+            return transaction
+
+    @property
+    def _transaction(self):
+        """Return current state.
+        """
+        if isinstance(self._current, list):
+            return self._current + self._new
+        elif isinstance(self._current, dict):
+            return {**self._current, **self._new}
 
     @classproperty
-    def table(cls):
+    def model_name(cls):
         return cls.__name__.split('.')[-1]
-
-    @classmethod
-    def create_table(cls):
-        cls._validate_sql_model()
-
-        if cls.primary_key is None:
-            raise KeyError("Model %s:" % cls.table +
-                           " No primary key") from None
-
-        api = g.config.get('database', 'type')
-        driver_cls = api.title()
-        driver = get_class('luxon.structs.models.%s:%s' % (api,
-                                                           driver_cls,))(cls)
-        driver.create()
-
-    @classmethod
-    def _validate_sql_model(self):
-        if self._sql is False:
-            raise TypeError("Model '%s' Not decorated with 'luxon.database_model'"
-                           % self.table)
 
     @classproperty
     def fields(cls):
-        if cls._declared_fields is None:
+        if cls._fields is None:
             ignore = ('primary_key', 'fields')
             current_fields = []
 
@@ -184,224 +177,26 @@ class BaseModel(object):
 
                     if isinstance(prop, BaseField):
                         current_fields.append((name, prop))
-                        prop._table = cls.table
-                        prop._name = name
+                        prop._table = cls.model_name
+                        prop._field_name = name
 
             current_fields.sort(key=lambda x: x[1]._creation_counter)
 
-            cls._declared_fields = OrderedDict(current_fields)
+            cls._fields = OrderedDict(current_fields)
 
-        return cls._declared_fields
-
-class Models(BaseModel):
-    __slots__ = ( '_current', '_new', '_deleted', '_args', '_kwargs' )
-
-    def __init__(self, *args, **kwargs):
-        self._current = []
-        self._new = []
-        self._deleted = []
-        self._args = args
-        self._kwargs = kwargs
-        super().__init__(*args, **kwargs)
-
-    def __getitem__(self, key):
-        try:
-            return self.transaction[key]
-        except KeyError:
-            raise KeyError("Model %s:" % self.table +
-                           " No such result/row '%s'" % key) from None
-
-    def __delitem__(self, key):
-        try:
-            self._deleted.append(self.transaction[key])
-            if key + 1 <= len(self._current):
-                del self._current[key]
-            else:
-                del self._new[key]
-        except KeyError:
-            raise KeyError("Model %s:" % self.table +
-                           " No such result/row '%s'" % key) from None
+        return cls._fields
 
     @property
-    def transaction(self):
-        """Return current state.
-        """
-        return self._current + self._new
-
-    def to_json(self):
+    def json(self):
         """Return as serialized JSON.
         """
-        return js.dumps(list(self))
-
-    def new(self):
-        """Create new row.
-
-        Creates a new row and returns row model.
-        """
-        NewModel = type(self.table, (Model,), {})
-        NewModel._sql = self._sql
-        NewModel.primary_key = self.primary_key
-        NewModel.db_charset = self.db_charset
-        NewModel.db_engine = self.db_engine
-        model = NewModel(declared_fields=self.fields)
-        self._new.append(model)
-        return model
-
-    def append(self, dict_obj):
-        """Append to Models.
-
-        Append new row with fields with relevant values from dictionary.
-
-        Args:
-            dict_obj (list): List of Rows.
-        """
-        model = self.new()
-        for item in dict_obj:
-            model[item] = dict_obj[item]
-
-    def rollback(self):
-        """Rollback.
-
-        Rollback to previous state before commit.
-        """
-        for model in self.transaction:
-            model.rollback()
-        self._new.clear()
-        self._current += self._deleted
-        self._deleted.clear()
-
-    def commit(self):
-        """Commit transaction.
-        """
-        if self._sql:
-            try:
-                conn = db()
-                table = self.table
-                if self.primary_key is None:
-                    raise KeyError("Model %s:" % table +
-                                   " No primary key") from None
-
-                key_id = self.primary_key.name
-
-                for row in self._deleted:
-                    delete_id = row[key_id]
-                    conn.execute('DELETE FROM %s' % table +
-                               ' WHERE %s' % key_id +
-                               ' = %s',
-                               delete_id)
-            finally:
-                if self._sql:
-                    conn.commit()
-                    conn.close()
-
-        for model in self.transaction:
-            model.commit()
-
-        self._current = self.transaction
-        self._new.clear()
-        self._deleted.clear()
-
-    def update(self, list_obj):
-        """Update Models.
-
-        Append rows from list object containing objects with relevant field
-        columns.
-
-        Args:
-            list_obj (list): List of Rows.
-        """
-        for row in list_obj:
-            new = self.new()
-            for column in row:
-                new[column] = row[column]
-
-class Model(BaseModel):
-    __slots__ = ( '_model', '_current', '_new', '_deleted', '_created', )
-
-    def __init__(self, *args, **kwargs):
-        self._current = {}
-        self._new = {}
-        self._created = True
-        self._updated = False
-        super().__init__(*args, **kwargs)
-
-        # NOTE(cfrademan): Set default values for model object.
-        for field in self.fields:
-            default = self.fields[field].default
-            on_update = self.fields[field].on_update
-            if default is not None and field not in self._transaction:
-                default = parse_defaults(default)
-                default = self.fields[field].parse(default)
-                if (field not in self._transaction or
-                        self._transaction[field] is None):
-                    self._current[field] = default
-
-    def __getattr__(self, attr):
-        if attr[0] == '_':
-            return super().__getattr__(attr)
-
-        try:
-            return self.__getitem__(attr)
-        except KeyError as e:
-            raise AttributeError(e) from None
-
-    def __setitem__(self, key, value):
-        if key in self.fields:
-            if (self.primary_key is not None and
-                        self[key] is not None and
-                        key == self.primary_key.name):
-                    raise ValueError("Model %s:" % self.table +
-                                     " Cannot alter primary key '%s'"
-                                     % key) from None
-            self._new[key] = self.fields[key].parse(value)
-
-            if self._created is False:
-                self._updated = True
-        else:
-            raise KeyError("Model %s:" % self.table +
-                           " No such field '%s'" % key) from None
-
-    def __getitem__(self, key):
-        if key in self.fields:
-            try:
-                return self._transaction[key]
-            except KeyError:
-                return None
-        else:
-            raise KeyError("Model %s:" % self.table +
-                           " No such field '%s'" % key) from None
-
-    def __setattr__(self, attr, value):
-        if attr[0] == '_':
-            super().__setattr__(attr, value)
-            return None
-
-        try:
-            self.__setitem__(attr, value)
-        except KeyError as e:
-            raise AttributeError(e) from None
+        return js.dumps(self.transaction)
 
     @property
-    def _transaction(self):
-        return {**self._current, **self._new}
-
-    @property
-    def transaction(self):
-        """Return current state.
-        """
-        # NOTE(cfrademan): KEEP both _transaction and transaction properties.
-        # This is for future use.
-        return {**self._current, **self._new}
-
-    def to_json(self):
-        """Return as serialized JSON.
-        """
-        return js.dumps(self._transaction)
-
-    def to_dict(self):
+    def dict(self):
         """Return as raw dict.
         """
-        return self._transaction.copy()
+        return self.transaction.copy()
 
     def rollback(self):
         """Rollback.
@@ -410,95 +205,82 @@ class Model(BaseModel):
         """
         self._new.clear()
 
-    def commit(self):
-        """Commit transaction.
-        """
-        if self._updated is False and self._created is False:
-            # NOTE(cfrademan): Short-circuit this method if nothing todo...
-            return None
+        if isinstance(self._current, list):
+            for model in self._transaction:
+                model.rollback()
 
+        self._created = False
+        self._updated = False
+
+    def _pre_commit(self):
         transaction = {}
+
         for field in self.fields:
             if field not in self._new:
                 on_update = self.fields[field].on_update
 
                 if on_update is not None and self._updated:
                     on_update = parse_defaults(on_update)
-                    on_update = self.fields[field].parse(on_update)
+                    on_update = self.fields[field]._parse(on_update)
                     self._new[field] = on_update
 
-            if (field in self.transaction and
-                    self.fields[field].null is False):
-                self.fields[field].error('required field')
+            if (self.fields[field].null is False and
+                    (field not in self._transaction or
+                     self._transaction[field] is None)):
+                self.fields[field].error('required')
 
             if (field in self._transaction and
                     self.fields[field].db):
                 transaction[field] = self._transaction[field]
 
-        try:
-            if self._sql:
-                conn = db()
-                table = self.table
-                if self.primary_key is None:
-                    raise KeyError("Model %s:" % table +
-                                   " No primary key") from None
+        return (self._transaction, transaction,)
 
-                key_id = self.primary_key.name
-
-
-                if self._created:
-                    query = "INSERT INTO %s (" % table
-                    query += ','.join(transaction.keys())
-                    query += ')'
-                    query += ' VALUES'
-                    query += ' ('
-                    placeholders = []
-                    for ph in range(len(transaction)):
-                        placeholders.append('%s')
-                    query += ','.join(placeholders)
-                    query += ')'
-                    conn.execute(query, list(transaction.values()))
-                    if isinstance(self.primary_key, Integer):
-                        self[self.primary_key.name] = conn.last_row_id()
-                    conn.commit()
-
-                elif self._updated:
-                    update_id = transaction[key_id]
-                    sets = []
-                    args = []
-                    for field in self._new:
-                        if self.primary_key.name != field:
-                            if self.fields[field].readonly:
-                                self._new[field].error('readonly value')
-                            if self.fields[field].db:
-                                sets.append('%s' % field +
-                                           ' = %s')
-                                args.append(self._new[field])
-
-                    if len(sets) > 0:
-                        sets = ", ".join(sets)
-                        conn.execute('UPDATE %s' % table +
-                                   ' SET %s' % sets +
-                                   ' WHERE %s' % key_id +
-                                   ' = %s',
-                                   args + [update_id,])
-
+    def commit(self):
+        """Commit transaction.
+        """
+        if (isinstance(self._current, dict)):
+            self._current = self._pre_commit()[0]
+        else:
             self._current = self._transaction
-            self._new.clear()
-            self._created = False
-            self._updated = False
-        finally:
-            if self._sql:
-                conn.commit()
-                conn.close()
 
-    def update(self, dict_obj):
-        """Update Model.
+        #self._new.clear()
+        self._created = False
+        self._updated = False
 
-        Append fields with relevant values from dictionary.
+        if isinstance(self._current, list):
+            for model in self._transaction:
+                model.commit()
+
+    def new(self):
+        """Create new row.
+
+        Creates a new row and returns row model.
+        """
+        if isinstance(self._current, list):
+            NewModel = type(self.model_name, (self.__class__,), {})
+            NewModel._sql = self._sql
+            NewModel.primary_key = self.primary_key
+            NewModel._fields = self.fields
+            model = NewModel(model=dict, hide=self._hide)
+            self._new.append(model)
+            self._created = True
+            return model
+        else:
+            raise NotImplementedError()
+
+    def update(self, obj):
+        """Update Models.
+
+        Append (list) or Update (obj) object to columns.
 
         Args:
-            list_obj (list): List of Rows.
+            obj (list/dict): List / Dict Object.
         """
-        for column in dict_obj:
-            new[column] = row[column]
+        if isinstance(self._current, list):
+            for row in obj:
+                new = self.new()
+                for column in row:
+                    new[column] = row[column]
+        else:
+            for column in obj:
+                self[column] = obj[column]

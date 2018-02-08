@@ -28,6 +28,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
 
+
 def length_calc(min_length, max_length, signed, octets, type=int):
     """Minimum Maximum Lenght Calculator.
 
@@ -37,15 +38,15 @@ def length_calc(min_length, max_length, signed, octets, type=int):
     Args:
         min_length (int): min length given by user.
         max_length (int): max length given by user.
-        signed: whether or not field is signed
-        octets: size of field in octets
+        signed (bool): whether or not field is signed
+        octets (int): size of field in octets
         type (type): String or Integer type.
 
     Returns:
         Valid minimum length and maximum length as a tuple
     """
     bits = octets * 8
-    default = 2**(bits)
+    default = 2 ** bits
 
     if type == str or type == bytes or type == bytearray:
         signed = False
@@ -59,13 +60,13 @@ def length_calc(min_length, max_length, signed, octets, type=int):
     if signed is True:
         if min_length is None or max_length is None:
             min_length = -signed_default
-            max_length = signed_default-1
+            max_length = signed_default - 1
         else:
-            if (min_length<-signed_default or min_length>max_length or
-                    min_length>signed_default):
+            if (min_length < -signed_default or min_length > max_length or
+                min_length > signed_default):
                 raise ValueError("Define Valid Minimum Lenght")
-            if (max_length<-signed_default or max_length<min_length or
-                    max_length>signed_default-1):
+            if (max_length < -signed_default or max_length < min_length or
+                max_length > signed_default - 1):
                 raise ValueError("Define Valid Maximum Lenght")
 
     else:
@@ -73,9 +74,9 @@ def length_calc(min_length, max_length, signed, octets, type=int):
             min_length = 0
             max_length = default
         else:
-            if min_length <0 or min_length>max_length or min_length>default:
+            if min_length < 0 or min_length > max_length or min_length > default:
                 raise ValueError("Define Valid Minimum Lenght")
-            if max_length>default or max_length<min_length or max_length<0:
+            if max_length > default or max_length < min_length or max_length < 0:
                 raise ValueError("Define Valid Maximum Lenght")
 
     return (min_length, max_length)

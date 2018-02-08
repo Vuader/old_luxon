@@ -182,4 +182,3 @@ _const.LDAP_CLEARTEXT = 13
 
 _const.LEFT = 1
 _const.RIGHT = 2
-

@@ -28,7 +28,21 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
 
+
 def to_tuple(obj):
+    """Tuple Converter
+
+    Takes any object and converts it to a touple.
+    If the object is a list, it is converted immediatly using tuple().
+    If the object is already a tuple it is just returned,
+    Else a tuple is created with the object as it's first element.
+
+    Args:
+        obj (any object): the object to be converted
+
+    Returns:
+        A touple containg the given object
+    """
     if isinstance(obj, list):
         return tuple(obj)
     elif isinstance(obj, tuple):

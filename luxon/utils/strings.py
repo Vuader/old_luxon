@@ -28,15 +28,31 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
 
+
 def try_lower(string):
     # Ask for, forgiveness seems faster, perhaps better :-)
+    """Converts string to lower case
+
+    Args:
+        string(str): ascii string
+
+    Returns:
+        converted string
+    """
     try:
         return string.lower()
     except Exception:
         return string
 
+
 def indent(text, indent):
     """Indent Text.
+
+    Args:
+        text(str): body of text
+        indent(str): characters with which to indent
+    Returns:
+        text indeneted with given characters
     """
     if not isinstance(text, str):
         raise ValueError("indent expecting text type 'str' not '%s'" % type(text))
@@ -49,6 +65,7 @@ def indent(text, indent):
         text = text.splitlines(True)
         return indent.join(text)
 
+
 def unquote_string(quoted):
     """Unquote an "quoted-string".
 
@@ -56,7 +73,7 @@ def unquote_string(quoted):
         quoted (str): Original quoted string
 
     Returns:
-        str: unquoted string
+        Unquoted string
     """
 
     if len(quoted) < 2:

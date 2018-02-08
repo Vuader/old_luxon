@@ -41,8 +41,15 @@ from luxon.exceptions import FieldError
 from luxon.utils.timezone import to_utc
 from luxon.utils.timezone import TimezoneUTC
 from luxon.utils.length_calc import length_calc
-
-EMAIL_RE = r'[^@]+@[^@]+\.[^@]+'
+from luxon.core.regex import (EMAIL_RE,
+                              WORD_RE,
+                              USERNAME_RE,
+                              URI_RE,
+                              FQDN_RE,
+                              IP4_RE,
+                              IP6_RE,
+                              IP4_PREFIX_RE,
+                              IP6_PREFIX_RE)
 
 def parse_defaults(value):
     if hasattr(value, '__call__'):
@@ -83,7 +90,7 @@ class BaseField(object):
     """
     __slots__ = ('length', 'min_length', 'max_length', 'null', 'default',
                  'db', 'label', 'placeholder', 'readonly', 'prefix',
-                 'suffix', 'columns' ,'hidden', 'enum', '_name', '_table',
+                 'suffix', 'columns' ,'hidden', 'enum', '_field_name', '_table',
                  '_value', '_creation_counter', 'm', 'd', 'on_update',
                  'password', 'signed')
 
@@ -92,7 +99,7 @@ class BaseField(object):
                  placeholder=None, readonly=False, prefix=None,
                  suffix=None, columns=None, hidden=False,
                  enum=[], on_update=None, password=False,
-                 signed=True):
+                 signed=True, internal=False):
         self._creation_counter = global_counter()
         self._value = None
 
@@ -116,15 +123,19 @@ class BaseField(object):
         self.hidden = hidden
         self.enum = enum
         self.password = password
+        self.internal = internal
 
     @property
     def name(self):
-        return self._name
+        return self._field_name
 
     def error(self, msg, value=None):
         raise FieldError(self.name, self.label, msg, value)
 
     def parse(self, value):
+        if self.null is False and (value is None or str(value).strip() == ''):
+            self.error('Empty field value (required)', value)
+
         if hasattr(value, '__len__'):
             if self.min_length is not None and len(value) < self.min_length:
                 self.error("Minimum length '%s'" % self.min_length, value)
@@ -136,10 +147,11 @@ class BaseField(object):
             if self.max_length is not None and value > self.max_length:
                 self.error("Exceeding max value '%s'" % self.max_length, value)
 
-
-        if self.null is False and (value is None or value.strip() == ''):
-            self.error('Empty field value (required)', value)
         return value
+
+    def _parse(self, value):
+        if value is not None:
+            return self.parse(value)
 
 class String(BaseField):
     """String Field.
@@ -542,6 +554,9 @@ class Blob(BaseField):
                      enum=[], on_update=None, password=False)
 
     def parse(self, value):
+        if value is None:
+            return value
+
         value = super().parse(value)
         return value
 
@@ -822,11 +837,12 @@ class Enum(String):
 
     Provide arguements as individual permitted values.
     """
-    def __init__(self, *args):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(**kwargs)
         self.enum = args
 
     def parse(self, value):
+        value = super().parse(value)
         if value not in self.enum:
             self.error('Invalid option', value)
         return value
@@ -836,9 +852,8 @@ class Uuid(String):
 
     For example: 827C7CCC-F9BD-47AC-A674-ABBBED665008
     """
-    def __init__(self, default=None):
-        super().__init__()
-        self.default = default
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.length = 36
         self.min_length = 36
         self.max_length = 36
@@ -846,7 +861,7 @@ class Uuid(String):
     def parse(self, value):
         if isinstance(value, uuid.UUID):
             value = str(value)
-        value = super().parse(value)
+        #value = super().parse(value)
         return value
 
 class Email(String):
@@ -866,20 +881,58 @@ class Phone(String):
         value = value.strip()
 
         try:
-            value = int(value)
-        except ValueError:
-            self.error("Invalid phone number '%s'" % value, value)
-
-        if value[0] != '+':
+            if value[0] != '+':
+                self.error("Invalid phone number '%s'" % value, value)
+        except IndexError:
             self.error("Invalid phone number '%s'" % value, value)
 
         try:
-            x = phonenumbers.parse(value, None)
+            phone_no = phonenumbers.parse(value, None)
         except Exception:
             self.error("Invalid phone number '%s'" % value, value)
 
-        if not phonenumbers.is_valid_number(x):
+        if not phonenumbers.is_valid_number(phone_no):
             self.error("Invalid phone number '%s'" % value, value)
+
+        phone_no = phonenumbers.format_number(phone_no,
+                                   phonenumbers.PhoneNumberFormat.INTERNATIONAL)
+        return phone_no
+
+class Word(String):
+    def parse(self, value):
+        value = super().parse(value)
+        if not WORD_RE.match(value):
+            self.error("Invalid Word '%s'" % value, value)
+
+        return value
+
+class Username(String):
+    """Username Field.
+    """
+    def parse(self, value):
+        value = super().parse(value)
+        if not USERNAME_RE.match(value):
+            self.error("Invalid Username '%s'" % value, value)
+
+        return value
+
+class Uri(String):
+    """URI Field.
+    """
+    def parse(self, value):
+        value = super().parse(value)
+        if not URI_RE.match(value):
+            self.error("Invalid URI '%s'" % value, value)
+
+        return value
+
+class Fqdn(String):
+    """URI Field.
+    """
+    def parse(self, value):
+        value = super().parse(value)
+        if not FQDN_RE.match(value):
+            self.error("Invalid Domain '%s'" % value, value)
 
         return value
 
@@ -889,6 +942,7 @@ class Boolean(SmallInt):
     def parse(self, value):
         if value is None:
             value = False
+
         elif isinstance(value, int):
             if value == 0:
                 value = False
@@ -994,10 +1048,10 @@ class ForeignKey(BaseField):
         on_update = on_update.upper()
 
         if on_delete not in on:
-            raise("Invalid on delete option table '%s'" % self._table)
+            raise ValueError("Invalid on delete option table '%s'" % self._table)
 
         if on_update not in on:
-            raise("Invalid on delete option table '%s'" % self._table)
+            raise ValueError("Invalid on delete option table '%s'" % self._table)
 
         self._foreign_keys = to_tuple(foreign_keys)
         self._reference_fields = to_tuple(reference_fields)

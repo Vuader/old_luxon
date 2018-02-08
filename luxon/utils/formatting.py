@@ -27,14 +27,19 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
-
+import os
 import datetime
+from textwrap import indent, wrap
+
 
 def format_ms(ms):
-    """Format millisecons to string.
+    """Format milliseconds to string.
 
     Args:
         ms (float): milliseconds.
+
+    Returns:
+        Milliseconds as human friendly string
     """
     # Minutes
     if ms >= 60:
@@ -48,3 +53,18 @@ def format_ms(ms):
     # Milliseconds
     ms = ms * 1000
     return '%.3fms' % ms
+
+def format_obj(obj, dent=0):
+    rows, columns = os.popen('stty size', 'r').read().split()
+    string = ""
+    if isinstance(obj, list):
+        dent = dent + 4
+        for item in obj:
+            string += indent(format_obj(item, dent), ' '*dent)
+            string += '\n\n'
+    elif isinstance(obj, dict):
+        for key in obj:
+            string += "%s: %s " % (key, obj[key],)
+        return '\n'.join(wrap(string, int(columns)-dent, drop_whitespace=False,
+                              subsequent_indent='|'))
+    return string

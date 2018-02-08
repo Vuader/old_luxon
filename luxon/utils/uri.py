@@ -36,6 +36,7 @@ _HEX_TO_BYTE = dict(((a + b).encode(), bytes([int(a + b, 16)]))
                     for a in _HEX_DIGITS
                     for b in _HEX_DIGITS)
 
+
 def decode(encoded_uri):
     """Decodes percent-encoded characters in a URI or query string.
 
@@ -43,7 +44,7 @@ def decode(encoded_uri):
         encoded_uri (str): An encoded URI (full or partial).
 
     Returns:
-        str: A decoded URL. If the URL contains escaped non-ASCII
+        A decoded URL. If the URL contains escaped non-ASCII
         characters, UTF-8 is assumed per RFC 3986.
     """
     decoded_uri = encoded_uri
@@ -71,6 +72,7 @@ def decode(encoded_uri):
     # return str
     return decoded_uri.decode('utf-8', 'replace')
 
+
 def clean_uri(uri):
     """Clean URL.
 
@@ -82,14 +84,16 @@ def clean_uri(uri):
     Args:
         uri (string): URL to parse.
 
-    Returns formatted uri str.
+    Returns:
+    Formatted uri str.
     """
     parsed = list(parse.urlparse(uri))
-    parsed[2] = re.sub("/{2,}", "/", parsed[2]).strip('/') # replace two or more / with one
+    parsed[2] = re.sub("/{2,}", "/", parsed[2]).strip('/')  # replace two or more / with one
 
     cleaned = parse.urlunparse(parsed)
 
     return cleaned
+
 
 def host_from_uri(uri):
     """Return only scheme + host + port from uri.
@@ -101,11 +105,12 @@ def host_from_uri(uri):
         uri (str): Standard URL as per RFC3986.
 
     Returns
-        str: Value for scheme + host + port as str.
+        Value for scheme + host + port as str.
     """
     uri = parse.urlparse(uri)
 
     return "%s://%s" % (uri.scheme, uri.netloc)
+
 
 def parse_host(host, default_port=None):
     """Parse a canonical 'host:port' string into parts.
@@ -118,8 +123,6 @@ def parse_host(host, default_port=None):
     Args:
         host (str): Host string to parse, optionally containing a
             port number.
-
-    Keyword Arguments:
         default_port (int): Port number to return when the host string
             does not contain one (default 'None').
 
