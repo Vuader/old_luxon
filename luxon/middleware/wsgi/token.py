@@ -59,8 +59,12 @@ class Token(object):
         token = req.get_header('X-Auth-Token')
         if token is not None:
             req.context.token.parse_token(token)
-
-        req.context.domain = req.get_header('X-Domain', default='default')
-        req.context.tenant_id = req.get_header('X-Tenant-Id')
-        req.context.roles = req.context.token.roles(req.context.domain,
-                                                    req.context.tenant_id)
+            req.context.domain = req.context.token.token['domain']
+            req.context.domain_id = req.context.token.token['domain_id']
+            req.context.tenant_id = req.context.token.token['tenant_id']
+            req.context.roles = req.context.token.token['roles']
+        else:
+            req.context.domain = None
+            req.context.domain_id = None
+            req.context.tenant_id = None
+            req.context.roles = []

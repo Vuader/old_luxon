@@ -27,17 +27,17 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
+from luxon import __identity__
+from luxon.core.response import ResponseBase
+from luxon import constants as const
 
-from luxon.core.auth.driver import BaseDriver
-
-class ExampleDriver(BaseDriver):
-    """Example Authentication Driver.
+class Response(ResponseBase):
+    """Represents an SCRIPT response to a request.
     """
-    def authenticate(self, username, password, domain='default'):
-        self._initial()
-        if username == 'root' and password == 'test' and domain == 'default':
-            self.new_token(user_id=1234, username='root',
-                           domain=None, tenant_id=None)
-            return True
-        else:
-            return False
+    __slots__ = (
+    )
+
+    def __init__(self, metadata):
+        self.status = 'SCRIPT'
+        super().__init__()
+

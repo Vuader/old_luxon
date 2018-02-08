@@ -27,17 +27,18 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
-
+from luxon import db
 from luxon.core.auth.driver import BaseDriver
+from luxon.utils.password import valid as is_valid_password
+from luxon.utils.auth import authorize
 
-class ExampleDriver(BaseDriver):
-    """Example Authentication Driver.
-    """
-    def authenticate(self, username, password, domain='default'):
-        self._initial()
-        if username == 'root' and password == 'test' and domain == 'default':
-            self.new_token(user_id=1234, username='root',
-                           domain=None, tenant_id=None)
-            return True
-        else:
-            return False
+class Mysql(BaseDriver):
+    def authenticate(self, username, password, domain=None):
+            valid, credentials = authorize('tachyonic', username, password, domain)
+            if valid is True:
+                # Validate Password againts stored HASHED Value.
+                if is_valid_password(password, credentials['password']):
+
+                    self.new_token(user_id=credentials['user_id'],
+                                   username=username)
+            return valid

@@ -32,7 +32,7 @@ from luxon.structs.models import fields
 
 class Mysql(object):
     def __init__(self, model):
-        self._table = model.table
+        self._name = model.model_name
         self._fields = model.fields
         self._primary_key = model.primary_key
         self._db_engine = model.db_engine
@@ -41,16 +41,16 @@ class Mysql(object):
 
     # Backup, Drop, Create, Restore.
     def create(self):
-        table = self._table
+        name = self._name
         model_fields = self._fields
 
         with db() as conn:
-            if conn.has_table(self._table):
-                # NOTE(cfrademan): Drop exisiting table..
-                conn.execute("DROP TABLE %s" % table)
+            if conn.has_table(name):
+                # NOTE(cfrademan): Drop exisiting name..
+                conn.execute("DROP TABLE %s" % name)
 
-            # NOTE(cfrademan): We need to create the table..
-            create = 'CREATE TABLE `%s` (' % table
+            # NOTE(cfrademan): We need to create the name..
+            create = 'CREATE TABLE `%s` (' % name
             sql_fields = []
             for field in model_fields:
                 sql_field = None
@@ -200,7 +200,7 @@ class Mysql(object):
                 elif isinstance(model_fields[field], fields.ForeignKey):
                     foreign_keys = []
                     references = []
-                    ref_table = model_fields[field]._reference_fields[0]._table
+                    ref_name = model_fields[field]._reference_fields[0]._table
 
                     for fk in model_fields[field]._foreign_keys:
                         foreign_keys.append('`' + fk.name + '`')
@@ -212,7 +212,7 @@ class Mysql(object):
 
                     index = 'CONSTRAINT `%s`' % column
                     index += ' FOREIGN KEY (%s)' % foreign_keys
-                    index += ' REFERENCES `%s`' % ref_table
+                    index += ' REFERENCES `%s`' % ref_name
                     index += ' (%s)' % references
                     index += ' ON DELETE %s' % model_fields[field]._on_delete
                     index += ' ON UPDATE %s' % model_fields[field]._on_update

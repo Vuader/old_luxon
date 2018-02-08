@@ -27,17 +27,37 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
+from uuid import uuid4
 
-from luxon.core.auth.driver import BaseDriver
+from luxon import database_model
+from luxon import Model
+from luxon import SQLModel
+from luxon import Uuid
+from luxon import String
+from luxon import Text
+from luxon import DateTime
+from luxon import Boolean
+from luxon import Email
+from luxon import Phone
+from luxon import Enum
+from luxon import Index
+from luxon import Uri
+from luxon import Word
+from luxon import ForeignKey
+from luxon import Fqdn
+from luxon import UniqueIndex
+from luxon.utils.timezone import now
 
-class ExampleDriver(BaseDriver):
-    """Example Authentication Driver.
-    """
-    def authenticate(self, username, password, domain='default'):
-        self._initial()
-        if username == 'root' and password == 'test' and domain == 'default':
-            self.new_token(user_id=1234, username='root',
-                           domain=None, tenant_id=None)
-            return True
-        else:
-            return False
+@database_model()
+class luxon_endpoint(SQLModel):
+    id = Uuid(default=uuid4, internal=True)
+    name = Fqdn(max_length=64,null=False)
+    interface = Enum('public', 'internal', 'admin',null=False)
+    region = String(max_length=64, null=False)
+    uri = Uri(max_length=64, null=False)
+    creation_time = DateTime(default=now, internal=True)
+    primary_key = id
+    unique_endpoint = UniqueIndex(interface, uri)
+    endpoint_name = Index(name)
+    endpoint_find = Index(name, interface)
+    endpoint_exact = Index(name, interface, region)

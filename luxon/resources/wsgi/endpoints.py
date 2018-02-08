@@ -27,17 +27,36 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
+from luxon import db
+from luxon import register_resource
 
-from luxon.core.auth.driver import BaseDriver
+from luxon.models.endpoints import luxon_endpoint
 
-class ExampleDriver(BaseDriver):
-    """Example Authentication Driver.
-    """
-    def authenticate(self, username, password, domain='default'):
-        self._initial()
-        if username == 'root' and password == 'test' and domain == 'default':
-            self.new_token(user_id=1234, username='root',
-                           domain=None, tenant_id=None)
-            return True
-        else:
-            return False
+@register_resource('GET', '/v1/endpoints')
+def endpoints(req, resp):
+    endpoints = luxon_endpoint()
+    endpoints.sql_api()
+    resp.set_cache_max_age(120)
+    return endpoints
+
+@register_resource('POST', '/v1/endpoint', tag='role:root')
+def new_endpoint(req, resp):
+    endpoint = luxon_endpoint(model=dict)
+    endpoint.update(req.json)
+    endpoint.commit()
+    return endpoint
+
+@register_resource([ 'PUT', 'PATCH' ], '/v1/endpoint/{id}', tag='role:root')
+def update_endpoint(req, resp, id):
+    endpoint = luxon_endpoint(model=dict)
+    endpoint.sql_id(id)
+    endpoint.update(req.json)
+    endpoint.commit()
+    return endpoint
+
+@register_resource('DELETE', '/v1/endpoint/{id}', tag='role:root')
+def delete_endpoint(req, resp, id):
+    with db() as conn:
+        conn.execute('DELETE FROM luxon_endpoint WHERE id = %s',
+                    id)
+        conn.commit()

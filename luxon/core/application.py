@@ -44,6 +44,7 @@ from luxon.exceptions import (Error,
                               NoContextError,)
 from luxon.utils import imports
 from luxon.utils.timer import Timer
+from luxon.utils.objects import object_name
 
 log = GetLogger()
 
@@ -64,12 +65,12 @@ def determine_app_root(name, app_root=None):
         else:
             raise Error("Invalid path for root '%s'" % app_root)
 
-def load_config(app_root):
+def load_config(ini):
     config = Config()
-    if os.path.isfile(app_root + '/settings.ini'):
-        config.load(app_root + '/settings.ini')
+    if os.path.isfile(ini):
+        config.load(ini)
         return config
-    log.warning("No 'settings.ini' found in '" + app_root + "/settings.ini'")
+    log.warning("%s not found" % ini)
 
     return config
 
@@ -102,20 +103,25 @@ class ApplicationBase(object):
                 'modules',
                 'middleware',)
 
-    def __init__(self, name, app_root=None):
+    def __init__(self, name, app_root=None, ini=None):
         try:
             with Timer() as elapsed:
                 # Set current app as global
                 g.app = self
 
                 # Attempt to determine application root.
-                g.app_root = self.app_root = app_root = determine_app_root(name, app_root)
+                g.app_root = self.app_root = app_root = determine_app_root(name,
+                                                                       app_root)
 
                 # Set Application Name
                 self.name = name
 
                 # Load Configuration
-                g.config = self.config = load_config(self.app_root)
+                if ini is None:
+                    g.config = self.config = load_config(self.app_root +
+                                                         '/settings.ini')
+                else:
+                    g.config = self.config = load_config(ini)
 
                 # Configure Logger.
                 GetLogger().app_configure()
@@ -150,6 +156,9 @@ class ApplicationBase(object):
                 # Response Object.
                 response = self._RESPONSE_CLASS(*args,
                                                 **kwargs)
+
+                # Set Response object for request.
+                request.response = response
 
                 # Process the middleware 'pre' method before routing it
                 for middleware in g.middleware_pre:
@@ -191,9 +200,8 @@ class ApplicationBase(object):
             if log.debug_mode():
                 log.debug('%s' % (trace))
             else:
-                log.info('%s.%s: %s' % (exception.__class__.__name__,
-                                       exception.__class__.__module__,
-                                       exception))
+                log.info('%s: %s' % (object_name(exception),
+                                     exception))
             self._proxy_handle_error(request, response, exception, trace)
             # Return response object.
             return response
@@ -202,9 +210,8 @@ class ApplicationBase(object):
             if log.debug_mode():
                 log.debug('%s' % (trace))
             else:
-                log.error('%s.%s: %s' % (exception.__class__.__name__,
-                                         exception.__class__.__module__,
-                                         exception))
+                log.error('%s: %s' % (object_name(exception),
+                                      exception))
             self._proxy_handle_error(request, response, exception, trace)
             # Return response object.
             return response
@@ -213,9 +220,8 @@ class ApplicationBase(object):
             if log.debug_mode():
                 log.debug('%s' % (trace))
             else:
-                log.error('%s.%s: %s' % (exception.__class__.__name__,
-                                         exception.__class__.__module__,
-                                         exception))
+                log.error('%s: %s' % (object_name(exception),
+                                      exception))
             self._proxy_handle_error(request, response, exception, trace)
             # Return response object.
             return response

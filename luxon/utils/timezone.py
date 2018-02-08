@@ -204,6 +204,9 @@ def now(tz=TimezoneUTC()):
     """
     return py_datetime.now(tz=tz)
 
+def utc(datetime):
+    return to_timezone(datetime, dst=TimezoneUTC(), src=TimezoneUTC())
+
 def to_utc(datetime, src=None):
     return to_timezone(datetime, dst=TimezoneUTC(), src=src)
 

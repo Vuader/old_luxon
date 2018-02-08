@@ -27,17 +27,32 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
+from luxon import g
+from luxon import register_resource
 
-from luxon.core.auth.driver import BaseDriver
+@register_resource('script', '-h')
+def help(req, resp):
+    """Command line help.
 
-class ExampleDriver(BaseDriver):
-    """Example Authentication Driver.
+    The first arguement is usually path towards a responder/section of options.
+
+    Paths can contain field expressions consisting of a bracketed field name.
+    These values are required. For example, given the following path:
+
+        /example/delete/{id}
+
+    Some of the sections may have sub arguement parsers. You may use -h like
+    so:
+
+        /examples -h
     """
-    def authenticate(self, username, password, domain='default'):
-        self._initial()
-        if username == 'root' and password == 'test' and domain == 'default':
-            self.new_token(user_id=1234, username='root',
-                           domain=None, tenant_id=None)
-            return True
+    resp.write(help.__doc__ + '\n')
+    resp.write('Arguements/Routes:\n')
+    for route in g.router.index:
+        doc = g.router.index[route]['SCRIPT']['doc']
+        if doc is not None:
+            doc = doc.splitlines()[0]
         else:
-            return False
+            doc = ''
+
+        resp.write("\t%s\t%s\n" % (route, doc,))
