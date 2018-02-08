@@ -31,7 +31,7 @@ import json
 from http.cookies import SimpleCookie
 
 from luxon.structs.cidict import CiDict
-from luxon.core.http.headers import content_type_encoding
+from luxon.utils.http import content_type_encoding
 from luxon.testing.wsgi.cookie import Cookie
 
 class Result(object):

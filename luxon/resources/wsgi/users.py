@@ -29,34 +29,47 @@
 # THE POSSIBILITY OF SUCH DAMAGE.
 from luxon import db
 from luxon import register_resource
-
 from luxon.models.users import luxon_user
+from luxon.utils.password import hash
+
 
 @register_resource('GET', '/v1/users', tag='role:root')
 def users(req, resp):
-    endpoints = luxon_user(hide=('password',))
-    endpoints.sql_query("SELECT * FROM luxon.user")
-    return endpoints
-"""
-@register_resource('POST', '/v1/endpoint', tag='role:root')
-def new_endpoint(req, resp):
-    endpoint = model_endpoint(model=dict)
-    endpoint.update(req.json)
-    endpoint.commit()
-    return endpoint
+    users = luxon_user(hide=('password',))
+    users.sql_api()
+    return users
 
-@register_resource([ 'PUT', 'PATCH' ], '/v1/endpoint/{id}', tag='role:root')
-def update_endpoint(req, resp, id):
-    endpoint = model_endpoint(model=dict)
-    endpoint.sql_id(id)
-    endpoint.update(req.json)
-    endpoint.commit()
-    return endpoint
+@register_resource('GET', '/v1/user/{id}', tag='role:root')
+def users(req, resp, id):
+    users = luxon_user(model=dict, hide=('password',))
+    users.sql_id(id)
+    return users
 
-@register_resource('DELETE', '/v1/endpoint/{id}', tag='role:root')
-def delete_endpoint(req, resp, id):
-    with db() as conn:
-        conn.execute('DELETE FROM endpoint WHERE id = %s',
-                    id)
-        conn.commit()
-"""
+@register_resource('POST', '/v1/user', tag='role:root')
+def new_user(req, resp):
+    user = luxon_user(model=dict, hide=('password',))
+    user = req.json.copy()
+    user['tag'] = 'tachyonic'
+    if 'password' in user and user['password'] is not None:
+        user['password'] = hash(user['password'])
+    user.update(user)
+    user.commit()
+    return user
+
+@register_resource([ 'PUT', 'PATCH' ], '/v1/user/{id}', tag='role:root')
+def update_user(req, resp, id):
+    user = luxon_user(model=dict, hide=('password',))
+    user.sql_id(id)
+    user = req.json.copy()
+    user['tag'] = 'tachyonic'
+    if 'password' in user and user['password'] is not None:
+        user['password'] = hash(user['password'])
+    user.update(user)
+    user.commit()
+    return user
+
+@register_resource('DELETE', '/v1/user/{id}', tag='role:root')
+def delete_user(req, resp, id):
+    user = luxon_user(model=dict, hide=('password',))
+    user.sql_id(id)
+    user.delete()

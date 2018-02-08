@@ -35,12 +35,18 @@ from luxon import db
 from luxon import js
 from luxon.utils.imports import get_class
 from luxon.utils.classproperty import classproperty
-from luxon.structs.models.fields import BaseField, Integer, parse_defaults
+from luxon.structs.models.fields import (BaseField,
+                                         Integer,
+                                         parse_defaults,
+                                         ForeignKey,
+                                         Index,
+                                         UniqueIndex,)
 from luxon.utils.cast import to_tuple
 
 class Model(object):
     _fields = None
     primary_key = None
+    filter_fields = ( ForeignKey, Index, UniqueIndex, )
 
     __slots__ = ( '_current', '_new', '_updated', '_created', '_hide' )
 
@@ -60,10 +66,14 @@ class Model(object):
                 default = self.fields[field].default
                 if default is not None:
                     default = parse_defaults(default)
-                    default = self.fields[field].parse(default)
+                    default = self.fields[field]._parse(default)
                     if (field not in self._transaction or
                             self._transaction[field] is None):
                         self._current[field] = default
+                elif field in ('domain_id', 'tenant_id',):
+                    self._new[field] = getattr(g.current_request, field)
+                elif not isinstance(self.fields[field], Model.filter_fields):
+                    self._current[field] = None
 
     def __getitem__(self, key):
         if isinstance(self._current, dict):
@@ -80,9 +90,18 @@ class Model(object):
 
     def __setitem__(self, key, value):
         if isinstance(self._current, dict):
-            if key not in self.fields:
+            try:
+                if (self.fields[key].readonly is True and
+                        self._transaction[key] is not None):
+                    raise ValidationError("Model %s:" % self.model_name +
+                                   " readonly field '%s'" % key) from None
+            except KeyError:
                 raise ValidationError("Model %s:" % self.model_name +
                                " No such field '%s'" % key) from None
+            
+            if key in ('domain_id', 'tenant_id',):
+                raise ValidationError("Model %s:" % self.model_name +
+                               " readonly field '%s'" % key) from None
             if self.fields[key].internal is True:
                 raise ValidationError("Model %s:" % self.model_name +
                                " Internal only field '%s'" % key) from None
@@ -94,7 +113,7 @@ class Model(object):
                                      " Cannot alter primary key '%s'"
                                      % key) from None
 
-            self._new[key] = self.fields[key].parse(value)
+            self._new[key] = self.fields[key]._parse(value)
             self._updated = True
         else:
             raise NotImplementedError()
@@ -202,12 +221,8 @@ class Model(object):
 
                 if on_update is not None and self._updated:
                     on_update = parse_defaults(on_update)
-                    on_update = self.fields[field].parse(on_update)
+                    on_update = self.fields[field]._parse(on_update)
                     self._new[field] = on_update
-
-            if field in ('domain_id', 'tenant_id',):
-                if field not in self.transaction:
-                    self._new[field] = getattr(g.current_request, field)
 
             if (self.fields[field].null is False and
                     (field not in self._transaction or
@@ -218,16 +233,17 @@ class Model(object):
                     self.fields[field].db):
                 transaction[field] = self._transaction[field]
 
-        # NOTE(cfrademan): This only returns fields to be updated in DB.
-        return transaction
+        return (self._transaction, transaction,)
 
     def commit(self):
         """Commit transaction.
         """
         if (isinstance(self._current, dict)):
-            self._current = self._pre_commit()
+            self._current = self._pre_commit()[0]
+        else:
+            self._current = self._transaction
 
-        self._new.clear()
+        #self._new.clear()
         self._created = False
         self._updated = False
 
@@ -241,7 +257,7 @@ class Model(object):
         Creates a new row and returns row model.
         """
         if isinstance(self._current, list):
-            NewModel = type(self.model_name, (Model,), {})
+            NewModel = type(self.model_name, (self.__class__,), {})
             NewModel._sql = self._sql
             NewModel.primary_key = self.primary_key
             NewModel._fields = self.fields

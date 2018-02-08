@@ -70,7 +70,7 @@ class SQLModel(Model):
                 row = result[0]
                 for field in row.keys():
                     if row[field] is not None:
-                        val = self.fields[field].parse(row[field])
+                        val = self.fields[field]._parse(row[field])
                         self._current[field] = val
                 self._created = False
                 self._updated = False
@@ -81,7 +81,7 @@ class SQLModel(Model):
                     for field in row.keys():
                         if field in self.fields:
                             if row[field] is not None:
-                                val = self.fields[field].parse(row[field])
+                                val = self.fields[field]._parse(row[field])
                                 model._current[field] = val
                     model._created = False
                     model._updated = False
@@ -98,33 +98,37 @@ class SQLModel(Model):
         query = []
         if 'domain_id' in self.fields:
             domain_id = g.current_request.domain_id
-            query.append('domain_id = %s')
-            values.append(domain_id)
+            if domain_id is not None:
+                query.append('domain_id = %s')
+                values.append(domain_id)
         if 'tenant_id' in self.fields:
             tenant_id = g.current_request.tenant_id
-            query.append('tenant_id = %s')
-            values.append(tenant_id)
+            if tenant_id is not None:
+                query.append('tenant_id = %s')
+                values.append(tenant_id)
 
         search = g.current_request.query_params.get('search')
         if search is not None:
             try:
                 for lookin in search.split(","):
                     field, val = lookin.split(":")
+                    field = field.replace(' ', '')
                     if field not in self.fields:
                         raise exceptions.ValidationError("Unknown field" +
-                                                         '%s' % field +
+                                                         ' %s' % field +
                                                          ' in search')
-                    query.append(field.replace(' ','') + ' = %s')
-
-                    values.append(val)
+                    if isinstance(val, (int, float,)):
+                        query.append(field + ' LIKE ' + val)
+                    else:
+                        query.append(field + ' LIKE ' + "'" + val + "%%'")
             except ValueError:
-                raise ValidationError('Invalid search format defined')
+                raise exceptions.ValidationError('Invalid search format defined')
 
         query_str = " AND ".join(query)
         if where is True and len(query) > 0:
             query = " WHERE %s" % query_str
         else:
-            query = query_str
+            query = " AND %s" % query_str
 
         return (query, tuple(values),)
 
@@ -152,6 +156,33 @@ class SQLModel(Model):
                     raise ValueError('Invalid range defiend')
 
         return (query, (),)
+
+    def delete(self):
+        if not isinstance(self._current, dict):
+            raise NotImplementedError()
+
+
+        with db() as conn:
+            if self.primary_key is None:
+                raise KeyError("Model %s:" % self.model_name +
+                               " No primary key") from None
+
+            primary_id = self._transaction[self.primary_key.name]
+
+            ctx_query, ctx_values = self._api_context(False)
+
+            crsr = conn.execute("DELETE FROM %s" % self.model_name +
+                                " WHERE %s" % self.primary_key.name +
+                                " = %s" +
+                                " %s" % ctx_query,
+                                (primary_id,) + ctx_values)
+            result = crsr.fetchall()
+            crsr.commit()
+
+        self._current.clear()
+        self._new.clear()
+        self._updated = False
+        self._created = False
 
     def sql_api(self):
         with db() as conn:
@@ -182,7 +213,7 @@ class SQLModel(Model):
     def sql_id(self, primary_id):
         if isinstance(self._current, dict):
             with db() as conn:
-                ctx_query, ctx_values = self._api_context(True)
+                ctx_query, ctx_values = self._api_context(False)
                 if self.primary_key is None:
                     raise KeyError("Model %s:" % name +
                                    " No primary key") from None
@@ -209,45 +240,48 @@ class SQLModel(Model):
 
         key_id = self.primary_key.name
 
-        transaction = self._pre_commit()
+        transaction = self._pre_commit()[1]
 
         try:
             conn = db()
-            for field in self.fields:
-                if isinstance(self.fields[field], UniqueIndex):
-                    query = "SELECT count(*) as no FROM %s WHERE " % name
-                    query += " %s != " % key_id
-                    query += "%s AND "
-                    index_fields = []
-                    index_values = []
-                    index_values.append(self._transaction[key_id])
-                    for index_field in self.fields[field]._index:
-                        if index_field.name in self._transaction:
-                            index_fields.append(index_field.name + ' = %s')
-                            index_values.append(self._transaction[index_field.name])
-                    query += ' AND '.join(index_fields)
-                    crsr = conn.execute(query, index_values)
-                    res = crsr.fetchone()
-                    if res['no'] > 0:
-                        raise exceptions.ValidationError("Model %s:" % name +
-                                                         " Duplicate Entry") from None
-                if isinstance(self.fields[field], ForeignKey):
-                    for no, fk_field in enumerate(self.fields[field]._foreign_keys):
-                        if (fk[field]._on_update == 'NO ACTION' or
-                                fk[field]._on_update == 'RESTRICT'):
-                            if fk_field.name in self._transaction:
-                                ref = fk_field._reference_fields[no]
-                                index_fields.append(ref.name+ ' = %s')
-                                index_values.append(self._transaction[fk_field.name])
-                                table = self._transaction[fk_field._table]
-                    query = "SELECT count(*) as no FROM %s WHERE " % table
-                    query += ' AND '.join(index_fields)
-                    crsr = conn.execute(query, index_values)
-                    if res['no'] > 0:
-                        raise exceptions.ValidationError("Model %s:" % name +
-                                                         " Object referenced.") from None
-
             if isinstance(self._current, dict):
+                for field in self.fields:
+                    if isinstance(self.fields[field], UniqueIndex):
+                        index_fields = []
+                        index_values = []
+                        query = "SELECT count(*) as no FROM %s WHERE " % name
+                        if key_id in self._transaction:
+                            query += " %s != " % key_id
+                            query += "%s AND "
+                            index_values.append(self._transaction[key_id])
+                        for index_field in self.fields[field]._index:
+                            if index_field.name in self._transaction:
+                                index_fields.append(index_field.name + ' = %s')
+                                index_values.append(self._transaction[index_field.name])
+                        query += ' AND '.join(index_fields)
+                        crsr = conn.execute(query, index_values)
+                        res = crsr.fetchone()
+                        if res['no'] > 0:
+                            raise exceptions.ValidationError("Model %s:" % name +
+                                                             " Duplicate Entry") from None
+                    if isinstance(self.fields[field], ForeignKey):
+                        fk = self.fields[field]
+                        if (fk._on_update == 'NO ACTION' or
+                                fk._on_update == 'RESTRICT'):
+                            for no, fk_field in enumerate(self.fields[field]._foreign_keys):
+                                    if fk_field.name in self._transaction:
+                                        ref = fk_field._reference_fields[no]
+                                        index_fields.append(ref.name+ ' = %s')
+                                        index_values.append(self._transaction[fk_field.name])
+                                        table = self._transaction[fk_field._table]
+
+                            query = "SELECT count(*) as no FROM %s WHERE " % table
+                            query += ' AND '.join(index_fields)
+                            crsr = conn.execute(query, index_values)
+                            if res['no'] > 0:
+                                raise exceptions.ValidationError("Model %s:" % name +
+                                                                 " Object referenced.") from None
+
                 if self._created:
                     query = "INSERT INTO %s (" % name
                     query += ','.join(transaction.keys())
@@ -308,3 +342,4 @@ class SQLModel(Model):
         driver = get_class('luxon.structs.models.%s:%s' % (api,
                                                            driver_cls,))(cls)
         driver.create()
+
