@@ -32,6 +32,7 @@ import os
 import threading
 import random
 
+from luxon import g
 from luxon import GetLogger
 from luxon.utils.unique import string_id
 from luxon.structs.container import Container
@@ -94,6 +95,7 @@ class RequestBase(object):
         'policy',
         'tag',
         'context',
+        'response',
     )
     def __init__(self, *args, **kwargs):
         # Request ID
@@ -105,6 +107,8 @@ class RequestBase(object):
         # Request Context
         self.context = Container()
 
+        self.response = None
+
     def __repr__(self):
         return '<%s: %s %r>' % (self.__class__.__name__, self.method,
                                 self.route)
@@ -112,3 +116,17 @@ class RequestBase(object):
     def __str__(self):
         return '<%s: %s %r>' % (self.__class__.__name__, self.method,
                                 self.route)
+
+    @property
+    def domain_id(self):
+        try:
+            return self.context.domain_id
+        except AttributeError:
+            return None
+
+    @property
+    def tenant_id(self):
+        try:
+            return self.context.tenant_id
+        except AttributeError:
+            return None

@@ -59,6 +59,10 @@ class ResponseBase(object):
     __slot__ = (
         'content_type',
         '_stream',
+        '_total_rows',
+        '_filtered_rows',
+        '_view_rows',
+        '_headers',
     )
 
     """Base Session / Request Class.
@@ -73,6 +77,10 @@ class ResponseBase(object):
         """
         self.content_type = None
         self._stream = None
+        self._total_rows = None
+        self._filtered_rows = None
+        self._view_rows = None
+        self._headers = {}
 
     def __post__(self, app, *args, **kwargs):
         """Post Request Response prepare.
@@ -83,6 +91,34 @@ class ResponseBase(object):
             kwargs (dict): Kwargs provided to application interface.
         """
         pass
+
+    @property
+    def rows(self):
+        return (self._total_rows, self._filtered_rows)
+
+    @rows.setter
+    def rows(self, value):
+        if not isinstance(value, (tuple, list,)):
+            raise ValueError('Invalid rows value type set on response object')
+
+        try:
+            total_rows, view_rows = value
+            self._total_rows = int(total_rows)
+            self._view_rows = int(view_rows)
+            if self._view_rows > self._total_rows:
+                raise ValueError('View rows cannot' +
+                                 ' exceed total rows') from None
+            self._filtered_rows = total_rows - view_rows
+
+            try:
+                self.set_header('X-Total-Rows', str(self._total_rows))
+                self.set_header('X-View-Rows', str(self._view_rows))
+                self.set_header('X-Filtered-Rows', str(self._filtered_rows))
+            except AttributeError:
+                pass
+
+        except ValueError:
+            raise ValueError('Invalid rows value type set on response object')
 
     @property
     def content_length(self):
@@ -128,17 +164,17 @@ class ResponseBase(object):
             # If JSON serializeable object.
             self.content_type = const.APPLICATION_JSON
             self._stream = if_unicode_to_bytes(js.dumps(obj))
-        elif hasattr(obj, 'to_json'):
+        elif hasattr(obj, 'json'):
             # If JSON serializeable object.
             self.content_type = const.APPLICATION_JSON
-            self._stream = if_unicode_to_bytes(obj.to_json())
+            self._stream = if_unicode_to_bytes(obj.json)
         elif hasattr(obj, 'read') or hasattr(obj, '__iter__'):
             # If body content behaves like file.
             if self.content_type is None:
                 self.content_type = const.APPLICATION_OCTET_STREAM
             self._stream = obj
         else:
-            raise Exception('resource not returning acceptable object %s' %
+            raise ValueError('resource not returning acceptable object %s' %
                             type(obj))
 
     def write(self, value):
@@ -150,13 +186,15 @@ class ResponseBase(object):
         Returns:
             int: The number of bytes written.
         """
+        value = if_unicode_to_bytes(value)
+
         if not isinstance(self._stream, BytesIO):
             self._stream = BytesIO()
 
         length = self._stream.write(value)
 
         if self.content_type is None:
-            self.content_type = self.DEFAULT_CONTENT_TYPE
+            self.content_type = self._DEFAULT_CONTENT_TYPE
 
         return length
 
@@ -186,6 +224,13 @@ class ResponseBase(object):
                 pass
 
             yield b''
+
+    def read(self):
+        try:
+            self._stream.seek(0)
+            return self._stream.read()
+        except AttributeError:
+            return self._stream
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self.status)

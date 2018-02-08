@@ -27,31 +27,53 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
+import functools
 
-class ClassPropertyDescriptor(object):
-    def __init__(self, fget, fset=None):
-        self.fget = fget
-        self.fset = fset
+class classproperty(property):
+    """Similar to property decorator, but allows class-level properties.
+    """
+    def __new__(cls, fget=None, doc=None):
+        if fget is None:
+            def wrapper(func):
+                return cls(func)
 
-    def __get__(self, obj, klass=None):
-        if klass is None:
-            klass = type(obj)
-        return self.fget.__get__(obj, klass)()
+            return wrapper
 
-    def __set__(self, obj, value):
-        if not self.fset:
-            raise AttributeError("can't set attribute")
-        type_ = type(obj)
-        return self.fset.__get__(obj, type_)(value)
+        return super(classproperty, cls).__new__(cls)
 
-    def setter(self, func):
-        if not isinstance(func, (classmethod, staticmethod)):
-            func = classmethod(func)
-        self.fset = func
-        return self
+    def __init__(self, fget, doc=None):
+        fget = self._fget_wrapper(fget)
 
-def classproperty(func):
-    if not isinstance(func, (classmethod, staticmethod)):
-        func = classmethod(func)
+        super(classproperty, self).__init__(fget=fget, doc=doc)
 
-    return ClassPropertyDescriptor(func)
+        if doc is not None:
+            self.__doc__ = doc
+
+    def __get__(self, obj, objtype=None):
+        if objtype is not None:
+            val = self.fget.__wrapped__(objtype)
+        else:
+            val = super(classproperty, self).__get__(obj, objtype=objtype)
+        return val
+
+    def getter(self, fget):
+        return super(classproperty, self).getter(self._fget_wrapper(fget))
+
+    def setter(self, fset):
+        raise NotImplementedError("classproperty can only be read-only")
+
+    def deleter(self, fdel):
+        raise NotImplementedError("classproperty can only be read-only")
+
+    @staticmethod
+    def _fget_wrapper(orig_fget):
+        if isinstance(orig_fget, classmethod):
+            orig_fget = orig_fget.__func__
+
+        @functools.wraps(orig_fget)
+        def fget(obj):
+            return orig_fget(obj.__class__)
+
+        fget.__wrapped__ = orig_fget
+
+        return fget

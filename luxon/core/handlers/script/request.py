@@ -27,17 +27,27 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
+import sys
+import argparse
 
-from luxon.core.auth.driver import BaseDriver
+from luxon import g
+from luxon.core.request import RequestBase
 
-class ExampleDriver(BaseDriver):
-    """Example Authentication Driver.
+class Request(RequestBase):
+    """Represents a SCRIPT request.
     """
-    def authenticate(self, username, password, domain='default'):
-        self._initial()
-        if username == 'root' and password == 'test' and domain == 'default':
-            self.new_token(user_id=1234, username='root',
-                           domain=None, tenant_id=None)
-            return True
-        else:
-            return False
+    def __init__(self, metadata):
+        description = metadata.description + ' ' + metadata.version
+        print(description + '\n')
+        super().__init__()
+        self.method = 'script'
+        try:
+            self.route = sys.argv[1]
+            self.argv = sys.argv[:1] + sys.argv[2:]
+            sys.argv = sys.argv[:1] + sys.argv[2:]
+        except IndexError:
+            self.route = '-h'
+            self.argv = sys.argv[:1]
+            sys.argv = sys.argv[:1]
+
+        self.parser = argparse.ArgumentParser(description=metadata.description)

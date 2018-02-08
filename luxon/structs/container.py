@@ -166,7 +166,8 @@ class Container(object):
         except KeyError:
             return default
 
-    def to_json(self):
+    @property
+    def json(self):
         """Return JSON Object of container"""
         return js.dumps(self())
 

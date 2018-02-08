@@ -27,17 +27,53 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
+import os
+from getpass import getpass
 
-from luxon.core.auth.driver import BaseDriver
+from luxon import g
+from luxon import GetLogger
+from luxon.exceptions import AccessDenied
+from luxon.utils.imports import get_class
+from luxon.api.client import Client
 
-class ExampleDriver(BaseDriver):
-    """Example Authentication Driver.
-    """
-    def authenticate(self, username, password, domain='default'):
-        self._initial()
-        if username == 'root' and password == 'test' and domain == 'default':
-            self.new_token(user_id=1234, username='root',
-                           domain=None, tenant_id=None)
-            return True
+log = GetLogger(__name__)
+
+class Auth(object):
+    __slots__ = ()
+
+    def pre(self, req, resp):
+        if 'TAC_API' not in os.environ:
+            raise AccessDenied('Require Tachyonic URI (TAC_API system' +
+                               ' environment)')
+
+        print('API: %s' % os.environ['TAC_API'])
+
+        if 'TAC_DOMAIN' not in os.environ:
+            domain = None
+            print('Domain: -*Global*-')
         else:
-            return False
+            domain = os.environ['TAC_DOMAIN']
+            print('Domain: %s' % domain)
+
+        if 'TAC_USER' not in os.environ:
+            raise AccessDenied('Require Tachyonic Username (TAC_USER system' +
+                               ' environment)')
+
+        print('Username: %s' % os.environ['TAC_USER'])
+
+
+        if 'TAC_TENANT_ID' not in os.environ:
+            tenant_id = None
+        else:
+            tenant_id = os.environ['TAC_TENANT_ID']
+
+        g.api = api = Client(os.environ['TAC_API'])
+
+        password = getpass(prompt='Password: ')
+        print('')
+
+        api.authenticate(os.environ['TAC_USER'],
+                         password,
+                         domain)
+
+        api.scope(domain, tenant_id)

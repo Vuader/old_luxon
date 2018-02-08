@@ -576,6 +576,7 @@ class Request(RequestBase):
                 return parse_qs(self.query_string, True)
         except KeyError:
             return {}
+        return {}
 
     @property
     def content_type(self):

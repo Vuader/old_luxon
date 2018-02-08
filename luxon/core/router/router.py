@@ -69,7 +69,7 @@ class Router(metaclass=Singleton):
         for route in _routes:
             resource, method, kwargs, route, tag = _routes[route]
             if not isinstance(route, retype):
-                uri = '/' + route
+                uri = route
             else:
                 uri = str(route)
             try:

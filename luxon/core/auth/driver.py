@@ -29,19 +29,21 @@
 # THE POSSIBILITY OF SUCH DAMAGE.
 import base64
 from datetime import timedelta
+from hashlib import md5
 
 from luxon import g
 from luxon.utils import js
-from luxon.utils.timezone import now
+from luxon.utils.timezone import now, utc
 from luxon.structs.container import Container
 from luxon.utils import pki
 from luxon.utils.encoding import if_unicode_to_bytes, if_bytes_to_unicode
 from luxon.exceptions import AccessDenied
 from luxon import GetLogger
+from luxon.utils.auth import user_roles, domain_id
 
 log = GetLogger(__name__)
 
-from hashlib import md5
+
 
 class BaseDriver(object):
     """Base Authentication BaseDriver
@@ -65,8 +67,8 @@ class BaseDriver(object):
         self._token_expire = expire
         self._initial()
 
-    def new_token(self, user_id, username, domain, domain_id,
-              roles=[], tenant_id=None):
+    def new_token(self, user_id, username, domain=None, tenant_id=None,
+                  expire=None):
         """Create Token.
 
         This part of step 1 during the authentication after validation.
@@ -79,9 +81,11 @@ class BaseDriver(object):
             domain_id (str): Current domain id.
             tenant_id (str): Current tenant id.
         """
-        if self._token is not None:
-            raise ValueError('Token readonly after authenticated')
         self._token = {}
+        if user_id is None:
+            raise ValueError('Require user_id for new_token')
+        if username is None:
+            raise ValueError('Require username for new_token')
 
         # These are only set during valid login.
         # Unique user id.
@@ -94,49 +98,27 @@ class BaseDriver(object):
         self._token['creation'] = now()
 
         # Token expire datetime, format YYYY/MM/DD HH:MM:SS.
-        expire = (now() + timedelta(seconds=self._token_expire))
-        self._token['expire'] = expire.strftime("%Y/%m/%d %H:%M:%S")
+        if expire is None:
+            expire = (now() + timedelta(seconds=self._token_expire))
+            self._token['expire'] = expire.strftime("%Y/%m/%d %H:%M:%S")
+        else:
+            self._token['expire'] = expire
 
-        # User belongs to this domain.
-        self._token['user_domain'] = domain
-        self._token['user_domain_id'] = domain_id
+        # Scope domain.
+        self._token['domain'] = domain
+        self._token['domain_id'] = domain_id(domain)
 
-        # User belongs to this tenant.
-        self._token['user_tenant_id'] = tenant_id
+        # Scope tenant.
+        self._token['tenant_id'] = tenant_id
 
-        # User has following roles assigned.
-        self._token['user_roles'] = {}
-
-        for role in roles:
-            role_name, domain, tenant_id = role
-            if role_name not in self._token['user_roles']:
-                self._token['user_roles'][role_name] = {}
-                self._token['user_roles'][role_name]['domains'] = []
-                self._token['user_roles'][role_name]['tenants'] = []
-            if domain not in self._token['user_roles'][role_name]['domains']:
-                self._token['user_roles'][role_name]['domains'].append(domain)
-            if tenant_id not in self._token['user_roles'][role_name]['tenants']:
-                self._token['user_roles'][role_name]['tenants'].append(tenant_id)
+        # Scope roles.
+        self._token['roles'] = user_roles(user_id, domain, tenant_id)
 
         # Token Signature
         private_key = g.app.app_root.rstrip('/') + '/token.key'
         bytes_token = if_unicode_to_bytes(js.dumps(self._token))
         self._token_sig = pki.sign(private_key, base64.b64encode(bytes_token))
         return self._token_sig
-
-    def roles(self, domain, tenant_id=None):
-        roles = []
-        token = self.token
-        if token is not None:
-            for role in token['user_roles']:
-                if domain in token['user_roles'][role]['domains']:
-                    if tenant_id is None:
-                        roles.append(role)
-                    elif tenant_id in token['user_roles'][role]['tenants']:
-                        roles.append(role)
-                elif tenant_id in token['user_roles'][role]['tenants']:
-                    roles.append(role)
-        return roles
 
     @property
     def token(self):
@@ -164,7 +146,8 @@ class BaseDriver(object):
     def __repr__(self):
         return self.__str__()
 
-    def to_json(self):
+    @property
+    def json(self):
         return self.__str__()
 
     def _initial(self):
@@ -180,25 +163,62 @@ class BaseDriver(object):
         """
         self._initial()
 
-    def authenticate(self, username, password, domain='default'):
+    def authenticate(self, username, password, domain=None):
         return False
 
-    def login(self, username, password, domain='default'):
+    def login(self, username, password, domain=None):
         if self.authenticate(username, password, domain):
             return True
         else:
             log.warning('Invalid login credentials for %s' % username)
             raise AccessDenied('Invalid login credentials')
 
-    def parse_token(self, token):
-        self._initial()
-        token = if_unicode_to_bytes(token)
-        signature, token = token.split(b'!!!!')
+    def _check_token(self, signature, token):
         cert = g.app.app_root.rstrip('/') + '/token.cert'
         try:
             self._token_sig = pki.verify(cert, signature, token)
         except ValueError as e:
             log.warning('Invalid Token: %s' % e)
             raise AccessDenied('Invalid Token')
+
+
+    def parse_token(self, token):
+        self._initial()
+        token = if_unicode_to_bytes(token)
+        signature, token = token.split(b'!!!!')
+        self._token_sig = self._check_token(signature, token)
         self._token = js.loads(base64.b64decode(token))
         self._token_sig = signature
+        utc_now = now()
+        utc_expire = utc(self._token['expire'])
+        if utc_now > utc_expire:
+            raise AccessDenied('Token Expired')
+
+    def scope_token(self, token, domain=None, tenant_id=None):
+        self.parse_token(token)
+        if 'user_id' in self._token:
+            user_id = self._token['user_id']
+        else:
+            raise AccessDenied('user_id not in token')
+
+        if 'username' in self._token:
+            username = self._token['username']
+        else:
+            raise AccessDenied('username not in token')
+
+        if 'expire' in self._token:
+            expire = self._token['expire']
+        else:
+            raise AccessDenied('expire not in token')
+
+        if 'domain' in self._token:
+            if (self._token['domain'] is not None and
+                    self._token['domain'] != domain):
+                raise AccessDenied('token already scoped in domain')
+
+        if 'tenant_id' in self._token:
+            if (self._token['tenant_id'] is not None and
+                    self._token['tenant_id'] != domain):
+                raise AccessDenied('token already scoped in tenant')
+
+        self.new_token(user_id, username, domain, tenant_id, expire=expire)

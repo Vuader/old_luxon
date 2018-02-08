@@ -28,16 +28,19 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
 
-from luxon.core.auth.driver import BaseDriver
+from luxon import g
+from luxon.core.application import ApplicationBase
+from luxon.core.handlers.script.request import Request
+from luxon.core.handlers.script.response import Response
+import luxon.resources.script.help
 
-class ExampleDriver(BaseDriver):
-    """Example Authentication Driver.
+class Application(ApplicationBase):
+    """This class is part of the main entry point into the application.
+
+    Each instance provides a callable interface for SCRIPT requests.
     """
-    def authenticate(self, username, password, domain='default'):
-        self._initial()
-        if username == 'root' and password == 'test' and domain == 'default':
-            self.new_token(user_id=1234, username='root',
-                           domain=None, tenant_id=None)
-            return True
-        else:
-            return False
+    _REQUEST_CLASS = Request
+    _RESPONSE_CLASS = Response
+
+    def handle_error(self, req, resp, exception, traceback):
+        return str(exception)

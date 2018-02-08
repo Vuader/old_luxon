@@ -28,16 +28,27 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
 
-from luxon.core.auth.driver import BaseDriver
+import re
 
-class ExampleDriver(BaseDriver):
-    """Example Authentication Driver.
-    """
-    def authenticate(self, username, password, domain='default'):
-        self._initial()
-        if username == 'root' and password == 'test' and domain == 'default':
-            self.new_token(user_id=1234, username='root',
-                           domain=None, tenant_id=None)
-            return True
-        else:
-            return False
+IP4_EXPR = r'[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}'
+FQDN_EXPR = r'([0-9a-z]+\.?)+'
+IP6_EXPR = r'([0-9a-f]{1,4}::?){1,8}'
+
+EMAIL_RE = re.compile(r'[^@]+@[^@]+\.[^@]+', re.IGNORECASE)
+WORD_RE = re.compile(r'^[a-z]+[a-z0-9]+$',re.IGNORECASE)
+USERNAME_RE = re.compile(r'^[a-z]+[a-z0-9.]+$',re.IGNORECASE)
+URI_RE = re.compile(r'^(?:http|ftp)s?://'
+                    r'(' +
+                    FQDN_EXPR +
+                    r'|' +
+                    IP6_EXPR +
+                    r')'
+                    r'(?::\d+)?' # optional port
+                    r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+FQDN_RE = re.compile(r'^' + FQDN_EXPR + r'$', re.IGNORECASE)
+IP4_RE = re.compile(r'^' + IP4_EXPR + r'$')
+SUBNETMASK = IP4_RE
+WILDCARD = IP4_RE
+IP4_PREFIX_RE = re.compile(r'^' + IP4_EXPR + '/[0-9]{1,2}$')
+IP6_RE = re.compile(r'^' + IP6_EXPR + '$', re.IGNORECASE)
+IP6_PREFIX_RE = re.compile(r'^' + IP6_EXPR + '/[0-9]{1,3}$', re.IGNORECASE)

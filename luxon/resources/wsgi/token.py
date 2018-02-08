@@ -54,8 +54,9 @@ class Token(object):
         openssl req  -nodes -new -x509  -keyout token.key -out token.cert
     """
     def __init__(self):
-        g.router.add('POST', '/v1/token', self.post)
         g.router.add('GET', '/v1/token', self.get)
+        g.router.add('POST', '/v1/token', self.post)
+        g.router.add('PATCH', '/v1/token', self.patch)
 
     def get(self, req, resp):
         if 'token' in req.context:
@@ -70,7 +71,18 @@ class Token(object):
             req.context.token.login(request_object.get('username',
                                                        None),
                         request_object.get('password', None),
-                        req.get_header('X-Domain', default='default'))
+                        request_object.get('domain', 'default'))
+            return req.context.token
+        else:
+            raise ValueError('Middleware not loaded - no token' +
+                             ' + authentication')
+
+    def patch(self, req, resp):
+        request_object = req.json
+        if 'token' in req.context:
+            req.context.token.scope_token(req.context.token.token['token'],
+                                          request_object.get('domain'),
+                                          request_object.get('tenant_id'))
             return req.context.token
         else:
             raise ValueError('Middleware not loaded - no token' +

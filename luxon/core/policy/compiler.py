@@ -30,7 +30,7 @@
 
 import re
 
-from luxon.utils.timer import timer
+from luxon.utils.timer import Timer
 from luxon.core.logger import GetLogger
 from luxon.core.cls.singleton import Singleton
 
@@ -54,7 +54,7 @@ def compiler(dict_rule_set):
         dict_rule_set (dict): Rule Set loaded from JSON file for example.
     """
 
-    with timer() as elapsed:
+    with Timer() as elapsed:
         # MATCH : expression used within rule statements.
         interpolation_match = re.compile(r"[a-z_\-]+:[a-z_\-]+", re.IGNORECASE)
 

@@ -321,8 +321,8 @@ def request(method, uri, data,
         cache = Cache()
 
         if data is not None:
-            if hasattr(data, 'to_json'):
-                data = data.to_json()
+            if hasattr(data, 'json'):
+                data = data.json
             elif isinstance(data, (dict, list, OrderedDict)):
                 data = js.dumps(data)
 
