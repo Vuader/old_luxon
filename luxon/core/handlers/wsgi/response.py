@@ -66,7 +66,6 @@ class Response(ResponseBase):
 
     def __init__(self, environ, start_response):
         super().__init__(environ, start_response)
-        self._headers = {}
         self._start_response = start_response
 
         # Used internally.

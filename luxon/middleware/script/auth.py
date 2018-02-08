@@ -27,53 +27,53 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
-import functools
+import os
+from getpass import getpass
 
-class classproperty(property):
-    """Similar to property decorator, but allows class-level properties.
-    """
-    def __new__(cls, fget=None, doc=None):
-        if fget is None:
-            def wrapper(func):
-                return cls(func)
+from luxon import g
+from luxon import GetLogger
+from luxon.exceptions import AccessDenied
+from luxon.utils.imports import get_class
+from luxon.api.client import Client
 
-            return wrapper
+log = GetLogger(__name__)
 
-        return super(classproperty, cls).__new__(cls)
+class Auth(object):
+    __slots__ = ()
 
-    def __init__(self, fget, doc=None):
-        fget = self._fget_wrapper(fget)
+    def pre(self, req, resp):
+        if 'TAC_API' not in os.environ:
+            raise AccessDenied('Require Tachyonic URI (TAC_API system' +
+                               ' environment)')
 
-        super(classproperty, self).__init__(fget=fget, doc=doc)
+        print('API: %s' % os.environ['TAC_API'])
 
-        if doc is not None:
-            self.__doc__ = doc
-
-    def __get__(self, obj, objtype=None):
-        if objtype is not None:
-            val = self.fget.__wrapped__(objtype)
+        if 'TAC_DOMAIN' not in os.environ:
+            domain = None
+            print('Domain: -*Global*-')
         else:
-            val = super(classproperty, self).__get__(obj, objtype=objtype)
-        return val
+            domain = os.environ['TAC_DOMAIN']
+            print('Domain: %s' % domain)
 
-    def getter(self, fget):
-        return super(classproperty, self).getter(self._fget_wrapper(fget))
+        if 'TAC_USER' not in os.environ:
+            raise AccessDenied('Require Tachyonic Username (TAC_USER system' +
+                               ' environment)')
 
-    def setter(self, fset):
-        raise NotImplementedError("classproperty can only be read-only")
+        print('Username: %s' % os.environ['TAC_USER'])
 
-    def deleter(self, fdel):
-        raise NotImplementedError("classproperty can only be read-only")
 
-    @staticmethod
-    def _fget_wrapper(orig_fget):
-        if isinstance(orig_fget, classmethod):
-            orig_fget = orig_fget.__func__
+        if 'TAC_TENANT_ID' not in os.environ:
+            tenant_id = None
+        else:
+            tenant_id = os.environ['TAC_TENANT_ID']
 
-        @functools.wraps(orig_fget)
-        def fget(obj):
-            return orig_fget(obj.__class__)
+        g.api = api = Client(os.environ['TAC_API'])
 
-        fget.__wrapped__ = orig_fget
+        password = getpass(prompt='Password: ')
+        print('')
 
-        return fget
+        api.authenticate(os.environ['TAC_USER'],
+                         password,
+                         domain)
+
+        api.scope(domain, tenant_id)

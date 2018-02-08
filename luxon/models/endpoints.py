@@ -27,53 +27,37 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
-import functools
+from uuid import uuid4
 
-class classproperty(property):
-    """Similar to property decorator, but allows class-level properties.
-    """
-    def __new__(cls, fget=None, doc=None):
-        if fget is None:
-            def wrapper(func):
-                return cls(func)
+from luxon import database_model
+from luxon import Model
+from luxon import SQLModel
+from luxon import Uuid
+from luxon import String
+from luxon import Text
+from luxon import DateTime
+from luxon import Boolean
+from luxon import Email
+from luxon import Phone
+from luxon import Enum
+from luxon import Index
+from luxon import Uri
+from luxon import Word
+from luxon import ForeignKey
+from luxon import Fqdn
+from luxon import UniqueIndex
+from luxon.utils.timezone import now
 
-            return wrapper
-
-        return super(classproperty, cls).__new__(cls)
-
-    def __init__(self, fget, doc=None):
-        fget = self._fget_wrapper(fget)
-
-        super(classproperty, self).__init__(fget=fget, doc=doc)
-
-        if doc is not None:
-            self.__doc__ = doc
-
-    def __get__(self, obj, objtype=None):
-        if objtype is not None:
-            val = self.fget.__wrapped__(objtype)
-        else:
-            val = super(classproperty, self).__get__(obj, objtype=objtype)
-        return val
-
-    def getter(self, fget):
-        return super(classproperty, self).getter(self._fget_wrapper(fget))
-
-    def setter(self, fset):
-        raise NotImplementedError("classproperty can only be read-only")
-
-    def deleter(self, fdel):
-        raise NotImplementedError("classproperty can only be read-only")
-
-    @staticmethod
-    def _fget_wrapper(orig_fget):
-        if isinstance(orig_fget, classmethod):
-            orig_fget = orig_fget.__func__
-
-        @functools.wraps(orig_fget)
-        def fget(obj):
-            return orig_fget(obj.__class__)
-
-        fget.__wrapped__ = orig_fget
-
-        return fget
+@database_model()
+class luxon_endpoint(SQLModel):
+    id = Uuid(default=uuid4, internal=True)
+    name = Fqdn(max_length=64,null=False)
+    interface = Enum('public', 'internal', 'admin',null=False)
+    region = String(max_length=64, null=False)
+    uri = Uri(max_length=64, null=False)
+    creation_time = DateTime(default=now, internal=True)
+    primary_key = id
+    unique_endpoint = UniqueIndex(interface, uri)
+    endpoint_name = Index(name)
+    endpoint_find = Index(name, interface)
+    endpoint_exact = Index(name, interface, region)

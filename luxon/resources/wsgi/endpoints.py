@@ -27,53 +27,36 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
-import functools
+from luxon import db
+from luxon import register_resource
 
-class classproperty(property):
-    """Similar to property decorator, but allows class-level properties.
-    """
-    def __new__(cls, fget=None, doc=None):
-        if fget is None:
-            def wrapper(func):
-                return cls(func)
+from luxon.models.endpoints import luxon_endpoint
 
-            return wrapper
+@register_resource('GET', '/v1/endpoints')
+def endpoints(req, resp):
+    endpoints = luxon_endpoint()
+    endpoints.sql_api()
+    resp.set_cache_max_age(120)
+    return endpoints
 
-        return super(classproperty, cls).__new__(cls)
+@register_resource('POST', '/v1/endpoint', tag='role:root')
+def new_endpoint(req, resp):
+    endpoint = luxon_endpoint(model=dict)
+    endpoint.update(req.json)
+    endpoint.commit()
+    return endpoint
 
-    def __init__(self, fget, doc=None):
-        fget = self._fget_wrapper(fget)
+@register_resource([ 'PUT', 'PATCH' ], '/v1/endpoint/{id}', tag='role:root')
+def update_endpoint(req, resp, id):
+    endpoint = luxon_endpoint(model=dict)
+    endpoint.sql_id(id)
+    endpoint.update(req.json)
+    endpoint.commit()
+    return endpoint
 
-        super(classproperty, self).__init__(fget=fget, doc=doc)
-
-        if doc is not None:
-            self.__doc__ = doc
-
-    def __get__(self, obj, objtype=None):
-        if objtype is not None:
-            val = self.fget.__wrapped__(objtype)
-        else:
-            val = super(classproperty, self).__get__(obj, objtype=objtype)
-        return val
-
-    def getter(self, fget):
-        return super(classproperty, self).getter(self._fget_wrapper(fget))
-
-    def setter(self, fset):
-        raise NotImplementedError("classproperty can only be read-only")
-
-    def deleter(self, fdel):
-        raise NotImplementedError("classproperty can only be read-only")
-
-    @staticmethod
-    def _fget_wrapper(orig_fget):
-        if isinstance(orig_fget, classmethod):
-            orig_fget = orig_fget.__func__
-
-        @functools.wraps(orig_fget)
-        def fget(obj):
-            return orig_fget(obj.__class__)
-
-        fget.__wrapped__ = orig_fget
-
-        return fget
+@register_resource('DELETE', '/v1/endpoint/{id}', tag='role:root')
+def delete_endpoint(req, resp, id):
+    with db() as conn:
+        conn.execute('DELETE FROM luxon_endpoint WHERE id = %s',
+                    id)
+        conn.commit()

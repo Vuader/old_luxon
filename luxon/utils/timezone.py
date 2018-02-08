@@ -129,7 +129,6 @@ class TimezoneUTC(TimezoneGMT):
     """UTC timezone class implementing UTC Timezone"""
     TZNAME = 'UTC'
 
-
 def TimezoneSystem():
     global _cached_time_zone_system
 
@@ -137,7 +136,6 @@ def TimezoneSystem():
         _cached_time_zone_system = get_localzone()
 
     return _cached_time_zone_system
-
 
 def TimezoneApp():
     global _cached_time_zone_app
@@ -152,7 +150,6 @@ def TimezoneApp():
             _cached_time_zone_app = pytz.timezone(app_timezone)
 
     return _cached_time_zone_app
-
 
 def parse_datetime(datetime):
     if isinstance(datetime, py_datetime):
@@ -179,7 +176,6 @@ def parse_datetime(datetime):
     raise ValueError('datetime value %r does not' % datetime +
                      ' match known formats')
 
-
 def to_timezone(datetime, dst=TimezoneSystem(), src=None):
     if not isinstance(datetime, py_datetime):
         datetime = parse_datetime(datetime)
@@ -200,8 +196,7 @@ def to_timezone(datetime, dst=TimezoneSystem(), src=None):
     except AttributeError:
         pass
     return datetime
-
-
+  
 def now(tz=TimezoneUTC()):
     """Current date time.
 
@@ -210,26 +205,17 @@ def now(tz=TimezoneUTC()):
     """
     return py_datetime.now(tz=tz)
 
+def utc(datetime):
+    return to_timezone(datetime, dst=TimezoneUTC(), src=TimezoneUTC())
 
 def to_utc(datetime, src=None):
     return to_timezone(datetime, dst=TimezoneUTC(), src=src)
 
-
 def to_gmt(datetime, src=None):
     return to_timezone(datetime, dst=TimezoneGMT(), src=src)
-
 
 def to_system(datetime, src=None):
     return to_timezone(datetime, dst=TimezoneSystem(), src=src)
 
-
 def to_app(datetime, src=None):
     return to_timezone(datetime, dst=TimezoneApp(), src=src)
-
-
-def parse(datetime):
-    # TODO
-    raise NotImplemented('TODO')
-
-    if isinstance(datetime, py_datetime):
-        return datetime

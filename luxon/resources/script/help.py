@@ -27,53 +27,32 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
-import functools
+from luxon import g
+from luxon import register_resource
 
-class classproperty(property):
-    """Similar to property decorator, but allows class-level properties.
+@register_resource('script', '-h')
+def help(req, resp):
+    """Command line help.
+
+    The first arguement is usually path towards a responder/section of options.
+
+    Paths can contain field expressions consisting of a bracketed field name.
+    These values are required. For example, given the following path:
+
+        /example/delete/{id}
+
+    Some of the sections may have sub arguement parsers. You may use -h like
+    so:
+
+        /examples -h
     """
-    def __new__(cls, fget=None, doc=None):
-        if fget is None:
-            def wrapper(func):
-                return cls(func)
-
-            return wrapper
-
-        return super(classproperty, cls).__new__(cls)
-
-    def __init__(self, fget, doc=None):
-        fget = self._fget_wrapper(fget)
-
-        super(classproperty, self).__init__(fget=fget, doc=doc)
-
+    resp.write(help.__doc__ + '\n')
+    resp.write('Arguements/Routes:\n')
+    for route in g.router.index:
+        doc = g.router.index[route]['SCRIPT']['doc']
         if doc is not None:
-            self.__doc__ = doc
-
-    def __get__(self, obj, objtype=None):
-        if objtype is not None:
-            val = self.fget.__wrapped__(objtype)
+            doc = doc.splitlines()[0]
         else:
-            val = super(classproperty, self).__get__(obj, objtype=objtype)
-        return val
+            doc = ''
 
-    def getter(self, fget):
-        return super(classproperty, self).getter(self._fget_wrapper(fget))
-
-    def setter(self, fset):
-        raise NotImplementedError("classproperty can only be read-only")
-
-    def deleter(self, fdel):
-        raise NotImplementedError("classproperty can only be read-only")
-
-    @staticmethod
-    def _fget_wrapper(orig_fget):
-        if isinstance(orig_fget, classmethod):
-            orig_fget = orig_fget.__func__
-
-        @functools.wraps(orig_fget)
-        def fget(obj):
-            return orig_fget(obj.__class__)
-
-        fget.__wrapped__ = orig_fget
-
-        return fget
+        resp.write("\t%s\t%s\n" % (route, doc,))

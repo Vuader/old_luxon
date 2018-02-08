@@ -12,7 +12,7 @@
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
 #
-# * Neither the name of the copyright holders nor the names of its
+# * Neither the model_name of the copyright holders nor the model_names of its
 #   contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
 #
@@ -34,17 +34,17 @@ from luxon import g
 def backup_tables(conn):
     models = {}
     for Model in reversed(g.models):
-        if conn.has_table(Model.table):
-            crsr = conn.execute("SELECT * FROM %s" % Model.table)
-            models[Model.table] = crsr.fetchall()
+        if conn.has_table(Model.model_name):
+            crsr = conn.execute("SELECT * FROM %s" % Model.model_name)
+            models[Model.model_name] = crsr.fetchall()
             conn.commit()
     return models
 
 
 def drop_tables(conn):
     for Model in reversed(g.models):
-        if conn.has_table(Model.table):
-            conn.execute('DROP TABLE %s' % Model.table)
+        if conn.has_table(Model.model_name):
+            conn.execute('DROP TABLE %s' % Model.model_name)
 
 
 def create_tables():
@@ -54,7 +54,7 @@ def create_tables():
 
 def restore_tables(conn, backup):
     for Model in g.models:
-        if Model.table in backup:
-            conn.insert(Model.table, backup[Model.table])
+        if Model.model_name in backup:
+            conn.insert(Model.model_name, backup[Model.model_name])
         else:
-            conn.insert(Model.table, Model.db_default_rows)
+            conn.insert(Model.model_name, Model.db_default_rows)

@@ -27,53 +27,28 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
-import functools
 
-class classproperty(property):
-    """Similar to property decorator, but allows class-level properties.
-    """
-    def __new__(cls, fget=None, doc=None):
-        if fget is None:
-            def wrapper(func):
-                return cls(func)
+import re
 
-            return wrapper
+IP4_EXPR = r'[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}'
+FQDN_EXPR = r'([0-9a-z]+\.?)+'
+IP6_EXPR = r'([0-9a-f]{1,4}::?){1,8}'
 
-        return super(classproperty, cls).__new__(cls)
-
-    def __init__(self, fget, doc=None):
-        fget = self._fget_wrapper(fget)
-
-        super(classproperty, self).__init__(fget=fget, doc=doc)
-
-        if doc is not None:
-            self.__doc__ = doc
-
-    def __get__(self, obj, objtype=None):
-        if objtype is not None:
-            val = self.fget.__wrapped__(objtype)
-        else:
-            val = super(classproperty, self).__get__(obj, objtype=objtype)
-        return val
-
-    def getter(self, fget):
-        return super(classproperty, self).getter(self._fget_wrapper(fget))
-
-    def setter(self, fset):
-        raise NotImplementedError("classproperty can only be read-only")
-
-    def deleter(self, fdel):
-        raise NotImplementedError("classproperty can only be read-only")
-
-    @staticmethod
-    def _fget_wrapper(orig_fget):
-        if isinstance(orig_fget, classmethod):
-            orig_fget = orig_fget.__func__
-
-        @functools.wraps(orig_fget)
-        def fget(obj):
-            return orig_fget(obj.__class__)
-
-        fget.__wrapped__ = orig_fget
-
-        return fget
+EMAIL_RE = re.compile(r'[^@]+@[^@]+\.[^@]+', re.IGNORECASE)
+WORD_RE = re.compile(r'^[a-z]+[a-z0-9]+$',re.IGNORECASE)
+USERNAME_RE = re.compile(r'^[a-z]+[a-z0-9.]+$',re.IGNORECASE)
+URI_RE = re.compile(r'^(?:http|ftp)s?://'
+                    r'(' +
+                    FQDN_EXPR +
+                    r'|' +
+                    IP6_EXPR +
+                    r')'
+                    r'(?::\d+)?' # optional port
+                    r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+FQDN_RE = re.compile(r'^' + FQDN_EXPR + r'$', re.IGNORECASE)
+IP4_RE = re.compile(r'^' + IP4_EXPR + r'$')
+SUBNETMASK = IP4_RE
+WILDCARD = IP4_RE
+IP4_PREFIX_RE = re.compile(r'^' + IP4_EXPR + '/[0-9]{1,2}$')
+IP6_RE = re.compile(r'^' + IP6_EXPR + '$', re.IGNORECASE)
+IP6_PREFIX_RE = re.compile(r'^' + IP6_EXPR + '/[0-9]{1,3}$', re.IGNORECASE)

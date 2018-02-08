@@ -27,53 +27,18 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
-import functools
+from luxon import db
+from luxon.core.auth.driver import BaseDriver
+from luxon.utils.password import valid as is_valid_password
+from luxon.utils.auth import authorize
 
-class classproperty(property):
-    """Similar to property decorator, but allows class-level properties.
-    """
-    def __new__(cls, fget=None, doc=None):
-        if fget is None:
-            def wrapper(func):
-                return cls(func)
+class Mysql(BaseDriver):
+    def authenticate(self, username, password, domain=None):
+            valid, credentials = authorize('tachyonic', username, password, domain)
+            if valid is True:
+                # Validate Password againts stored HASHED Value.
+                if is_valid_password(password, credentials['password']):
 
-            return wrapper
-
-        return super(classproperty, cls).__new__(cls)
-
-    def __init__(self, fget, doc=None):
-        fget = self._fget_wrapper(fget)
-
-        super(classproperty, self).__init__(fget=fget, doc=doc)
-
-        if doc is not None:
-            self.__doc__ = doc
-
-    def __get__(self, obj, objtype=None):
-        if objtype is not None:
-            val = self.fget.__wrapped__(objtype)
-        else:
-            val = super(classproperty, self).__get__(obj, objtype=objtype)
-        return val
-
-    def getter(self, fget):
-        return super(classproperty, self).getter(self._fget_wrapper(fget))
-
-    def setter(self, fset):
-        raise NotImplementedError("classproperty can only be read-only")
-
-    def deleter(self, fdel):
-        raise NotImplementedError("classproperty can only be read-only")
-
-    @staticmethod
-    def _fget_wrapper(orig_fget):
-        if isinstance(orig_fget, classmethod):
-            orig_fget = orig_fget.__func__
-
-        @functools.wraps(orig_fget)
-        def fget(obj):
-            return orig_fget(obj.__class__)
-
-        fget.__wrapped__ = orig_fget
-
-        return fget
+                    self.new_token(user_id=credentials['user_id'],
+                                   username=username)
+            return valid

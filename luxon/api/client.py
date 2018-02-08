@@ -82,21 +82,21 @@ class Client(RestClient):
             del self.headers['X-Tenant-Id']
         if 'X-Auth-Token' in self.headers:
             del self.headers['X-Auth-Token']
-        self.headers['X-Domain'] = domain
 
         data = {}
         data['username'] = username
         data['password'] = password
+        data['domain'] = domain
 
-        response = self.execute("POST", auth_url,
-                                data, endpoint='tachyonic').json
+        response = self.execute("POST", auth_url, data).json
 
         if 'token' in response:
             self.headers['X-Auth-Token'] = response['token']
+            self.auth_token = response['token']
 
         return response
 
-    def token(self, token, domain='default', tenant_id=None):
+    def token(self, token):
         """Authenticate using Token.
 
         Once authenticated execute will be processed using the context
@@ -111,26 +111,62 @@ class Client(RestClient):
         """
         auth_url = "/v1/token"
 
-        self.headers['X-Domain'] = domain
-        self.headers['X-Auth-Token'] = token
+        response = self.execute("GET", auth_url).json
 
+        if 'token' in response:
+            self.headers['X-Auth-Token'] = response['token']
+        if 'tenant_id' in response:
+            self.headers['X-Tenant-Id'] = response['tenant_id']
+        if 'domain' in response:
+            self.headers['X-Domain'] = response['domain']
+
+        return response
+
+    def scope(self, domain, tenant_id=None):
+        """Scope Token.
+        """
+        auth_url = "/v1/token"
+
+        self.headers['X-Domain'] = domain
         if tenant_id is not None:
             self.headers['X-Tenant-Id'] = tenant_id
         elif 'X-Tenant-Id' in self.headers:
             del self.headers['X-Tenant-Id']
 
-        return self.execute("GET", auth_url, endpoint='tachyonic').json
+        scope = {}
+        scope['domain'] = domain
+        scope['tenant_id'] = tenant_id
 
-    def domain(self, domain):
-        """Set context of domain name.
-        """
-        self.headers['X-Domain'] = domain
+        response = self.execute("PATCH", auth_url, scope).json
 
-    def tenant(self, tenant):
-        """Set context of tenant unique id.
+        if 'token' in response:
+            self.headers['X-Auth-Token'] = response['token']
+        if 'tenant_id' in response:
+            self.headers['X-Tenant-Id'] = response['tenant_id']
+        if 'domain' in response:
+            self.headers['X-Domain'] = response['domain']
+
+        return response
+
+    def unscope(self):
+        """Unscope Token.
         """
-        if tenant is None:
-            if 'X-Tenant-Id' in self.tachyonic_headers:
-                del self.headers['X-Tenant-Id']
-        else:
-            self.headers['X-Tenant-Id'] = tenant
+        self.headers['X-Auth-Token'] = self.auth_token
+        if 'X-Domain' in self.headers:
+            del self.headers['X-Domain']
+        if 'X-Tenant-Id' in self.headers:
+            del self.headers['X-Tenant-Id']
+
+    def new_endpoint(self, name, interface, region, uri):
+        req = {}
+        req['name'] = name
+        req['interface'] = interface
+        req['region'] = region
+        req['uri'] = uri
+        return self.execute('POST', '/v1/endpoint', req)
+
+    def list_endpoints(self):
+        return super().execute('GET', '/v1/endpoints')
+
+    def delete_endpoint(self, id):
+        return super().execute('DELETE', '/v1/endpoint/%s' % id)

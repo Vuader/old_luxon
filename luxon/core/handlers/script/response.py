@@ -27,53 +27,17 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
-import functools
+from luxon import __identity__
+from luxon.core.response import ResponseBase
+from luxon import constants as const
 
-class classproperty(property):
-    """Similar to property decorator, but allows class-level properties.
+class Response(ResponseBase):
+    """Represents an SCRIPT response to a request.
     """
-    def __new__(cls, fget=None, doc=None):
-        if fget is None:
-            def wrapper(func):
-                return cls(func)
+    __slots__ = (
+    )
 
-            return wrapper
+    def __init__(self, metadata):
+        self.status = 'SCRIPT'
+        super().__init__()
 
-        return super(classproperty, cls).__new__(cls)
-
-    def __init__(self, fget, doc=None):
-        fget = self._fget_wrapper(fget)
-
-        super(classproperty, self).__init__(fget=fget, doc=doc)
-
-        if doc is not None:
-            self.__doc__ = doc
-
-    def __get__(self, obj, objtype=None):
-        if objtype is not None:
-            val = self.fget.__wrapped__(objtype)
-        else:
-            val = super(classproperty, self).__get__(obj, objtype=objtype)
-        return val
-
-    def getter(self, fget):
-        return super(classproperty, self).getter(self._fget_wrapper(fget))
-
-    def setter(self, fset):
-        raise NotImplementedError("classproperty can only be read-only")
-
-    def deleter(self, fdel):
-        raise NotImplementedError("classproperty can only be read-only")
-
-    @staticmethod
-    def _fget_wrapper(orig_fget):
-        if isinstance(orig_fget, classmethod):
-            orig_fget = orig_fget.__func__
-
-        @functools.wraps(orig_fget)
-        def fget(obj):
-            return orig_fget(obj.__class__)
-
-        fget.__wrapped__ = orig_fget
-
-        return fget

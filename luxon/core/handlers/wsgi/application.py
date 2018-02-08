@@ -33,10 +33,14 @@ from luxon.core.application import ApplicationBase
 from luxon.core.handlers.wsgi.request import Request
 from luxon.core.handlers.wsgi.response import Response
 from luxon.exceptions import (Error, NotFound,
-                              AccessDenied, JSONDecodeError)
+                              AccessDenied, JSONDecodeError,
+                              ValidationError, FieldError)
 from luxon.constants import HTTP_STATUS_CODES
 from luxon.structs.htmldoc import HTMLDoc
 from luxon import render_template
+from luxon import GetLogger
+
+log = GetLogger(__name__)
 
 class Application(ApplicationBase):
     """This class is part of the main entry point into the application.
@@ -61,6 +65,8 @@ class Application(ApplicationBase):
     _RESPONSE_CLASS = Response
 
     def handle_error(self, req, resp, exception, traceback):
+        title = None
+        description = None
 
         try:
             resp.status = exception.status
@@ -71,21 +77,30 @@ class Application(ApplicationBase):
                 resp.status = 404
             elif isinstance(exception, JSONDecodeError):
                 resp.status = 400
+            elif isinstance(exception, FieldError):
+                resp.status = 400
+            elif isinstance(exception, ValidationError):
+                resp.status = 400
             else:
                 resp.status = 500
 
-        try:
-            title = exception.title
-        except AttributeError:
-            if resp.status in HTTP_STATUS_CODES:
-                title = str(resp.status) + ' ' +  HTTP_STATUS_CODES[resp.status]
-            else:
-                title = exception.__class__.__name__
-
-        try:
-            description = exception.description
-        except AttributeError:
+        if isinstance(exception, FieldError):
             description = str(exception)
+
+        if title is None:
+            try:
+                title = exception.title
+            except AttributeError:
+                if resp.status in HTTP_STATUS_CODES:
+                    title = str(resp.status) + ' ' +  HTTP_STATUS_CODES[resp.status]
+                else:
+                    title = exception.__class__.__name__
+
+        if description is None:
+            try:
+                description = exception.description
+            except AttributeError:
+                description = str(exception)
 
         try:
             for header in exception.headers:

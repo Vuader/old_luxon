@@ -59,8 +59,8 @@ class _JsonEncoder(json.JSONEncoder):
             return str(o.strftime("%Y/%m/%d %H:%M:%S"))
         elif isinstance(o, bytes):
             return o.decode('utf-8')
-        elif hasattr(o, 'to_dict'):
-            return o.to_dict()
+        elif hasattr(o, 'dict'):
+            return o.dict
         else:
             # Pass to Default Encoder
             return json.JSONEncoder.default(self, o)

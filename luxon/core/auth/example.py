@@ -36,13 +36,8 @@ class ExampleDriver(BaseDriver):
     def authenticate(self, username, password, domain='default'):
         self._initial()
         if username == 'root' and password == 'test' and domain == 'default':
-            # Roles list of tuples passed to token.
-            # e.g. ( 'Role', 'domain_name', 'tenant_id' )
-            roles = [ ('Root', 'default', None,) ]
-
             self.new_token(user_id=1234, username='root',
-                           domain=None, domain_id=None,
-                           tenant_id=None, roles=roles)
+                           domain=None, tenant_id=None)
             return True
         else:
             return False
