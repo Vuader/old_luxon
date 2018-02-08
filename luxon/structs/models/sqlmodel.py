@@ -209,45 +209,48 @@ class SQLModel(Model):
 
         key_id = self.primary_key.name
 
-        transaction = self._pre_commit()
+        transaction = self._pre_commit()[1]
 
         try:
             conn = db()
-            for field in self.fields:
-                if isinstance(self.fields[field], UniqueIndex):
-                    query = "SELECT count(*) as no FROM %s WHERE " % name
-                    query += " %s != " % key_id
-                    query += "%s AND "
-                    index_fields = []
-                    index_values = []
-                    index_values.append(self._transaction[key_id])
-                    for index_field in self.fields[field]._index:
-                        if index_field.name in self._transaction:
-                            index_fields.append(index_field.name + ' = %s')
-                            index_values.append(self._transaction[index_field.name])
-                    query += ' AND '.join(index_fields)
-                    crsr = conn.execute(query, index_values)
-                    res = crsr.fetchone()
-                    if res['no'] > 0:
-                        raise exceptions.ValidationError("Model %s:" % name +
-                                                         " Duplicate Entry") from None
-                if isinstance(self.fields[field], ForeignKey):
-                    for no, fk_field in enumerate(self.fields[field]._foreign_keys):
-                        if (fk[field]._on_update == 'NO ACTION' or
-                                fk[field]._on_update == 'RESTRICT'):
-                            if fk_field.name in self._transaction:
-                                ref = fk_field._reference_fields[no]
-                                index_fields.append(ref.name+ ' = %s')
-                                index_values.append(self._transaction[fk_field.name])
-                                table = self._transaction[fk_field._table]
-                    query = "SELECT count(*) as no FROM %s WHERE " % table
-                    query += ' AND '.join(index_fields)
-                    crsr = conn.execute(query, index_values)
-                    if res['no'] > 0:
-                        raise exceptions.ValidationError("Model %s:" % name +
-                                                         " Object referenced.") from None
-
             if isinstance(self._current, dict):
+                for field in self.fields:
+                    if isinstance(self.fields[field], UniqueIndex):
+                        index_fields = []
+                        index_values = []
+                        query = "SELECT count(*) as no FROM %s WHERE " % name
+                        if key_id in self._transaction:
+                            query += " %s != " % key_id
+                            query += "%s AND "
+                            index_values.append(self._transaction[key_id])
+                        for index_field in self.fields[field]._index:
+                            if index_field.name in self._transaction:
+                                index_fields.append(index_field.name + ' = %s')
+                                index_values.append(self._transaction[index_field.name])
+                        query += ' AND '.join(index_fields)
+                        crsr = conn.execute(query, index_values)
+                        res = crsr.fetchone()
+                        if res['no'] > 0:
+                            raise exceptions.ValidationError("Model %s:" % name +
+                                                             " Duplicate Entry") from None
+                    if isinstance(self.fields[field], ForeignKey):
+                        fk = self.fields[field]
+                        if (fk._on_update == 'NO ACTION' or
+                                fk._on_update == 'RESTRICT'):
+                            for no, fk_field in enumerate(self.fields[field]._foreign_keys):
+                                    if fk_field.name in self._transaction:
+                                        ref = fk_field._reference_fields[no]
+                                        index_fields.append(ref.name+ ' = %s')
+                                        index_values.append(self._transaction[fk_field.name])
+                                        table = self._transaction[fk_field._table]
+
+                            query = "SELECT count(*) as no FROM %s WHERE " % table
+                            query += ' AND '.join(index_fields)
+                            crsr = conn.execute(query, index_values)
+                            if res['no'] > 0:
+                                raise exceptions.ValidationError("Model %s:" % name +
+                                                                 " Object referenced.") from None
+
                 if self._created:
                     query = "INSERT INTO %s (" % name
                     query += ','.join(transaction.keys())

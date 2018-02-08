@@ -219,15 +219,17 @@ class Model(object):
                 transaction[field] = self._transaction[field]
 
         # NOTE(cfrademan): This only returns fields to be updated in DB.
-        return transaction
+        return (self._transaction, transaction,)
 
     def commit(self):
         """Commit transaction.
         """
         if (isinstance(self._current, dict)):
-            self._current = self._pre_commit()
+            self._current = self._pre_commit()[0]
+        else:
+            self._current = self._transaction
 
-        self._new.clear()
+        #self._new.clear()
         self._created = False
         self._updated = False
 
@@ -241,7 +243,7 @@ class Model(object):
         Creates a new row and returns row model.
         """
         if isinstance(self._current, list):
-            NewModel = type(self.model_name, (Model,), {})
+            NewModel = type(self.model_name, (self.__class__,), {})
             NewModel._sql = self._sql
             NewModel.primary_key = self.primary_key
             NewModel._fields = self.fields

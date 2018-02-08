@@ -27,15 +27,14 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
+import os
 from decimal import Decimal as PyDecimal
 
 import pytest
 
 from luxon import register_resource
 from luxon import database_model
-
-from luxon import Model
-from luxon import Models
+from luxon import SQLModel
 from luxon import String
 from luxon import Integer
 from luxon import Float
@@ -49,7 +48,6 @@ from luxon import Enum
 from luxon import Boolean
 from luxon import UniqueIndex
 from luxon import ForeignKey
-
 from luxon import g
 from luxon import Config
 from luxon import db
@@ -58,10 +56,11 @@ g.config = config = Config()
 g.config['database'] = {}
 g.config['database']['type'] = 'sqlite3'
 g.config['database']['database'] = 'test.db'
+g.app_root = os.getcwd()
 
 
 @database_model()
-class Model_Test2(Models):
+class Model_Test2(SQLModel):
     id = Integer(length=11, null=True)
     primary_key = id
     stringcol = String(length=128)
@@ -77,7 +76,7 @@ class Model_Test2(Models):
     unique_index2 = UniqueIndex(stringcol)
 
 @database_model()
-class Model_Test1(Models):
+class Model_Test1(SQLModel):
     id = Integer(length=11, null=True)
     primary_key = id
     stringcol = String(length=128)
@@ -134,6 +133,7 @@ def test_model():
     test1.commit()
     assert isinstance(test1[0]['pyobject'], dict)
     test1 = Model_Test1()
+    test1.sql_query("SELECT * FROM Model_Test1")
     assert isinstance(test1[0]['id'], int)
     assert isinstance(test1[0]['floatcol'], float)
     assert isinstance(test1[0]['doublecol'], float)
