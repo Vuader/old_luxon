@@ -35,10 +35,12 @@ from luxon.utils.objects import object_name
 
 log = GetLogger(__name__)
 
+
 def _log(msg, obj, pool):
     log.info('%s: %s (COUNT: %s, MAX_POOL_SIZE: %s, MAX_OVERFLOW %s' %
              (msg, object_name(obj), pool._count,
               pool._pool_size, pool._max_overflow))
+
 
 class ProxyObject(object):
     """ Class ProxyObject
@@ -51,7 +53,7 @@ class ProxyObject(object):
     to the pool.
 
     Unless the pool limit has been reached, in which case the real
-    close() method wil be called on the object.
+    close() method will be called on the object.
 
     Args:
         obj (obj): original (proxied) object.

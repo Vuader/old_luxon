@@ -28,7 +28,18 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
 
+
 def object_name(obj):
+    """Generates a name for an object from it's module and class
+
+
+    Args:
+        obj (object): any object to be named
+
+    Returns:
+        String naming the object
+
+    """
     try:
         return obj.__module__ + '.' + obj.__name__
     except AttributeError:
@@ -41,6 +52,7 @@ def object_name(obj):
 
     raise ValueError("Cannot determine object name '%s'" % type(obj)) from None
 
+
 def dict_value_property(dictionary, key):
     """Create a read-only property
 
@@ -51,6 +63,7 @@ def dict_value_property(dictionary, key):
     Returns:
         A property instance that can be assigned to a class variable.
     """
+
     def fget(self):
         dictionary_obj = getattr(self, dictionary)
         try:

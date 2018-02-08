@@ -31,11 +31,15 @@ import os
 import datetime
 from textwrap import indent, wrap
 
+
 def format_ms(ms):
-    """Format millisecons to string.
+    """Format milliseconds to string.
 
     Args:
         ms (float): milliseconds.
+
+    Returns:
+        Milliseconds as human friendly string
     """
     # Minutes
     if ms >= 60:

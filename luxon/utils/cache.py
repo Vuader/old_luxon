@@ -42,13 +42,13 @@ from luxon.utils.encoding import if_unicode_to_bytes
 from luxon.exceptions import NoContextError
 from luxon.utils.objects import object_name
 
-
 log = GetLogger(__name__)
+
 
 class Cache(object):
     def __init__(self):
         try:
-            redis = g.config.get('redis','host', fallback=None)
+            redis = g.config.get('redis', 'host', fallback=None)
             if redis is not None:
                 self.redis = strict()
             else:
@@ -95,4 +95,5 @@ def memoize(expiry_time=0, num_args=None):
         result = func(*args, **kw)
         cache.store(key, result, expiry_time)
         return result
+
     return decorator(_memoize)

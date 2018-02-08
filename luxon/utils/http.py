@@ -48,6 +48,7 @@ from luxon.utils.strings import unquote_string
 
 log = GetLogger(__name__)
 
+
 class ForwardedElement(object):
     """Representation of Forwarded header.
 
@@ -174,6 +175,7 @@ def parse_forwarded_header(forwarded):
 
     return elements
 
+
 def content_type_encoding(header):
     """Gets the encoding from Content-Type header.
 
@@ -198,6 +200,7 @@ def content_type_encoding(header):
 CACHE_CONTROL_RE = re.compile(r"[a-z_\-]+=[0-9]+", re.IGNORECASE)
 CACHE_CONTROL_OPTION_RE = re.compile(r"[a-z_\-] +", re.IGNORECASE)
 
+
 class CacheControl(object):
     def __init__(self):
         self.must_revalidate = None
@@ -210,19 +213,19 @@ class CacheControl(object):
         self.max_age = None
         self.s_maxage = None
 
+
 def parse_cache_control_header(header):
-    values = {}
-    values['options'] = []
+    values = {'options': []}
     cachecontrol = CacheControl()
 
     CACHE_CONTROL_OPTION_RE.findall(header)
     for option in CACHE_CONTROL_OPTION_RE.findall(header):
-        option = option.replace('-','_').lower()
+        option = option.replace('-', '_').lower()
 
     CACHE_CONTROL_RE.findall(header)
     for option in CACHE_CONTROL_RE.findall(header):
         option, value = option.split('=')
-        option = option.replace('-','_').lower()
+        option = option.replace('-', '_').lower()
         setattr(cachecontrol, option, value)
 
     return cachecontrol
@@ -230,9 +233,9 @@ def parse_cache_control_header(header):
 
 sessions = ThreadDict()
 
+
 def _debug(method, url, payload, request_headers, response_headers,
            response, status_code, elapsed):
-
     if log.debug_mode():
         log.debug('Method: %s' % method +
                   ', URL: %s' % url +
@@ -240,15 +243,16 @@ def _debug(method, url, payload, request_headers, response_headers,
                   timer=elapsed)
         for header in request_headers:
             log.debug('Request Header: %s="%s"' % (header,
-                                                 request_headers[header]))
+                                                   request_headers[header]))
         for header in response_headers:
             log.debug('Response Header: %s="%s"' % (header,
-                                                 response_headers[header]))
+                                                    response_headers[header]))
         log.debug(payload, prepend='Requet Payload')
         log.debug(response, prepend='Response Payload')
 
+
 class Response(object):
-    __slots__ = ('_result')
+    __slots__ = '_result'
 
     def __init__(self, requests_result):
         self._result = requests_result
@@ -312,6 +316,7 @@ class Response(object):
 
         return self._result.encoding.upper()
 
+
 def request(method, uri, data,
             headers={}, auth=None,
             timeout=(2, 8), verify=True,
@@ -330,7 +335,7 @@ def request(method, uri, data,
 
         host = host_from_uri(uri)
 
-        cache_obj = str(method)+str(uri)+str(data)
+        cache_obj = str(method) + str(uri) + str(data)
         cached = cache.load(cache_obj)
         if cached is not None:
             return Response(cached)

@@ -55,14 +55,13 @@ TIME_FORMATS = (
     '%a %b %d %H:%M:%S %Y',
 )
 
+
 def parse_http_date(http_date, obs_date=False):
     """Converts an HTTP date string to a datetime instance.
 
     Args:
         http_date (str): An RFC 1123 date string.
             e.g. Tue, 15 Nov 1994 12:45:26 GMT
-
-    Keyword Arguments:
         obs_date (bool): Support obs-date formats according to
             RFC 7231. (Default False)
             e.g. Sunday, 06-Nov-94 08:49:37 GMT
@@ -79,6 +78,7 @@ def parse_http_date(http_date, obs_date=False):
         return py_datetime.strptime(http_date, '%a, %d %b %Y %H:%M:%S %Z')
 
     return parse_datetime(http_date)
+
 
 class TimezoneGMT(tzinfo):
     """GMT timezone class implementing GMT Timezone"""
@@ -124,6 +124,7 @@ class TimezoneGMT(tzinfo):
         """
         return self.DST_OFFSET
 
+
 class TimezoneUTC(TimezoneGMT):
     """UTC timezone class implementing UTC Timezone"""
     TZNAME = 'UTC'
@@ -141,7 +142,7 @@ def TimezoneApp():
 
     if _cached_time_zone_app is None:
         app_timezone = g.app.config.get('application',
-                                                'timezone')
+                                        'timezone')
 
         if app_timezone == 'local' or app_timezone == 'server':
             _cached_time_zone_app = get_localzone()
@@ -191,11 +192,11 @@ def to_timezone(datetime, dst=TimezoneSystem(), src=None):
 
     datetime = datetime.astimezone(tz=dst)
     try:
-        datetime =  dst.normalize(datetime)
+        datetime = dst.normalize(datetime)
     except AttributeError:
         pass
     return datetime
-
+  
 def now(tz=TimezoneUTC()):
     """Current date time.
 
@@ -218,10 +219,3 @@ def to_system(datetime, src=None):
 
 def to_app(datetime, src=None):
     return to_timezone(datetime, dst=TimezoneApp(), src=src)
-
-def parse(datetime):
-    # TODO
-    raise NotImplemented('TODO')
-
-    if isinstance(datetime, py_datetime):
-        return datetime

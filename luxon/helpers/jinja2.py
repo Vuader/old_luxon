@@ -28,9 +28,20 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
 
+
 def render_template(template, *args, **kwargs):
-    # #PERFORMANCE - ONLY IMPORT HERE!
-    # JINJA is slow to import, and may not be needed.
+    """Function to return a jinja2 rendered template.
+
+    Imports the Environment class from luxon.core.template only when required,
+    in order to imporve performance as jinja2 libraries are low to import.
+
+    Args:
+        template (str): filename of template to render.
+
+    Retruns:
+        jinja2 rendered template with supplied args and kwargs.
+
+    """
     from luxon.core.template import Environment
     jinja = Environment()
     template = jinja.get_template(template)

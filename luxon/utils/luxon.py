@@ -34,11 +34,13 @@ from pkg_resources import (resource_stream, resource_listdir,
 
 from luxon.utils.imports import import_module
 
+
 def create_dir(path, new):
     new = os.path.normpath('%s%s' % (path, new))
     if not os.path.exists(new):
         os.makedirs(new)
         print('Created directory: %s' % new)
+
 
 def copy_file(module, path, src, dst, update=True):
     try:
@@ -69,6 +71,7 @@ def copy_file(module, path, src, dst, update=True):
                     with open(dst, 'wb') as handle:
                         handle.write(src_file)
                         print("Updated %s" % dst)
+
 
 def recursive_copy(local, module, path):
     if resource_isdir(module, path):

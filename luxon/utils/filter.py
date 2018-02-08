@@ -30,6 +30,7 @@
 
 from luxon.utils.encoding import is_text
 
+
 def filter_none_text(string):
     """Parse String and filter Binary
 
@@ -38,6 +39,10 @@ def filter_none_text(string):
 
     Args:
         string (bytes): Bytes String
+
+    Returns:
+        "BINARY" if the argument contained binary
+
     """
     if string is not None:
         if is_text(string):

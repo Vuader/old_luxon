@@ -34,7 +34,15 @@ from luxon.utils.pool import Pool
 
 _cached_pool = None
 
+
 def _get_conn():
+    """_get_conn function for internal use
+
+    Imports connect module if required.
+    i.e. the database type in settings.ini is mysql
+    Returns a connect object populated with the information under the 'database' section
+
+    """
     # #PERFORMANCE - ONLY IMPORT HERE!
     kwargs = g.config.kwargs('database')
     if kwargs.get('type') == 'mysql':
@@ -44,7 +52,22 @@ def _get_conn():
                        kwargs.get('password', 'password'),
                        kwargs.get('database', 'tachyonic'))
 
+
 def db():
+    """Function db - returns a Database Connection object from pool.
+
+    A Connection pool is created if one does not exist yet.
+
+    Database types and paramaters obtained from settings.ini file.
+
+    Supported types are:
+
+        * mysql
+        * sqlite3
+
+    Returns:
+         Database Connection object
+    """
     kwargs = g.config.kwargs('database')
     global _cached_pool
     if kwargs.get('type') == 'mysql':
@@ -58,8 +81,8 @@ def db():
         db = kwargs.get('database')
 
         db = (os.path.abspath(os.path.join(
-                              g.app_root,
-                              db)))
+            g.app_root,
+            db)))
         return connect(db)
     else:
         raise TypeError('Unknown Database type defined in configuration')

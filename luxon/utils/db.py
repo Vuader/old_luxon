@@ -30,6 +30,7 @@
 
 from luxon import g
 
+
 def backup_tables(conn):
     models = {}
     for Model in reversed(g.models):
@@ -39,14 +40,17 @@ def backup_tables(conn):
             conn.commit()
     return models
 
+
 def drop_tables(conn):
     for Model in reversed(g.models):
         if conn.has_table(Model.model_name):
             conn.execute('DROP TABLE %s' % Model.model_name)
 
+
 def create_tables():
     for Model in g.models:
         Model.create_table()
+
 
 def restore_tables(conn, backup):
     for Model in g.models:
