@@ -147,8 +147,11 @@ class BaseField(object):
             if self.max_length is not None and value > self.max_length:
                 self.error("Exceeding max value '%s'" % self.max_length, value)
 
-
         return value
+
+    def _parse(self, value):
+        if value is not None:
+            return self.parse(value)
 
 class String(BaseField):
     """String Field.
@@ -878,22 +881,22 @@ class Phone(String):
         value = value.strip()
 
         try:
-            value = int(value)
-        except ValueError:
-            self.error("Invalid phone number '%s'" % value, value)
-
-        if value[0] != '+':
+            if value[0] != '+':
+                self.error("Invalid phone number '%s'" % value, value)
+        except IndexError:
             self.error("Invalid phone number '%s'" % value, value)
 
         try:
-            x = phonenumbers.parse(value, None)
+            phone_no = phonenumbers.parse(value, None)
         except Exception:
             self.error("Invalid phone number '%s'" % value, value)
 
-        if not phonenumbers.is_valid_number(x):
+        if not phonenumbers.is_valid_number(phone_no):
             self.error("Invalid phone number '%s'" % value, value)
 
-        return value
+        phone_no = phonenumbers.format_number(phone_no,
+                                   phonenumbers.PhoneNumberFormat.INTERNATIONAL)
+        return phone_no
 
 class Word(String):
     def parse(self, value):

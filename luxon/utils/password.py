@@ -124,18 +124,23 @@ def valid(password, hashed):
     try:
         pwd_context
     except Exception:
-        schemes = ["md5_crypt", "bcrypt", "sha256_crypt", "sha512_crypt",
-                   "ldap_md5", "ldap_salted_md5", "ldap_sha1", "ldap_salted_sha1",
-                   "ldap_bcrypt", "ldap_sha256_crypt", "ldap_sha512_crypt"]
+        schemes = [ "md5_crypt",
+                    "bcrypt",
+                    "sha256_crypt",
+                    "sha512_crypt",
+                    "ldap_md5",
+                    "ldap_salted_md5",
+                    "ldap_sha1",
+                    "ldap_salted_sha1",
+                    "ldap_bcrypt",
+                    "ldap_sha256_crypt",
+                    "ldap_sha512_crypt",
+                    "plaintext" ]
         pwd_context = passlib.context.CryptContext(schemes=schemes)
 
-    # If Password is Clear-Text
-    if password == hashed:
-        return True
-    else:
-        # Validate Password using pwd_context
-        with Timer() as elapsed:
-            val = pwd_context.verify(password, hashed)
-            log.debug('Hash Validated %s' % val +
-                      ' (DURATION: %.4fs)' % elapsed())
-            return val
+    # Validate Password using pwd_context
+    with Timer() as elapsed:
+        val = pwd_context.verify(password, hashed)
+        log.debug('Hash Validated %s' % val +
+                  ' (DURATION: %.4fs)' % elapsed())
+        return val

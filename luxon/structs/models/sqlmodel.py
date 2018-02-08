@@ -70,7 +70,7 @@ class SQLModel(Model):
                 row = result[0]
                 for field in row.keys():
                     if row[field] is not None:
-                        val = self.fields[field].parse(row[field])
+                        val = self.fields[field]._parse(row[field])
                         self._current[field] = val
                 self._created = False
                 self._updated = False
@@ -81,7 +81,7 @@ class SQLModel(Model):
                     for field in row.keys():
                         if field in self.fields:
                             if row[field] is not None:
-                                val = self.fields[field].parse(row[field])
+                                val = self.fields[field]._parse(row[field])
                                 model._current[field] = val
                     model._created = False
                     model._updated = False
@@ -98,33 +98,37 @@ class SQLModel(Model):
         query = []
         if 'domain_id' in self.fields:
             domain_id = g.current_request.domain_id
-            query.append('domain_id = %s')
-            values.append(domain_id)
+            if domain_id is not None:
+                query.append('domain_id = %s')
+                values.append(domain_id)
         if 'tenant_id' in self.fields:
             tenant_id = g.current_request.tenant_id
-            query.append('tenant_id = %s')
-            values.append(tenant_id)
+            if tenant_id is not None:
+                query.append('tenant_id = %s')
+                values.append(tenant_id)
 
         search = g.current_request.query_params.get('search')
         if search is not None:
             try:
                 for lookin in search.split(","):
                     field, val = lookin.split(":")
+                    field = field.replace(' ', '')
                     if field not in self.fields:
                         raise exceptions.ValidationError("Unknown field" +
-                                                         '%s' % field +
+                                                         ' %s' % field +
                                                          ' in search')
-                    query.append(field.replace(' ','') + ' = %s')
-
-                    values.append(val)
+                    if isinstance(val, (int, float,)):
+                        query.append(field + ' LIKE ' + val)
+                    else:
+                        query.append(field + ' LIKE ' + "'" + val + "%%'")
             except ValueError:
-                raise ValidationError('Invalid search format defined')
+                raise exceptions.ValidationError('Invalid search format defined')
 
         query_str = " AND ".join(query)
         if where is True and len(query) > 0:
             query = " WHERE %s" % query_str
         else:
-            query = query_str
+            query = " AND %s" % query_str
 
         return (query, tuple(values),)
 
@@ -152,6 +156,33 @@ class SQLModel(Model):
                     raise ValueError('Invalid range defiend')
 
         return (query, (),)
+
+    def delete(self):
+        if not isinstance(self._current, dict):
+            raise NotImplementedError()
+
+
+        with db() as conn:
+            if self.primary_key is None:
+                raise KeyError("Model %s:" % self.model_name +
+                               " No primary key") from None
+
+            primary_id = self._transaction[self.primary_key.name]
+
+            ctx_query, ctx_values = self._api_context(False)
+
+            crsr = conn.execute("DELETE FROM %s" % self.model_name +
+                                " WHERE %s" % self.primary_key.name +
+                                " = %s" +
+                                " %s" % ctx_query,
+                                (primary_id,) + ctx_values)
+            result = crsr.fetchall()
+            crsr.commit()
+
+        self._current.clear()
+        self._new.clear()
+        self._updated = False
+        self._created = False
 
     def sql_api(self):
         with db() as conn:
@@ -182,7 +213,7 @@ class SQLModel(Model):
     def sql_id(self, primary_id):
         if isinstance(self._current, dict):
             with db() as conn:
-                ctx_query, ctx_values = self._api_context(True)
+                ctx_query, ctx_values = self._api_context(False)
                 if self.primary_key is None:
                     raise KeyError("Model %s:" % name +
                                    " No primary key") from None
@@ -311,3 +342,4 @@ class SQLModel(Model):
         driver = get_class('luxon.structs.models.%s:%s' % (api,
                                                            driver_cls,))(cls)
         driver.create()
+
