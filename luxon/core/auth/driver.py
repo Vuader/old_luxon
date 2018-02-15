@@ -30,6 +30,7 @@
 import base64
 from datetime import timedelta
 from hashlib import md5
+from collections import OrderedDict
 
 from luxon import g
 from luxon.utils import js
@@ -81,7 +82,7 @@ class BaseDriver(object):
             token (str): Unique token for specific user.
             tenant_id (str): Current tenant id.
         """
-        self._token = {}
+        self._token = OrderedDict()
         if user_id is None:
             raise ValueError('Require user_id for new_token')
         if username is None:
