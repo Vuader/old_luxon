@@ -65,9 +65,9 @@ def compiler(dict_rule_set):
 
         for rule in dict_rule_set:
             # Validate Rules.
-            if ' ' in rule or rule.count(':') == 0:
+            if ' ' in rule:
                 log.error("Error in rule name '" + rule +
-                          "' skipping. (expected value:value no spaces)" )
+                          "' skipping. (expected value with no spaces)" )
                 continue
 
             log.info('Build rule %s = %s' % (rule, dict_rule_set[rule]))

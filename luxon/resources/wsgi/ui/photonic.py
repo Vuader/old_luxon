@@ -33,7 +33,6 @@ from luxon import g
 
 @register_resource('POST', '/login')
 def login(req, resp):
-    resp.content_type = TEXT_HTML
     username = req.get_first('username')
     password = req.get_first('password')
     domain = req.get_first('domain')
@@ -46,7 +45,6 @@ def login(req, resp):
 
 @register_resource('GET', '/logout')
 def logout(req, resp):
-    resp.content_type = TEXT_HTML
     req.session.clear()
     req.session.save()
     req.token.clear()
@@ -54,19 +52,20 @@ def logout(req, resp):
 
 @register_resource('POST', '/scope')
 def scope(req, resp):
-    resp.content_type = TEXT_HTML
-    x_domain = req.get_first('X-Domain')
-    x_tenant_id = req.get_first('X-Tenant-Id')
-    if x_domain is not None:
-        scoped = g.client.scope(x_domain, x_tenant_id)
-        scoped = scoped['token']
-        req.session['scoped'] = scoped
-        req.session['domain'] = x_domain
-        req.session['tenant_id'] = x_tenant_id
-    else:
-        req.session['scoped'] = None
-        req.session['domain'] = None
-        req.session['tenant_id'] = None
+    if req.token.authenticated:
+        x_domain = req.get_first('X-Domain')
+        x_tenant_id = req.get_first('X-Tenant-Id')
+        if x_domain is not None:
+            scoped = g.client.scope(x_domain, x_tenant_id)
+            scoped = scoped['token']
+            req.session['scoped'] = scoped
+            req.session['domain'] = x_domain
+            req.session['tenant_id'] = x_tenant_id
+        else:
+            req.session['scoped'] = None
+            req.session['domain'] = None
+            req.session['tenant_id'] = None
 
-    req.session.save()
+        req.session.save()
+
     resp.redirect('/')
