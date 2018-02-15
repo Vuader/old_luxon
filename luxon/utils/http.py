@@ -287,21 +287,17 @@ class Response(object):
 
     @property
     def json(self):
-        content_type = self.content_type
-        if (content_type is not None and
-                'JSON' in content_type):
+        if self.encoding != 'UTF-8':
+            raise RestClientError(400, 'JSON requires UTF-8 Encoding')
 
-            if self.encoding != 'UTF-8':
-                raise RestClientError('JSON requires UTF-8 Encoding')
+        try:
+            if self.status_code != 204:
+                return js.loads(self.body)
+            else:
+                return b''
 
-            try:
-                if self.status_code != 204:
-                    return js.loads(self.body)
-                else:
-                    return b''
-
-            except JSONDecodeError as e:
-                raise RestClientError('JSON Decode: %s' % e)
+        except JSONDecodeError as e:
+            raise RestClientError(400, 'JSON Decode: %s' % e)
 
     @property
     def encoding(self):

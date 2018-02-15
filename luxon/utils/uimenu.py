@@ -30,13 +30,14 @@ class UIMenu(object):
                 # Render for Submenu.
                 render_item(submenu, path_name[1:], href, **kwargs)
 
+        has_policy_engine = hasattr(req, 'policy')
         # Run through items.
         for item in self._items:
             path_name, view, href, kwargs = item
-            if view is None or req.policy.validate(view):
+            if (view is None or (has_policy_engine and
+                                 req.policy.validate(view))):
                 path_name = path_name.strip('/').split('/')
                 render_item(root_menu, path_name, href, **kwargs)
-
         return str(root_menu)
 
     def __len__(self):
