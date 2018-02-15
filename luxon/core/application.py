@@ -180,11 +180,11 @@ class ApplicationBase(object):
 
                 # Execute Routed View.
                 try:
+                    # Process the middleware 'resource' after routing it
+                    for middleware in g.middleware_resource:
+                        middleware(request, response)
                     # Run View method.
                     if resource is not None:
-                        # Process the middleware 'resource' after routing it
-                        for middleware in g.middleware_resource:
-                            middleware(request, response)
                         view = resource(request,
                                         response,
                                         **r_kwargs)
