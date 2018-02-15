@@ -1116,8 +1116,8 @@ class Request(RequestBase):
     @property
     def is_ajax(self):
         if self._cached_is_ajax is None:
-            rw = self.get_header('X_REQUESTED_WITH').lower()
-            if rw is not None and 'xmlhttprequest' in rw:
+            rw = self.get_header('X_REQUESTED_WITH')
+            if rw is not None and 'xmlhttprequest' in rw.lower():
                 self._cached_is_ajax = True
             else:
                 self._cached_is_ajax = False
