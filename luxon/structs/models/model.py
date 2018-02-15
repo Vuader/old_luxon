@@ -71,7 +71,7 @@ class Model(object):
                             self._transaction[field] is None):
                         self._current[field] = default
                 elif field in ('domain_id', 'tenant_id',):
-                    self._new[field] = getattr(g.current_request, field)
+                    self._new[field] = getattr(g.current_request.token, field)
                 elif not isinstance(self.fields[field], Model.filter_fields):
                     self._current[field] = None
 

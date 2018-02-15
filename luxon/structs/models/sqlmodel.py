@@ -111,24 +111,20 @@ class SQLModel(Model):
             else:
                 query.append('tenant_id IS NULL')
 
-        search = g.current_request.query_params.get('search')
-        if search is not None:
-            try:
-                for lookin in search.split(","):
-                    field, val = lookin.split(":")
-                    field = field.replace(' ', '')
-                    if field not in self.fields:
-                        raise exceptions.ValidationError("Unknown field" +
-                                                         ' %s' % field +
-                                                         ' in search')
-                    if isinstance(val, (int, float,)):
-                        query.append(field + ' LIKE ' + val)
-                    else:
-                        query.append(field + ' LIKE ' + "'" + val + "%%'")
-            except ValueError:
-                raise exceptions.ValidationError('Invalid search format defined')
+        search = g.current_request.get_list('search')
+        if len(search) > 0:
+            for lookin in search:
+                field, val = lookin.split(":")
+                if field not in self.fields:
+                    raise exceptions.ValidationError("Unknown field" +
+                                                     ' %s' % field +
+                                                     ' in search')
+                if isinstance(val, (int, float,)):
+                    query.append(field + ' LIKE ' + val)
+                else:
+                    query.append(field + ' LIKE ' + "'" + val + "%%'")
         if len(query) > 0:
-            query_str = " AND ".join(query)
+            query_str = " OR ".join(query)
             if where is True and len(query) > 0:
                 query = " WHERE %s" % query_str
             else:
@@ -142,11 +138,22 @@ class SQLModel(Model):
         query = ''
 
         if g.current_request.method == 'GET':
-            order = g.current_request.query_params.get('sort')
-            if order is not None:
-                query += order_by(order, self.fields)
+            sort = g.current_request.get_list('sort')
+            if len(sort) > 0:
+                ordering = []
+                for order in sort:
+                    order_field, order_type = order.split(':')
+                    order_type = order_type.lower()
+                if order_type != "asc" and order_type != "desc":
+                    raise exceptions.ValidationError('Bad order for sort provided')
+                if order_field not in self.fields:
+                    raise exceptions.ValidationError("Unknown field '%s' in sort" %
+                                                    order_field)
+                ordering.append("%s %s" % (order_field, order_type))
 
-            range = g.current_request.query_params.get('range', None)
+                query += " ORDER BY %s" % ','.join(ordering)
+
+            range = g.current_request.get_first('range')
             if range is not None:
                 try:
                     range = range.split(',')
@@ -166,7 +173,6 @@ class SQLModel(Model):
     def delete(self):
         if not isinstance(self._current, dict):
             raise NotImplementedError()
-
 
         with db() as conn:
             if self.primary_key is None:

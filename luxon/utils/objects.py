@@ -41,12 +41,17 @@ def object_name(obj):
 
     """
     try:
-        return obj.__module__ + '.' + obj.__name__
+        try:
+            return obj.__module__ + '.' + obj.__name__
+        except TypeError:
+            return obj.__name__
     except AttributeError:
         try:
             val = obj.__class__.__module__
             val += '.' + obj.__class__.__name__
             return val.replace('builtins.','')
+        except TypeError:
+            return obj.__class__.__name__
         except AttributeError:
             return obj
 
