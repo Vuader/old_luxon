@@ -184,3 +184,33 @@ def parse_qs(query_string, keep_blanks=False):
                 params[k] = v
 
     return params
+
+
+def build_qs(params, uri=None):
+    qs = []
+    if isinstance(params, dict):
+        params = params.items()
+    for param in params:
+        try:
+            qs.append('%s=%s' % param)
+        except TypeError:
+            qs.append('%s' % param)
+
+    if uri is None:
+        uri = ''
+
+    if len(qs) > 0:
+        uri += '?' + '&'.join(qs)
+
+    return uri
+
+def uri(location, proto='http', path=None, params=None):
+    uri = proto + '://' + location.strip(' ').strip('/')
+    if path is not None:
+        path = path.strip('/').strip()
+        uri += '/%s' % path
+
+    if params is not None:
+        uri += '?' + build_qs(params)
+
+    return uri
