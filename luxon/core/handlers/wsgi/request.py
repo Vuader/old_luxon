@@ -204,11 +204,6 @@ class Request(RequestBase):
         query_string (str): Query string portion of the request URI, without
             the preceding '?' character.
 
-        query_params (dict): The mapping of request query parameter names to
-            their values.  Where the parameter appears multiple times in the
-            query string, the value mapped to that parameter key will be a list
-            of all the values in the order seen.
-
         content_type (str): Value of the Content-Type header, or None if the
             header is missing.
 
@@ -571,16 +566,6 @@ class Request(RequestBase):
         return self._cached_query_string
 
     @property
-    def query_params(self):
-        # URI QUERY_STRING try/catch cheaper and faster
-        try:
-            if self.query_string:
-                return parse_qs(self.query_string, True)
-        except KeyError:
-            return {}
-        return {}
-
-    @property
     def content_type(self):
         if self._cached_content_type is not None:
             return self._cached_content_type
@@ -610,18 +595,11 @@ class Request(RequestBase):
 
     @property
     def stream(self):
-        # Input File container.
-        # Don't expect a payload for methods GET, HEAD. However RFC 7231
-        # does permit payload for method HEAD.
         if self._cached_stream is not None:
             return self._cached_stream
 
-        if self.method not in ('GET', 'HEAD'):
-            if self.content_length != 0:
-                self._cached_stream = CachedInput(self.env.get('wsgi.input'))
-                return self._cached_stream
-
-        raise errors.HTTPUnsupportedMediaType('Expecting payload')
+        self._cached_stream = CachedInput(self.env.get('wsgi.input'))
+        return self._cached_stream
 
     @property
     def json(self):
@@ -637,12 +615,9 @@ class Request(RequestBase):
         if self._cached_form is not None:
             return self._cached_form
 
-        environ = { 'REQUEST_METHOD': 'POST',
-                    'CONTENT_LENGTH': self.content_length }
-        if 'CONTENT_TYPE' in self.env:
-            environ['CONTENT_TYPE'] = self.env['CONTENT_TYPE']
-
-        self._cached_form = FieldStorage(fp=self, keep_blank_values=False, environ=environ)
+        self.stream.seek(0)
+        self._cached_form = FieldStorage(fp=self.stream, keep_blank_values=False,
+                                         environ=self.env)
 
         return self._cached_form
 

@@ -295,7 +295,7 @@ class BaseDriver(object):
             if self._domain is not None:
                 return self._domain
             else:
-                return self.token.domain
+                return self.token['domain']
         return None
 
     @domain.setter
@@ -303,12 +303,12 @@ class BaseDriver(object):
         self._context_validate('domain', value)
 
     @property
-    def tenant_id(self, tenant_id):
+    def tenant_id(self):
         if self.authenticated:
             if self._tenant_id is not None:
                 return self._tenant_id
             else:
-                return self.token.tenant_id
+                return self.token['tenant_id']
         return None
 
     @tenant_id.setter
