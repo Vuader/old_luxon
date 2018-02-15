@@ -45,7 +45,7 @@ def compiler(dict_rule_set):
     Example of rule_set in dict format:
         { 'role:admin': '"admin" in role_kwarg',
           'user:login': '"login_kwarg" is True',
-          'match:both': 'role:admin or system:login' }
+          'match:both': '$role:admin or $system:login' }
 
         The syntax for the rule is exactly as per python conditional
         statements. Note these statements can be nested using braces ().
@@ -56,7 +56,7 @@ def compiler(dict_rule_set):
 
     with Timer() as elapsed:
         # MATCH : expression used within rule statements.
-        interpolation_match = re.compile(r"[a-z_\-]+:[a-z_\-]+", re.IGNORECASE)
+        interpolation_match = re.compile(r"\$[a-z_\-:]+", re.IGNORECASE)
 
         # Build Rules - Need todo this before compiling.
         # Some rules reference others.
@@ -80,13 +80,14 @@ def compiler(dict_rule_set):
             # Correct build_rule for interpolation.
             # Any string with value:value is an expression.
             for expr in interpolation_match.findall(build_rule):
-                if expr not in dict_rule_set:
+                if expr[0:] not in dict_rule_set:
                     log.error("Error in interpolation of '" + expr +
                               "' in rule '" + rule + "' skipping.")
+                    build_rule = build_rule.replace(expr, 'False')
                     continue
 
-                a, b = expr.split(':')
-                build_rule = build_rule.replace(expr, a + '_' + b + '()')
+                expr = expr.replace(':', '_')[0:]
+                build_rule = build_rule.replace(expr())
 
             # Add Rule to _rules dictionary for validation to select rule.
             build_rule += "_rules['" + rule + "'] = " + rule.replace(':','_')
@@ -98,12 +99,11 @@ def compiler(dict_rule_set):
 
         # Compile Rules
         try:
-            compiled = compile(rule_set, 'policy.json', 'exec')
+            compiled = compile(rule_set, 'policy.json.compiled', 'exec')
+            log.info('%s Rules compile completed.' % len(dict_rule_set),
+                      timer=elapsed())
+
+            return (compiled, dict_rule_set)
         except Exception:
-            log.error("Failed compiling '%s' %s invalid syntax" %
-                              (rule, repr(rule_set[rule])))
+            raise ValueError("Failed compiling rule_set")
 
-    log.info('%s Rules compile completed.' % len(dict_rule_set),
-              timer=elapsed())
-
-    return (compiled, dict_rule_set)

@@ -110,7 +110,7 @@ class Token(object):
     def __init__(self):
         g.router.add('GET', '/v1/token', self.get)
         g.router.add('POST', '/v1/token', self.post)
-        g.router.add('PATCH', '/v1/token', self.patch)
+        g.router.add('PATCH', '/v1/token', self.patch, tag='login')
 
     def get(self, req, resp):
         return req.token
