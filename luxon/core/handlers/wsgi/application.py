@@ -39,6 +39,7 @@ from luxon.constants import HTTP_STATUS_CODES
 from luxon.structs.htmldoc import HTMLDoc
 from luxon import render_template
 from luxon import GetLogger
+from luxon.constants import TEXT_HTML
 
 log = GetLogger(__name__)
 
@@ -108,8 +109,16 @@ class Application(ApplicationBase):
         except AttributeError:
             pass
 
-        if 'error_template' in g:
-            return render_template(g, title, description)
+        if req.is_ajax and 'ajax_error_template' in g:
+            resp.content_type = TEXT_HTML
+            return render_template(g.ajax_error_template,
+                                   error_title=title,
+                                   error_description=description)
+        elif 'error_template' in g:
+            resp.content_type = TEXT_HTML
+            return render_template(g.error_template,
+                                   error_title=title,
+                                   error_description=description)
         elif resp.content_type is None or 'json' in resp.content_type.lower():
             to_return = {}
             to_return['error'] = {}
@@ -117,7 +126,6 @@ class Application(ApplicationBase):
             to_return['error']['description'] = description
 
             return to_return
-
         elif 'html' in resp.content_type.lower():
             dom = HTMLDoc()
             html = dom.create_element('html')

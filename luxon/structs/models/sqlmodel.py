@@ -96,16 +96,20 @@ class SQLModel(Model):
     def _api_context(self, where=False):
         values = []
         query = []
-        if 'domain_id' in self.fields:
-            domain_id = g.current_request.domain_id
-            if domain_id is not None:
-                query.append('domain_id = %s')
-                values.append(domain_id)
+        if 'domain' in self.fields:
+            domain = g.current_request.token.domain
+            if domain is not None:
+                query.append('domain = %s')
+                values.append(domain)
+            else:
+                query.append('domain IS NULL')
         if 'tenant_id' in self.fields:
-            tenant_id = g.current_request.tenant_id
+            tenant_id = g.current_request.token.tenant_id
             if tenant_id is not None:
                 query.append('tenant_id = %s')
                 values.append(tenant_id)
+            else:
+                query.append('tenant_id IS NULL')
 
         search = g.current_request.query_params.get('search')
         if search is not None:
@@ -123,12 +127,14 @@ class SQLModel(Model):
                         query.append(field + ' LIKE ' + "'" + val + "%%'")
             except ValueError:
                 raise exceptions.ValidationError('Invalid search format defined')
-
-        query_str = " AND ".join(query)
-        if where is True and len(query) > 0:
-            query = " WHERE %s" % query_str
+        if len(query) > 0:
+            query_str = " AND ".join(query)
+            if where is True and len(query) > 0:
+                query = " WHERE %s" % query_str
+            else:
+                query = " AND %s" % query_str
         else:
-            query = " AND %s" % query_str
+            query = ''
 
         return (query, tuple(values),)
 
@@ -342,4 +348,3 @@ class SQLModel(Model):
         driver = get_class('luxon.structs.models.%s:%s' % (api,
                                                            driver_cls,))(cls)
         driver.create()
-

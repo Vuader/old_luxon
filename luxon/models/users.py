@@ -76,7 +76,7 @@ DOMAINS = [
 @database_model()
 class luxon_domain(SQLModel):
     id = Uuid(default=uuid4, internal=True)
-    name = Fqdn(max_length=64, null=False)
+    name = Fqdn(null=False)
     description = Text()
     enabled = Boolean(default=True)
     creation_time = DateTime(default=now, internal=True)
@@ -88,23 +88,23 @@ class luxon_domain(SQLModel):
 @database_model()
 class luxon_tenant(SQLModel):
     id = Uuid(default=uuid4, internal=True)
-    domain_id = Uuid(internal=True)
+    domain = Fqdn(internal=True)
     tenant_id = Uuid(internal=True)
     name = String(max_length=100, null=False)
     enabled = Boolean(default=True)
     creation_time = DateTime(default=now, internal=True)
-    unique_tenant = UniqueIndex(domain_id, name)
-    tenants = Index(id, domain_id)
-    tenants_search_name = Index(domain_id, name)
-    tenants_per_domain = Index(domain_id)
+    unique_tenant = UniqueIndex(domain, name)
+    tenants = Index(id, domain)
+    tenants_search_name = Index(domain, name)
+    tenants_per_domain = Index(domain)
     primary_key = id
-    tenant_domain_ref = ForeignKey(domain_id, luxon_domain.id)
+    tenant_domain_ref = ForeignKey(domain, luxon_domain.name)
     tenant_parent_ref = ForeignKey(tenant_id, id)
 
 
 USERS = [
     ('00000000-0000-0000-0000-000000000000', 'tachyonic',
-     '00000000-0000-0000-0000-000000000000', None,
+     None, None,
      'root', '$2b$12$QaWa.Q3gZuafYXkPo3EJRuSJ1wGuutShb73RuH1gdUVri82CU6V5q',
      None, 'Default Root User', None, None, None, None,
      1, now()),
@@ -114,7 +114,7 @@ USERS = [
 class luxon_user(SQLModel):
     id = Uuid(default=uuid4, internal=True)
     tag = String(max_length=30, null=False)
-    domain_id = Uuid(null=False, internal=True)
+    domain = Fqdn(internal=True)
     tenant_id = Uuid(internal=True)
     username = Username(max_length=100, null=False, readonly=True)
     password = String(max_length=100, null=False)
@@ -126,12 +126,12 @@ class luxon_user(SQLModel):
     last_login = DateTime(internal=True)
     enabled = Boolean(default=True)
     creation_time = DateTime(default=now, internal=True)
-    unique_username = UniqueIndex(domain_id, username)
+    unique_username = UniqueIndex(domain, username)
     user_tenant_ref = ForeignKey(tenant_id, luxon_tenant.id)
-    user_domain_ref = ForeignKey(domain_id, luxon_domain.id)
-    users = Index(domain_id, username)
-    users_tenants = Index(domain_id, tenant_id)
-    users_domain = Index(domain_id)
+    user_domain_ref = ForeignKey(domain, luxon_domain.name)
+    users = Index(domain, username)
+    users_tenants = Index(domain, tenant_id)
+    users_domain = Index(domain)
     primary_key = id
     db_default_rows = USERS
 
@@ -149,13 +149,14 @@ USER_ROLES = [
 class luxon_user_role(SQLModel):
     id = Uuid(default=uuid4, internal=True)
     role_id = Uuid()
-    domain_id = Uuid()
+    domain = Fqdn(internal=True)
     tenant_id = String()
     user_id = Uuid()
     creation_time = DateTime(default=now)
     unique_user_role = UniqueIndex(role_id, tenant_id, user_id)
     user_role_id_ref = ForeignKey(role_id, luxon_role.id)
-    user_role_domain_ref = ForeignKey(domain_id, luxon_domain.id)
-    user_roles = Index(domain_id, tenant_id)
+    user_role_domain_ref = ForeignKey(domain, luxon_domain.name)
+    user_role_tenant_ref = ForeignKey(tenant_id, luxon_tenant.id)
+    user_roles = Index(domain, tenant_id)
     primary_key = id
     db_default_rows = USER_ROLES

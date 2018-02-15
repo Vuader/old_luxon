@@ -34,9 +34,10 @@ from luxon.utils.objects import object_name
 from luxon.structs.threaddict import ThreadDict
 
 _thread_globals = ThreadDict()
-_thread_items = ('current_request',)
+_thread_items = ('current_request', 'client',)
 
 _context_items = ('app',
+                  'client',
                   'current_request',
                   'config',
                   'app_root',
@@ -128,11 +129,8 @@ class Globals(object):
     def __setattr__(self, key, value):
         if key in _thread_items:
             _thread_globals[key] = value
-            return True
-
-        self.__dict__[key] = value
-
-        return True
+        else:
+            self.__dict__[key] = value
 
     def __getattr__(self, attr):
         try:

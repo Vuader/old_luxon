@@ -28,20 +28,23 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
 import os
+import re
 
 from luxon import g
 from luxon import GetLogger
 from luxon.exceptions import AccessDenied
+from luxon.utils.auth import user_domains
 from luxon.utils.imports import get_class
-from luxon import register_resources
+from luxon.utils.html import select
 
 log = GetLogger(__name__)
 
-@register_resources()
-class Token(object):
-    """Token Middleware.
+STATIC_REGEX = re.compile('^/' + g.app.config.get('application',
+                                                  'static').strip('/')
+                          + '.*$')
 
-    Validates token and sets request.context.token object.
+class Token(object):
+    """Tokens Responders / Views.
 
     Luxon tokens use PKI. Its required to have the private key to sign
     new tokens on the tachyonic api. Endpoints will require the public cert
@@ -52,38 +55,48 @@ class Token(object):
 
     Creating token:
         openssl req  -nodes -new -x509  -keyout token.key -out token.cert
+
     """
-    def __init__(self):
-        g.router.add('GET', '/v1/token', self.get)
-        g.router.add('POST', '/v1/token', self.post)
-        g.router.add('PATCH', '/v1/token', self.patch)
+    __slots__ = ()
 
-    def get(self, req, resp):
-        if 'token' in req.context:
-            return req.context.token
-        else:
-            raise ValueError('Middleware not loaded - no token' +
-                                 ' + authentication')
+    def pre(self, req, resp):
+        token = req.session.get('token')
+        scoped = req.session.get('scoped')
+        domain = req.session.get('domain')
+        tenant_id = req.session.get('tenant_id')
 
-    def post(self, req, resp):
-        request_object = req.json
-        if 'token' in req.context:
-            req.context.token.login(request_object.get('username',
-                                                       None),
-                        request_object.get('password', None),
-                        request_object.get('domain', 'default'))
-            return req.context.token
-        else:
-            raise ValueError('Middleware not loaded - no token' +
-                             ' + authentication')
+        # SHORT-CIRCUIT TOKEN VALIDATION FOR STATIC
+        if STATIC_REGEX.match(req.route):
+            return None
 
-    def patch(self, req, resp):
-        request_object = req.json
-        if 'token' in req.context:
-            req.context.token.scope_token(req.context.token.token['token'],
-                                          request_object.get('domain'),
-                                          request_object.get('tenant_id'))
-            return req.context.token
-        else:
-            raise ValueError('Middleware not loaded - no token' +
-                             ' + authentication')
+        if token is not None:
+            try:
+                if scoped is not None:
+                    req.token.parse_token(scoped)
+                else:
+                    req.token.parse_token(token)
+
+                g.client.set_context(token,
+                                     scoped,
+                                     domain,
+                                     tenant_id)
+
+                req.token.domain = domain
+                req.token.tenant_id = tenant_id
+
+                req.context.domains_html = select('X-Domain',
+                                              g.client.user_domains().json,
+                                              domain,
+                                              True,
+                                              'form-control',
+                                              'this.form.submit()')
+                req.context.tenants_html = select('X-Tenant-Id',
+                                                  g.client.user_tenants().json,
+                                                  tenant_id,
+                                                  True,
+                                                  'form-control',
+                                                  'this.form.submit()')
+            except AccessDenied:
+                req.session.clear()
+                req.session.save()
+                raise

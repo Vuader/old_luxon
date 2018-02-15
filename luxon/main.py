@@ -43,7 +43,7 @@ from luxon import g
 from luxon.core.servers.web import server as web_server
 from luxon.core.config import Config
 from luxon import db
-from luxon.utils.luxon import create_dir, copy_file, recursive_copy
+from luxon.main_helpers import create_dir, copy_file, recursive_copy
 
 from luxon.utils.db import (backup_tables, drop_tables,
                             create_tables, restore_tables)
@@ -56,6 +56,7 @@ def setup(args):
         print("Your suppose to install luxon applications not luxon itself")
         exit()
 
+    copy_file(pkg, path, 'policy.json', 'policy.json', False)
     copy_file(pkg, path, 'settings.ini', 'settings.ini', False)
     copy_file(pkg, path, 'wsgi.py', 'wsgi.py', False)
     create_dir('', '%s/static' % path)

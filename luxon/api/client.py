@@ -148,6 +148,26 @@ class Client(RestClient):
 
         return response
 
+    def set_context(self, auth_token, scope_token, domain, tenant_id):
+
+        if 'X-Domain' in self.headers:
+            del self.headers['X-Domain']
+        if 'X-Tenant-Id' in self.headers:
+            del self.headers['X-Tenant-Id']
+
+        if auth_token is not None:
+            self.auth_token = auth_token
+            self.headers['X-Auth-Token'] = self.auth_token
+
+        if scope_token is not None:
+            self.headers['X-Auth-Token'] = scope_token
+
+        if domain is not None:
+            self.headers['X-Domain'] = domain
+
+        if tenant_id is not None:
+            self.headers['X-Tenant-Id'] = tenant_id
+
     def unscope(self):
         """Unscope Token.
         """
@@ -170,3 +190,9 @@ class Client(RestClient):
 
     def delete_endpoint(self, id):
         return super().execute('DELETE', '/v1/endpoint/%s' % id)
+
+    def user_domains(self):
+        return super().execute('GET', '/v1/domains')
+
+    def user_tenants(self):
+        return super().execute('GET', '/v1/tenants')

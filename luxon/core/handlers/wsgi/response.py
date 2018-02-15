@@ -34,6 +34,7 @@ from luxon.core.response import ResponseBase
 from luxon import constants as const
 from luxon.utils.encoding import is_ascii
 from luxon.utils.timezone import TimezoneGMT
+from luxon.utils.http import http_see_other
 
 GMT_TIMEZONE = TimezoneGMT()
 
@@ -83,6 +84,9 @@ class Response(ResponseBase):
     @status.setter
     def status(self, value):
         self._http_response_status_code = value
+
+    def redirect(self, uri):
+        http_see_other(uri)
 
     def set_header(self, name, value):
         """Set a header for this response to a given value.

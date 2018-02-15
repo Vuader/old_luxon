@@ -44,8 +44,12 @@ from luxon.utils.cast import to_tuple
 from luxon.utils.timezone import parse_http_date
 from luxon.utils.objects import dict_value_property
 from luxon import GetLogger
+from luxon.core.session import Session
+from luxon.utils.imports import get_class
+from luxon.utils.encoding import if_unicode_to_bytes
+from luxon.utils.strings import blank_to_none
 
-_cached_wsgi_error_conf = False
+root_logger = GetLogger()
 
 class Request(RequestBase):
     """Represents a clients HTTP request.
@@ -298,11 +302,10 @@ class Request(RequestBase):
         '_cached_is_bot',
         '_cached_static',
         '_cached_json',
-        '_wsgierrors',
+        '_cached_is_ajax',
+        '_cached_session',
     )
     def __init__(self, env, start_response):
-        global _cached_wsgi_error_conf
-
         # Init Base
         super().__init__(env, start_response)
 
@@ -310,10 +313,7 @@ class Request(RequestBase):
         self.method = env['REQUEST_METHOD']
 
         # WSGI Error Handling.
-        if _cached_wsgi_error_conf is False:
-            root_logger = GetLogger()
-            root_logger.log_wsgi(stream=env['wsgi.errors'])
-            _cached_wsgi_error_conf = True
+        # NOTE(cfrademan): To be looked into...
 
         # Set HTTP Request Application URL - Router uses this.
         # PEP 3333 specifies that PATH_INFO may be the
@@ -347,6 +347,8 @@ class Request(RequestBase):
         self._cached_is_bot = None
         self._cached_static = None
         self._cached_json = None
+        self._cached_is_ajax = None
+        self._cached_session = None
 
     @property
     def app(self):
@@ -653,13 +655,13 @@ class Request(RequestBase):
             if isinstance(value, list):
                 return form.getlist(key)
             else:
-                return form.getfirst(key)
+                return blank_to_none(form.getfirst(key))
 
         return dict( (value, parse_value(form, value)) for value in form)
 
     @property
     def form_array(self):
-        raise NotImplemented('Todo!')
+        raise NotImplementedError('Todo!')
 
     @property
     def form_json(self):
@@ -680,10 +682,7 @@ class Request(RequestBase):
                                     'base64': data }
                         json_safe_object[prop].append(file_obj)
                     else:
-                        if ((isinstance(item.value, str) and item.value != '') or
-                                (isinstance(item, bytes) and
-                                 item != b'')):
-                            json_safe_object[prop].append(item.value)
+                            json_safe_object[prop].append(blank_to_none(item.value))
             else:
                 if field.filename:
                     data = base64.encodestring(field.file.read())
@@ -692,10 +691,7 @@ class Request(RequestBase):
                                 'base64': data }
                     json_safe_object[prop] = file_obj
                 else:
-                    if ((isinstance(field.value, str) and field.value != '') or
-                            (isinstance(field.value, bytes) and
-                             field.value != b'')):
-                        json_safe_object[prop] = field.value
+                    json_safe_object[prop] = blank_to_none(field.value)
 
         return js.dumps(json_safe_object)
 
@@ -854,8 +850,10 @@ class Request(RequestBase):
             default = str(default)
 
         try:
-            return form.getfirst(field, default)
-
+            if field in form:
+                return blank_to_none(form.getfirst(field))
+            else:
+                return default
         except TypeError:
             pass
 
@@ -1120,6 +1118,36 @@ class Request(RequestBase):
             self._cached_cookies = cookies
 
         return self._cached_cookies.copy()
+
+    @property
+    def session(self):
+        if self._cached_session is None:
+            expire = g.config.get('sessions', 'expire')
+            backend = g.config.get('sessions', 'driver')
+            backend = get_class(backend)
+
+            if 'luxon' in self.cookies:
+                session_id = if_bytes_to_unicode(self.cookies['luxon'],
+                                                 'ISO-8859-1')
+            else:
+                session_id = self.id
+                self.response.set_cookie('luxon', session_id, max_age=expire,
+                                         domain=self.host)
+
+            self._cached_session = Session(session_id, expire=expire, backend=backend)
+
+        return self._cached_session
+
+    @property
+    def is_ajax(self):
+        if self._cached_is_ajax is None:
+            rw = self.get_header('X_REQUESTED_WITH')
+            if rw is not None and 'xmlhttprequest' in rw:
+                self._cached_is_ajax = True
+            else:
+                self._cached_is_ajax = False
+
+        return self._cached_is_ajax
 
     @property
     def is_mobile(self):

@@ -191,7 +191,7 @@ class HTTPError(Error):
             self.title = title
 
         if description is not None:
-            self.description = ': ' + description
+            self.description = description
         else:
             self.description = ''
 

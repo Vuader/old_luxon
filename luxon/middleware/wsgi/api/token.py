@@ -53,18 +53,9 @@ class Token(object):
     __slots__ = ()
 
     def pre(self, req, resp):
-        driver = g.app.config.get('tokens','driver')
-        expire = g.app.config.getint('tokens','expire')
-        req.context.token = get_class(driver)(expire)
         token = req.get_header('X-Auth-Token')
+
         if token is not None:
-            req.context.token.parse_token(token)
-            req.context.domain = req.context.token.token['domain']
-            req.context.domain_id = req.context.token.token['domain_id']
-            req.context.tenant_id = req.context.token.token['tenant_id']
-            req.context.roles = req.context.token.token['roles']
-        else:
-            req.context.domain = None
-            req.context.domain_id = None
-            req.context.tenant_id = None
-            req.context.roles = []
+            req.token.parse_token(token)
+            req.token.domain = req.get_header('X-Domain')
+            req.token.tenant_id = req.get_header('X-Tenant-Id')

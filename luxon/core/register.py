@@ -78,3 +78,6 @@ def middleware(middleware_class, *args, **kwargs):
 
 def error_template(template):
     g.error_template = template
+
+def ajax_error_template(template):
+    g.ajax_error_template = template
