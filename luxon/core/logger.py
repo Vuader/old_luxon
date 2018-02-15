@@ -284,19 +284,6 @@ class GetLogger(metaclass=NamedSingleton):
     def no_stdout(self):
         self._no('stdout')
 
-    def log_wsgi(self, stream=sys.stderr, log_level=logging.NOTSET):
-        self.no_stdout()
-        if 'wsgi' in self.handlers:
-            return self.handlers['wsgi']
-        else:
-            handler = logging.StreamHandler(stream=stream)
-            self._log(handler, log_level)
-            self.handlers['wsgi'] = handler
-            return handler
-
-    def no_wsgi(self):
-        self._no('wsgi')
-
     def log_syslog(self, host, port=514, log_level=logging.NOTSET):
         if 'syslog' in self.handlers:
             return self.handlers['syslog']

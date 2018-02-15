@@ -27,52 +27,19 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
+from luxon import db
+from luxon.core.auth.driver import BaseDriver
+from luxon.utils.password import valid as is_valid_password
+from luxon.utils.auth import authorize
+from luxon import g
 
-
-def to_tuple(obj):
-    """Tuple Converter
-
-    Takes any object and converts it to a tuple.
-    If the object is a list, it is converted immediatly using tuple().
-    If the object is already a tuple it is just returned,
-    If the object is None a empty tuple is returned,
-    Else a tuple is created with the object as it's first element.
-
-    Args:
-        obj (any object): the object to be converted
-
-    Returns:
-        A tuple containg the given object
-    """
-    if isinstance(obj, list):
-        return tuple(obj)
-    elif isinstance(obj, tuple):
-        return obj
-    elif obj is None:
-        return ()
-    else:
-        return (obj, )
-
-def to_list(obj):
-    """List Converter
-
-    Takes any object and converts it to a `list`.
-    If the object is a list, it is converted immediatly using `list()`.
-    If the object is already a `list` it is just returned,
-    If the object is None a empty `list` is returned,
-    Else a `list` is created with the object as it's first element.
-
-    Args:
-        obj (any object): the object to be converted
-
-    Returns:
-        A list containg the given object
-    """
-    if isinstance(obj, tuple):
-        return list(obj)
-    elif isinstance(obj, list):
-        return obj
-    elif obj is None:
-        return []
-    else:
-        return [obj, ]
+class Api(BaseDriver):
+    def authenticate(self, username, password, domain=None):
+            result = g.current_request.context.client.authenticate(username,
+                                                                   password,
+                                                                   domain)
+            self._token = result.copy()
+            del self._token['token']
+            sig, data = result['token'].split('!!!!')
+            self._token_sig = sig
+            return True

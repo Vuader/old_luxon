@@ -28,6 +28,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
 
+from luxon import g
 
 def render_template(template, *args, **kwargs):
     """Function to return a jinja2 rendered template.
@@ -45,4 +46,5 @@ def render_template(template, *args, **kwargs):
     from luxon.core.template import Environment
     jinja = Environment()
     template = jinja.get_template(template)
+
     return template.render(*args, **kwargs)

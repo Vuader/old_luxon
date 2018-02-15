@@ -29,9 +29,64 @@
 # THE POSSIBILITY OF SUCH DAMAGE.
 
 from luxon import db
+from luxon.utils.cache import memoize
 from luxon.utils.password import valid as is_valid_password
+from luxon.utils.cast import to_list
 
-def user_roles(user_id, domain=None, tenant_id=None):
+def get_domains():
+    with db() as conn:
+        crsr = conn.execute('SELECT * FROM luxon_domain')
+        return crsr.fetchall()
+
+def user_roles(user_id):
+    if user_id is None:
+        # NOTE(cfrademan): SHORT-CIRCUIT - google is your friend.
+        return []
+
+    domains = get_domains()
+    roles = []
+
+    with db() as conn:
+        query = 'SELECT' + \
+                ' luxon_user_role.id AS assignment_id,' + \
+                ' luxon_role.name AS role,' + \
+                ' luxon_user_role.role_id AS role_id,' + \
+                ' luxon_user_role.domain AS domain,' + \
+                ' luxon_user_role.tenant_id AS tenant_id,' + \
+                ' luxon_tenant.name AS tenant FROM' + \
+                ' luxon_user_role LEFT JOIN luxon_role ON' + \
+                ' luxon_user_role.role_id = luxon_role.id' + \
+                ' LEFT JOIN luxon_tenant ON' + \
+                ' luxon_user_role.tenant_id = luxon_tenant.id' + \
+                ' WHERE luxon_user_role.user_id = %s'
+
+        crsr = conn.execute(query, user_id)
+        roles = to_list(crsr.fetchall())
+        for role in roles:
+            if role['domain'] is None and role['tenant_id'] is None:
+                for domain in domains:
+                    role['domain'] = domain['name']
+                    roles.append(role)
+    return roles
+
+def user_domains(user_id):
+    domains = []
+    for role in user_roles(user_id):
+        domain = role['domain']
+        if domain not in domains:
+            domains.append(domain)
+    return domains
+
+def user_tenants(user_id):
+    tenants = {}
+    for tenant in user_roles(user_id):
+        tenant_id = tenant['tenant_id']
+        if tenant_id not in tenants:
+            if tenant_id is not None:
+                tenants[tenant_id] = tenant['tenant']
+    return tenants
+
+def context_roles(user_id, domain=None, tenant_id=None):
     roles = []
     with db() as conn:
         values = []
@@ -39,23 +94,20 @@ def user_roles(user_id, domain=None, tenant_id=None):
         query = 'SELECT' + \
                 ' luxon_user_role.id as assignment_id,' + \
                 ' luxon_user_role.role_id AS role_id,' + \
-                ' luxon_user_role.domain_id as domain_id,' + \
+                ' luxon_user_role.domain as domain,' + \
                 ' luxon_role.name as role,' + \
                 ' luxon_user_role.tenant_id as tenant_id FROM' + \
                 ' luxon_user_role LEFT JOIN luxon_role ON' + \
                 ' luxon_user_role.role_id = luxon_role.id' + \
-                ' LEFT JOIN luxon_domain ON' + \
-                ' luxon_user_role.domain_id = luxon_domain.id' + \
-                ' OR luxon_user_role.domain_id is NULL' + \
                 ' LEFT JOIN luxon_tenant ON' + \
                 ' luxon_user_role.tenant_id = luxon_tenant.id' + \
                 ' OR luxon_user_role.tenant_id is NULL' + \
                 ' where luxon_user_role.user_id = %s'
         if domain is not None:
-            query += ' and luxon_domain.name = %s'
+            query += ' and luxon_user_role.domain = %s'
             values.append(domain)
         else:
-            query += ' and luxon_user_role.domain_id IS NULL'
+            query += ' and luxon_user_role.domain IS NULL'
 
         if tenant_id is not None:
             query += ' and luxon_user_role.tenant_id = %s'
@@ -73,19 +125,23 @@ def user_roles(user_id, domain=None, tenant_id=None):
 def authorize(tag, username=None, password=None, domain=None):
     with db() as conn:
         auth = {}
-        crsr = conn.execute('SELECT luxon_user.id AS user_id' +
-                            ' ,luxon_user.last_login AS last_login' +
-                            ' ,luxon_user.username AS username' +
-                            ' ,luxon_user.password AS password' +
-                            ' ,luxon_domain.name AS domain' +
-                            ' FROM luxon_user' +
-                            ' LEFT JOIN luxon_domain' +
-                            ' ON luxon_user.domain_id = luxon_domain.id' +
-                            ' WHERE luxon_user.enabled = 1' +
-                            ' AND luxon_user.username = %s' +
-                            ' AND luxon_domain.name = %s' +
-                            ' AND luxon_user.tag = %s',
-                            (username, domain, tag))
+        values = [ username, tag ]
+        sql = 'SELECT luxon_user.id AS user_id' + \
+              ' ,luxon_user.last_login AS last_login' + \
+              ' ,luxon_user.username AS username' + \
+              ' ,luxon_user.password AS password' + \
+              ' ,luxon_user.domain AS domain' + \
+              ' FROM luxon_user' + \
+              ' WHERE luxon_user.enabled = 1' + \
+              ' AND luxon_user.username = %s' + \
+              ' AND luxon_user.tag = %s'
+        if domain is not None:
+            sql += ' AND luxon_user.domain = %s'
+            values.append(domain)
+        else:
+            sql += ' AND luxon_user.domain IS NULL'
+
+        crsr = conn.execute(sql, values)
         result = crsr.fetchone()
         if result is not None:
             # Validate Password againts stored HASHED Value.
@@ -94,13 +150,3 @@ def authorize(tag, username=None, password=None, domain=None):
                 return (True, auth,)
 
         return (False, auth,)
-
-def domain_id(domain):
-    if domain is not None:
-        with db() as conn:
-            crsr = conn.execute('SELECT * FROM luxon_domain WHERE name = %s',
-                                domain)
-            result = crsr.fetchone()
-            if result is not None:
-                return result['id']
-    return None

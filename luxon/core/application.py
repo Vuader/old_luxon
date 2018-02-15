@@ -103,7 +103,7 @@ class ApplicationBase(object):
                 'modules',
                 'middleware',)
 
-    def __init__(self, name, app_root=None, ini=None):
+    def __init__(self, name, app_root=None, ini=None, content_type=None):
         try:
             with Timer() as elapsed:
                 # Set current app as global
@@ -125,6 +125,9 @@ class ApplicationBase(object):
 
                 # Configure Logger.
                 GetLogger().app_configure()
+
+                if content_type is not None:
+                    self._RESPONSE_CLASS._DEFAULT_CONTENT_TYPE = content_type
 
                 # Started Application
                 log.info('Started Application'
@@ -168,6 +171,9 @@ class ApplicationBase(object):
                 resource, method, r_kwargs, target, tag = g.router.find( \
                     request.method, \
                     request.route)
+
+                # Route Kwargs in requests.
+                request.route_kwargs = r_kwargs
 
                 # Set route tag in requests.
                 request.tag = tag

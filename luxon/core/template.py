@@ -43,15 +43,27 @@ from luxon.utils.timer import Timer
 
 log = GetLogger(__name__)
 
-class Environment(Jinja2Environment, metaclass=ThreadSingleton):
+
+class Environment(Jinja2Environment):
     def __init__(self, *args, **kwargs):
 
         super().__init__(loader=TachyonicLoader(),
                          trim_blocks=True,
                          lstrip_blocks=True)
 
+
         self.globals['REQ'] = g.current_request
-        self.globals['APP'] = g.app
+        self.globals['REQUEST_ID'] = g.current_request.id
+
+        app = g.current_request.app.strip('/').strip()
+        if app == '':
+            self.globals['APP'] = app
+        else:
+            self.globals['APP'] = '/' + app
+
+        self.globals['STATIC'] = g.current_request.static
+        self.globals['G'] = g
+        self.globals['CONTEXT'] = g.current_request.context
 
 
 def split_template_path(template):
@@ -104,7 +116,7 @@ class TachyonicLoader(BaseLoader):
             try:
                 package_path = split_template_path(template)
                 package = package_path[0]
-                template = ".".join(package_path[1:])
+                template = "/".join(package_path[1:])
                 if package not in self._pkgloaders:
                     self._pkgloaders[package] = PackageLoader(package,
                                                      package_path='/templates',

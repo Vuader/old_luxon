@@ -31,6 +31,8 @@
 from urllib import parse
 import re
 
+from luxon.utils.strings import blank_to_none
+
 _HEX_DIGITS = '0123456789ABCDEFabcdef'
 _HEX_TO_BYTE = dict(((a + b).encode(), bytes([int(a + b, 16)]))
                     for a in _HEX_DIGITS
@@ -161,6 +163,8 @@ def parse_qs(query_string, keep_blanks=False):
         k, _, v = field.partition('=')
         if not (v or keep_blanks):
             continue
+
+        v = blank_to_none(v)
 
         if is_encoded:
             k = decode(k)

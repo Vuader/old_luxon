@@ -39,7 +39,8 @@ from luxon.utils import pki
 from luxon.utils.encoding import if_unicode_to_bytes, if_bytes_to_unicode
 from luxon.exceptions import AccessDenied
 from luxon import GetLogger
-from luxon.utils.auth import user_roles, domain_id
+from luxon.utils.auth import context_roles
+from luxon.utils.cast import to_tuple
 
 log = GetLogger(__name__)
 
@@ -68,7 +69,7 @@ class BaseDriver(object):
         self._initial()
 
     def new_token(self, user_id, username, domain=None, tenant_id=None,
-                  expire=None):
+                  expire=None, roles=[]):
         """Create Token.
 
         This part of step 1 during the authentication after validation.
@@ -78,7 +79,6 @@ class BaseDriver(object):
             username (str): Username.
             email (str): User email address.
             token (str): Unique token for specific user.
-            domain_id (str): Current domain id.
             tenant_id (str): Current tenant id.
         """
         self._token = {}
@@ -106,13 +106,14 @@ class BaseDriver(object):
 
         # Scope domain.
         self._token['domain'] = domain
-        self._token['domain_id'] = domain_id(domain)
 
         # Scope tenant.
         self._token['tenant_id'] = tenant_id
 
         # Scope roles.
-        self._token['roles'] = user_roles(user_id, domain, tenant_id)
+        self._token['roles'] = list(set(context_roles(user_id,
+                                        domain,
+                                        tenant_id) + roles))
 
         # Token Signature
         private_key = g.app.app_root.rstrip('/') + '/token.key'
@@ -129,6 +130,13 @@ class BaseDriver(object):
                 if_unicode_to_bytes(base64.b64encode(
                     if_unicode_to_bytes(js.dumps(self._token))))
         return self._cached_token
+
+    @property
+    def authenticated(self):
+        if self._token is not None:
+            return True
+        else:
+            return False
 
     @property
     def encoded(self):
@@ -156,7 +164,8 @@ class BaseDriver(object):
         self._token = None
         self._token_sig = None
         self._cached_token = None
-        self._context = Container()
+        self._tenant_id = None
+        self._domain = None
 
     def clear(self):
         """Clear Login Context.
@@ -206,6 +215,11 @@ class BaseDriver(object):
         else:
             raise AccessDenied('username not in token')
 
+        if 'roles' in self._token:
+            roles = self._token['roles']
+        else:
+            raise AccessDenied('roles not in token')
+
         if 'expire' in self._token:
             expire = self._token['expire']
         else:
@@ -221,4 +235,82 @@ class BaseDriver(object):
                     self._token['tenant_id'] != domain):
                 raise AccessDenied('token already scoped in tenant')
 
-        self.new_token(user_id, username, domain, tenant_id, expire=expire)
+        self.new_token(user_id, username,
+                       domain, tenant_id,
+                       expire=expire,
+                       roles=roles)
+
+
+    def _context_validate(self, context, value):
+        if self.authenticated:
+            token_context = self.token.get(context)
+            if token_context is not None:
+                if value is None:
+                    raise AccessDenied("token not scoped for %s Global" %
+                                       context)
+                elif value == token_context:
+                    setattr(self, '_' + context, value)
+                else:
+                    raise AccessDenied("token not scoped for %s '%s'" %
+                                       (context,value,))
+            else:
+                    setattr(self, '_' + context, value)
+        else:
+            raise AccessDenied("not authenticated - access denied to %s '%s'" %
+                               (context,value,))
+
+    @property
+    def user_id(self):
+        if self.authenticated:
+            return self.token['user_id']
+        return None
+
+    @property
+    def username(self):
+        if self.authenticated:
+            return self.token['username']
+        return None
+
+    @property
+    def expire(self):
+        if self.authenticated:
+            return self.token['expire']
+        return None
+
+    @property
+    def created(self):
+        if self.authenticated:
+            return self.token['created']
+        return None
+
+    @property
+    def roles(self):
+        if self.authenticated:
+            return to_tuple(self.token['roles'])
+        return ()
+
+    @property
+    def domain(self):
+        if self.authenticated:
+            if self._domain is not None:
+                return self._domain
+            else:
+                return self.token.domain
+        return None
+
+    @domain.setter
+    def domain(self, value):
+        self._context_validate('domain', value)
+
+    @property
+    def tenant_id(self, tenant_id):
+        if self.authenticated:
+            if self._tenant_id is not None:
+                return self._tenant_id
+            else:
+                return self.token.tenant_id
+        return None
+
+    @tenant_id.setter
+    def tenant_id(self, value):
+        self._context_validate('tenant_id', value)

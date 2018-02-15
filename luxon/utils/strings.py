@@ -28,6 +28,12 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
 
+def blank_to_none(value):
+    if ((isinstance(value, str) and value == '') or
+            (isinstance(value, bytes) and
+             value == b'')):
+        return None
+    return value
 
 def try_lower(string):
     # Ask for, forgiveness seems faster, perhaps better :-)

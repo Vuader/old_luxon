@@ -27,49 +27,46 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
-from luxon import db
 from luxon import register_resource
-from luxon.models.users import luxon_user
-from luxon.utils.password import hash
+from luxon.constants import TEXT_HTML
+from luxon import g
 
+@register_resource('POST', '/login')
+def login(req, resp):
+    resp.content_type = TEXT_HTML
+    username = req.get_first('username')
+    password = req.get_first('password')
+    domain = req.get_first('domain')
+    req.token.authenticate(username,
+                           password,
+                           domain)
+    req.session['token'] = req.token.encoded
+    req.session.save()
+    resp.redirect('/')
 
-@register_resource('GET', '/v1/users', tag='role:root')
-def users(req, resp):
-    users = luxon_user(hide=('password',))
-    users.sql_api()
-    return users
+@register_resource('GET', '/logout')
+def logout(req, resp):
+    resp.content_type = TEXT_HTML
+    req.session.clear()
+    req.session.save()
+    req.token.clear()
+    resp.redirect('/')
 
-@register_resource('GET', '/v1/user/{id}', tag='role:root')
-def users(req, resp, id):
-    users = luxon_user(model=dict, hide=('password',))
-    users.sql_id(id)
-    return users
+@register_resource('POST', '/scope')
+def scope(req, resp):
+    resp.content_type = TEXT_HTML
+    x_domain = req.get_first('X-Domain')
+    x_tenant_id = req.get_first('X-Tenant-Id')
+    if x_domain is not None:
+        scoped = g.client.scope(x_domain, x_tenant_id)
+        scoped = scoped['token']
+        req.session['scoped'] = scoped
+        req.session['domain'] = x_domain
+        req.session['tenant_id'] = x_tenant_id
+    else:
+        req.session['scoped'] = None
+        req.session['domain'] = None
+        req.session['tenant_id'] = None
 
-@register_resource('POST', '/v1/user', tag='role:root')
-def new_user(req, resp):
-    user = luxon_user(model=dict, hide=('password',))
-    user = req.json.copy()
-    user['tag'] = 'tachyonic'
-    if 'password' in user and user['password'] is not None:
-        user['password'] = hash(user['password'])
-    user.update(user)
-    user.commit()
-    return user
-
-@register_resource([ 'PUT', 'PATCH' ], '/v1/user/{id}', tag='role:root')
-def update_user(req, resp, id):
-    user = luxon_user(model=dict, hide=('password',))
-    user.sql_id(id)
-    user = req.json.copy()
-    user['tag'] = 'tachyonic'
-    if 'password' in user and user['password'] is not None:
-        user['password'] = hash(user['password'])
-    user.update(user)
-    user.commit()
-    return user
-
-@register_resource('DELETE', '/v1/user/{id}', tag='role:root')
-def delete_user(req, resp, id):
-    user = luxon_user(model=dict, hide=('password',))
-    user.sql_id(id)
-    user.delete()
+    req.session.save()
+    resp.redirect('/')

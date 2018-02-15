@@ -44,6 +44,10 @@ defaults = {
         'expire': '3600',
         'driver': 'luxon.core.auth.example:ExampleDriver',
     },
+    'sessions': {
+        'expire': '3600',
+        'driver': 'luxon.core.session:SessionFile',
+    },
     'tenants': {
         'driver': 'luxon.core.tenant.example:ExampleDriver',
     },

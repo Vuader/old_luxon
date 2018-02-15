@@ -36,6 +36,8 @@ from luxon import g
 from luxon import GetLogger
 from luxon.utils.unique import string_id
 from luxon.structs.container import Container
+from luxon.utils.imports import get_class
+
 
 log = GetLogger(__name__)
 
@@ -89,6 +91,7 @@ class RequestBase(object):
     __slots__ = (
         'app',
         'route',
+        'route_kwargs',
         'method',
         'log',
         'id',
@@ -96,6 +99,7 @@ class RequestBase(object):
         'tag',
         'context',
         'response',
+        '_cached_token',
     )
     def __init__(self, *args, **kwargs):
         # Request ID
@@ -109,6 +113,8 @@ class RequestBase(object):
 
         self.response = None
 
+        self._cached_token = None
+
     def __repr__(self):
         return '<%s: %s %r>' % (self.__class__.__name__, self.method,
                                 self.route)
@@ -118,15 +124,9 @@ class RequestBase(object):
                                 self.route)
 
     @property
-    def domain_id(self):
-        try:
-            return self.context.domain_id
-        except AttributeError:
-            return None
-
-    @property
-    def tenant_id(self):
-        try:
-            return self.context.tenant_id
-        except AttributeError:
-            return None
+    def token(self):
+        if self._cached_token is None:
+            driver = g.app.config.get('tokens','driver')
+            expire = g.app.config.getint('tokens','expire')
+            self._cached_token = get_class(driver)(expire)
+        return self._cached_token
