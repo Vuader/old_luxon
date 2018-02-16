@@ -78,16 +78,16 @@ def compiler(dict_rule_set):
                           condition + '\n')
 
             # Correct build_rule for interpolation.
-            # Any string with value:value is an expression.
+            # Any string with '$value' is an expression.
             for expr in interpolation_match.findall(build_rule):
-                if expr[0:] not in dict_rule_set:
-                    log.error("Error in interpolation of '" + expr +
+                if expr[1:] not in dict_rule_set:
+                    log.error("Missing rule for interpolation of '" + expr +
                               "' in rule '" + rule + "' skipping.")
                     build_rule = build_rule.replace(expr, 'False')
                     continue
 
-                expr = expr.replace(':', '_')[0:]
-                build_rule = build_rule.replace(expr())
+                build_rule = build_rule.replace(expr, expr.replace(':',
+                                                                   '_')[1:])
 
             # Add Rule to _rules dictionary for validation to select rule.
             build_rule += "_rules['" + rule + "'] = " + rule.replace(':','_')
