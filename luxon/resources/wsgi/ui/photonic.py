@@ -56,7 +56,7 @@ def scope(req, resp):
         x_domain = req.get_first('X-Domain')
         x_tenant_id = req.get_first('X-Tenant-Id')
         if x_domain is not None:
-            scoped = g.client.scope(x_domain, x_tenant_id)
+            scoped = g.client.scope(x_domain, x_tenant_id).json
             scoped = scoped['token']
             req.session['scoped'] = scoped
             req.session['domain'] = x_domain

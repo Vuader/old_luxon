@@ -35,11 +35,8 @@ from luxon import g
 
 class Api(BaseDriver):
     def authenticate(self, username, password, domain=None):
-            result = g.current_request.context.client.authenticate(username,
-                                                                   password,
-                                                                   domain)
-            self._token = result.copy()
-            del self._token['token']
-            sig, data = result['token'].split('!!!!')
-            self._token_sig = sig
+            response = g.client.authenticate(username,
+                                             password,
+                                             domain)
+            self._token = response.json['token']
             return True
