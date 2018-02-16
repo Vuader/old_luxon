@@ -45,7 +45,6 @@ from luxon.utils.cast import to_tuple
 log = GetLogger(__name__)
 
 
-
 class BaseDriver(object):
     """Base Authentication BaseDriver
 
@@ -82,6 +81,7 @@ class BaseDriver(object):
             tenant_id (str): Current tenant id.
         """
         token = {}
+        
         if user_id is None:
             raise ValueError('Require user_id for new_token')
         if username is None:
