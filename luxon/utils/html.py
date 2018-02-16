@@ -33,6 +33,7 @@ def select(name, options, selected, empty=False, cls=None, onchange=None):
     html = HTMLDoc()
     select = html.create_element('select')
     select.set_attribute('name', name)
+    select.set_attribute('id', name)
     if onchange is not None:
         select.set_attribute('onchange', onchange)
 

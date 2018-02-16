@@ -69,3 +69,14 @@ def scope(req, resp):
         req.session.save()
 
     resp.redirect('/')
+
+@register_resource(['GET', 'POST'], '/apiproxy')
+def apiproxy(req, resp):
+    endpoint = req.get_first('endpoint')
+    url = req.get_first('url')
+    response = g.client.execute(
+       req.method, url, req.form_dict, endpoint=endpoint)
+    resp.set_headers(response.headers)
+    resp.status = response.status_code
+    resp.content_type = response.content_type
+    return response.body

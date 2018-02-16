@@ -88,13 +88,13 @@ class Token(object):
                                               g.client.user_domains().json,
                                               domain,
                                               True,
-                                              'form-control',
+                                              'select2 form-control',
                                               'this.form.submit()')
                 req.context.tenants_html = select('X-Tenant-Id',
                                                   g.client.user_tenants().json,
                                                   tenant_id,
                                                   True,
-                                                  'form-control',
+                                                  'select2 form-control',
                                                   'this.form.submit()')
             except AccessDenied:
                 req.session.clear()
