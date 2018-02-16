@@ -31,6 +31,7 @@ import re
 import cgi
 import string
 import requests
+
 from collections import OrderedDict
 
 from luxon import g
@@ -46,6 +47,7 @@ from luxon.utils.encoding import if_unicode_to_bytes
 from luxon.utils.cache import Cache
 from luxon.exceptions import JSONDecodeError
 from luxon.utils.strings import unquote_string
+from luxon.structs.cidict import CiDict
 
 log = GetLogger(__name__)
 
@@ -252,10 +254,11 @@ def _debug(method, url, payload, request_headers, response_headers,
 
 
 class Response(object):
-    __slots__ = ('_result', '_cached_json',)
+    __slots__ = ('_result', '_cached_json', '_cached_headers',)
 
     def __init__(self, requests_result):
         self._cached_json = None
+        self._cached_headers = None
         self._result = requests_result
 
     @property
@@ -264,7 +267,10 @@ class Response(object):
 
     @property
     def headers(self):
-        return self._result.headers
+        if self._cached_headers is None:
+            self._cached_headers = CiDict()
+            self._cached_headers.update(self._result.headers)
+        return self._cached_headers
 
     @property
     def status_code(self):

@@ -35,6 +35,8 @@ from luxon import constants as const
 from luxon.utils.encoding import is_ascii
 from luxon.utils.timezone import TimezoneGMT
 from luxon.utils.http import http_see_other
+from luxon.structs.cidict import CiDict
+
 
 GMT_TIMEZONE = TimezoneGMT()
 
@@ -161,7 +163,7 @@ class Response(ResponseBase):
             ValueError: `headers` was not a 'dict' or 'list' of 'tuple'.
         """
 
-        if isinstance(headers, dict):
+        if isinstance(headers, (dict, CiDict,)):
             headers = headers.items()
 
         _headers = self._headers
