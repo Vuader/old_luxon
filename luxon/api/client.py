@@ -88,11 +88,11 @@ class Client(RestClient):
         data['password'] = password
         data['domain'] = domain
 
-        response = self.execute("POST", auth_url, data).json
+        response = self.execute("POST", auth_url, data)
 
-        if 'token' in response:
-            self.headers['X-Auth-Token'] = response['token']
-            self.auth_token = response['token']
+        if 'token' in response.json:
+            self.headers['X-Auth-Token'] = response.json['token']
+            self.auth_token = response.json['token']
 
         return response
 
@@ -111,14 +111,14 @@ class Client(RestClient):
         """
         auth_url = "/v1/token"
 
-        response = self.execute("GET", auth_url).json
+        response = self.execute("GET", auth_url)
 
-        if 'token' in response:
-            self.headers['X-Auth-Token'] = response['token']
-        if 'tenant_id' in response:
-            self.headers['X-Tenant-Id'] = response['tenant_id']
-        if 'domain' in response:
-            self.headers['X-Domain'] = response['domain']
+        if 'token' in response.json:
+            self.headers['X-Auth-Token'] = response.json['token']
+        if 'tenant_id' in response.json:
+            self.headers['X-Tenant-Id'] = response.json['tenant_id']
+        if 'domain' in response.json:
+            self.headers['X-Domain'] = response.json['domain']
 
         return response
 
@@ -137,14 +137,14 @@ class Client(RestClient):
         scope['domain'] = domain
         scope['tenant_id'] = tenant_id
 
-        response = self.execute("PATCH", auth_url, scope).json
+        response = self.execute("PATCH", auth_url, scope)
 
-        if 'token' in response:
-            self.headers['X-Auth-Token'] = response['token']
-        if 'tenant_id' in response:
-            self.headers['X-Tenant-Id'] = response['tenant_id']
-        if 'domain' in response:
-            self.headers['X-Domain'] = response['domain']
+        if 'token' in response.json:
+            self.headers['X-Auth-Token'] = response.json['token']
+        if 'tenant_id' in response.json:
+            self.headers['X-Tenant-Id'] = response.json['tenant_id']
+        if 'domain' in response.json:
+            self.headers['X-Domain'] = response.json['domain']
 
         return response
 
@@ -186,13 +186,13 @@ class Client(RestClient):
         return self.execute('POST', '/v1/endpoint', req)
 
     def list_endpoints(self):
-        return super().execute('GET', '/v1/endpoints')
+        return self.execute('GET', '/v1/endpoints')
 
     def delete_endpoint(self, id):
-        return super().execute('DELETE', '/v1/endpoint/%s' % id)
+        return self.execute('DELETE', '/v1/endpoint/%s' % id)
 
     def user_domains(self):
-        return super().execute('GET', '/v1/domains')
+        return self.execute('GET', '/v1/domains')
 
     def user_tenants(self):
-        return super().execute('GET', '/v1/tenants')
+        return self.execute('GET', '/v1/tenants')

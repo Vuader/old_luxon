@@ -216,7 +216,6 @@ class CacheControl(object):
 
 
 def parse_cache_control_header(header):
-    values = {'options': []}
     cachecontrol = CacheControl()
 
     CACHE_CONTROL_OPTION_RE.findall(header)
@@ -253,9 +252,10 @@ def _debug(method, url, payload, request_headers, response_headers,
 
 
 class Response(object):
-    __slots__ = '_result'
+    __slots__ = ('_result', '_cached_json',)
 
     def __init__(self, requests_result):
+        self._cached_json = None
         self._result = requests_result
 
     @property
@@ -287,17 +287,20 @@ class Response(object):
 
     @property
     def json(self):
-        if self.encoding != 'UTF-8':
-            raise RestClientError(400, 'JSON requires UTF-8 Encoding')
+        if self._cached_json is None:
+            if self.encoding != 'UTF-8':
+                raise RestClientError(400, 'JSON requires UTF-8 Encoding')
 
-        try:
-            if self.status_code != 204:
-                return js.loads(self.body)
-            else:
-                return b''
+            try:
+                if self.status_code != 204:
+                    self._cached_json = js.loads(self.body)
+                else:
+                    self._cached_json = None
 
-        except JSONDecodeError as e:
-            raise RestClientError(400, 'JSON Decode: %s' % e)
+            except JSONDecodeError as e:
+                raise RestClientError(400, 'JSON Decode: %s' % e)
+
+        return self._cached_json
 
     @property
     def encoding(self):
