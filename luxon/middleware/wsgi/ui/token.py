@@ -87,6 +87,13 @@ class Token(object):
                 req.token.domain = domain
                 req.token.tenant_id = tenant_id
 
+                _selected_tenant = {}
+                if tenant_id is not None:
+                    _tenant = g.client.execute('GET',
+                                     '/v1/tenant/%s' % tenant_id)
+                    _tenant_name = _tenant.json['name']
+                    _selected_tenant = {tenant_id: _tenant_name}
+
                 req.context.regions_html = select('X-Region',
                                                   g.client.endpoints.regions,
                                                   region,
@@ -101,7 +108,7 @@ class Token(object):
                                               'select2 form-control',
                                               'this.form.submit()')
                 req.context.tenants_html = select('X-Tenant-Id',
-                                                  None,
+                                                  _selected_tenant,
                                                   tenant_id,
                                                   True,
                                                   'select2 form-control',
