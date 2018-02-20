@@ -39,6 +39,8 @@ defaults = {
         'restapi': 'http://localhost/api',
         'log_stdout': True,
         'log_level': 'WARNING',
+        'interface': 'public',
+        'region': 'default',
     },
     'tokens': {
         'expire': '3600',

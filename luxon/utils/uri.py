@@ -164,24 +164,22 @@ def parse_qs(query_string, keep_blanks=False):
         if not (v or keep_blanks):
             continue
 
-        v = blank_to_none(v)
-
         if is_encoded:
             k = decode(k)
+            v = decode(v)
 
         if k in params:
             old_value = params[k]
-            if is_encoded:
-                v = decode(v)
-                if isinstance(old_value, list):
-                    old_value.append(v)
-                else:
-                    params[k] = [old_value, v]
+
+            if isinstance(old_value, list):
+                old_value.append(blank_to_none(v))
+            else:
+                params[k] = [old_value, blank_to_none(v)]
         else:
             if is_encoded:
-                params[k] = decode(v)
+                params[k] = blank_to_none(decode(v))
             else:
-                params[k] = v
+                params[k] = blank_to_none(v)
 
     return params
 

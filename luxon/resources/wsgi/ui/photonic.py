@@ -53,8 +53,10 @@ def logout(req, resp):
 @register_resource('POST', '/scope')
 def scope(req, resp):
     if req.token.authenticated:
+        x_region = req.get_first('X-Region')
         x_domain = req.get_first('X-Domain')
         x_tenant_id = req.get_first('X-Tenant-Id')
+        req.session['region'] = x_region
         if x_domain is not None:
             scoped = g.client.scope(x_domain, x_tenant_id).json
             scoped = scoped['token']
@@ -67,15 +69,25 @@ def scope(req, resp):
             req.session['tenant_id'] = None
 
         req.session.save()
-
     resp.redirect('/')
 
-@register_resource(['GET', 'POST'], '/apiproxy')
+@register_resource(['GET', 'POST', 'PATCH', 'DELETE', 'PUT'], '/apiproxy')
 def apiproxy(req, resp):
-    endpoint = req.get_first('endpoint')
-    url = req.get_first('url')
-    response = g.client.execute(
-       req.method, url, req.form_dict, endpoint=endpoint)
+    endpoint = req.query_params.get('endpoint')
+    term = req.query_params.get('term')
+    search_field = req.query_params.get('search_field')
+    url = req.query_params.get('url')
+    url += '?'
+
+    if req.query_string:
+        url += req.query_string
+
+    url += '&range=5'
+    if term is not None and search_field is not None:
+        url += '&search=%s:%s' % (search_field, term,)
+
+    response = g.client.execute(req.method, url, req.form_json,
+                                endpoint=endpoint)
     resp.set_headers(response.headers)
     resp.status = response.status_code
     resp.content_type = response.content_type

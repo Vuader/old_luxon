@@ -61,6 +61,7 @@ class Token(object):
 
     def pre(self, req, resp):
         token = req.session.get('token')
+        region = req.session.get('region')
         scoped = req.session.get('scoped')
         domain = req.session.get('domain')
         tenant_id = req.session.get('tenant_id')
@@ -79,19 +80,28 @@ class Token(object):
                 g.client.set_context(token,
                                      scoped,
                                      domain,
-                                     tenant_id)
+                                     tenant_id,
+                                     region,
+                                     g.config.get('application', 'interface'))
 
                 req.token.domain = domain
                 req.token.tenant_id = tenant_id
 
+                req.context.regions_html = select('X-Region',
+                                                  g.client.endpoints.regions,
+                                                  region,
+                                                  True,
+                                                  'select2 form-control',
+                                                  'this.form.submit()')
+
                 req.context.domains_html = select('X-Domain',
-                                              g.client.user_domains().json,
+                                                  ( domain, ),
                                               domain,
                                               True,
                                               'select2 form-control',
                                               'this.form.submit()')
                 req.context.tenants_html = select('X-Tenant-Id',
-                                                  g.client.user_tenants().json,
+                                                  None,
                                                   tenant_id,
                                                   True,
                                                   'select2 form-control',

@@ -204,6 +204,11 @@ class Request(RequestBase):
         query_string (str): Query string portion of the request URI, without
             the preceding '?' character.
 
+        query_params (dict): The mapping of request query parameter names to
+            their values.  Where the parameter appears multiple times in the
+            query string, the value mapped to that parameter key will be a list
+            of all the values in the order seen.
+
         content_type (str): Value of the Content-Type header, or None if the
             header is missing.
 
@@ -286,6 +291,7 @@ class Request(RequestBase):
         '_cached_relative_uri',
         '_cached_forwarded',
         '_cached_query_string',
+        '_cached_query_params',
         '_cached_content_type',
         '_cached_content_length',
         '_cached_stream',
@@ -331,6 +337,7 @@ class Request(RequestBase):
         self._cached_relative_uri = None
         self._cached_forwarded = None
         self._cached_query_string = None
+        self._cached_query_params = None
         self._cached_content_type = None
         self._cached_content_length = None
         self._cached_stream = None
@@ -558,12 +565,27 @@ class Request(RequestBase):
         # URI QUERY_STRING try/catch cheaper and faster
         if self._cached_query_string is not None:
             return self._cached_query_string
+
         try:
             self._cached_query_string = self.env['QUERY_STRING']
         except KeyError:
-            self._cached_query_string = ''
+            self._cached_query_string = None
 
         return self._cached_query_string
+
+    @property
+    def query_params(self):
+        # URI QUERY_STRING try/catch cheaper and faster
+        if self._cached_query_params is None:
+            try:
+                if self.query_string:
+                    self._cached_query_params = parse_qs(self.query_string, True)
+                else:
+                    self._cached_query_params = {}
+            except KeyError:
+                self._cached_query_params = {}
+
+        return self._cached_query_params
 
     @property
     def content_type(self):
@@ -588,7 +610,7 @@ class Request(RequestBase):
                                               'Negative Length not allowed.')
             return length
         except KeyError:
-            raise errors.HTTPLengthRequired()
+            return 0
         except ValueError:
             raise errors.HTTPInvalidHeader('Content-Length',
                                           'Not an integer')
@@ -616,8 +638,12 @@ class Request(RequestBase):
             return self._cached_form
 
         self.stream.seek(0)
-        self._cached_form = FieldStorage(fp=self.stream, keep_blank_values=False,
-                                         environ=self.env)
+        environ = { 'REQUEST_METHOD': 'POST',
+                    'CONTENT_LENGTH': self.content_length }
+        if 'CONTENT_TYPE' in self.env:
+            environ['CONTENT_TYPE'] = self.env['CONTENT_TYPE']
+
+        self._cached_form = FieldStorage(fp=self, keep_blank_values=False, environ=environ)
 
         return self._cached_form
 

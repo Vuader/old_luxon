@@ -37,7 +37,7 @@ from luxon.utils.imports import get_class
 from luxon import register_resources
 from luxon import register_resource
 from luxon.models.endpoints import luxon_endpoint
-from luxon.models.users import luxon_user
+from luxon.models.users import luxon_user, luxon_tenant
 from luxon.utils.password import hash
 from luxon.utils.auth import user_domains, user_tenants
 
@@ -46,11 +46,48 @@ log = GetLogger(__name__)
 
 @register_resource('GET', '/v1/domains')
 def domains(req, resp):
-    return user_domains(req.token.user_id)
+    search = req.query_params.get('term')
+    domains_list = user_domains(req.token.user_id)
+    if search is not None:
+        filtered = []
+        for domain in domains_list:
+            if search in domain:
+                filtered.append(domain)
+        return filtered
+    return domains_list
 
-@register_resource('GET', '/v1/tenants')
+@register_resource('GET', '/v1/tenants', tag='admin')
 def tenants(req, resp):
-    return user_tenants(req.token.user_id)
+    tenants = luxon_tenant()
+    tenants.sql_api()
+    return tenants
+
+@register_resource('POST', '/v1/tenant', tag='admin')
+def new_tenant(req, resp):
+    tenant = luxon_tenant(model=dict)
+    tenant.update(req.json)
+    tenant.commit()
+    return tenant
+
+@register_resource([ 'PUT', 'PATCH' ], '/v1/tenant/{id}', tag='admin')
+def update_tenant(req, resp, id):
+    tenant = luxon_tenant(model=dict)
+    tenant.sql_id(id)
+    tenant.update(req.json)
+    tenant.commit()
+    return tenant
+
+@register_resource('GET', '/v1/tenant/{id}', tag='admin')
+def view_tenant(req, resp, id):
+    tenant = luxon_tenant(model=dict)
+    tenant.sql_id(id)
+    return tenant
+
+@register_resource('DELETE', '/v1/tenant/{id}', tag='admin')
+def delete_tenant(req, resp, id):
+    tenant = luxon_tenant(model=dict)
+    tenant.sql_id(id)
+    tenant.delete()
 
 @register_resource('GET', '/v1/regions')
 def regions(req, resp):
@@ -58,7 +95,7 @@ def regions(req, resp):
     with db() as conn:
         crsr = conn.execute('SELECT region FROM luxon_endpoint GROUP BY region')
         for region in crsr:
-            regions.append(region)
+            regions.append(region['region'])
     resp.set_cache_max_age(120)
     return regions
 
@@ -82,6 +119,12 @@ def update_endpoint(req, resp, id):
     endpoint.sql_id(id)
     endpoint.update(req.json)
     endpoint.commit()
+    return endpoint
+
+@register_resource('GET', '/v1/endpoint/{id}', tag='role:root')
+def view_endpoint(req, resp, id):
+    endpoint = luxon_endpoint(model=dict)
+    endpoint.sql_id(id)
     return endpoint
 
 @register_resource('DELETE', '/v1/endpoint/{id}', tag='role:root')
