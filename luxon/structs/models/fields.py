@@ -970,6 +970,7 @@ class UniqueIndex(BaseField):
     def __init__(self, *args):
         self._index = args
         super().__init__()
+        self.internal = True
 
 class Index(BaseField):
     """Index.
@@ -990,6 +991,7 @@ class Index(BaseField):
     def __init__(self, *args):
         self._index = args
         super().__init__()
+        self.internal = True
 
 class ForeignKey(BaseField):
     """Foreign Key.
@@ -1058,3 +1060,4 @@ class ForeignKey(BaseField):
         self._on_delete = on_delete.upper()
         self._on_update = on_update.upper()
         super().__init__()
+        self.internal = True

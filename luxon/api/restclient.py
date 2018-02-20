@@ -67,6 +67,8 @@ class RestClient(object):
                  cert=None, default_region='default',
                  default_interface='public'):
 
+        self.region = None
+        self.interface = None
         self.uri = uri
         self.auth = auth
         self.timeout = timeout
@@ -122,6 +124,12 @@ class RestClient(object):
         Returns tuple (status code, respone headers, response body)
         """
         headers = {**headers, **self.headers}
+
+        if region is None:
+            region = self.region
+
+        if interface is None:
+            interface = self.interface
 
         if endpoint is not None:
             uri = self.endpoints.get(endpoint, interface, region)

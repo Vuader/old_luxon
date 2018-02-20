@@ -33,27 +33,7 @@ from luxon.structs.models.model import Model
 from luxon.structs.models.fields import Integer, UniqueIndex, ForeignKey
 from luxon import exceptions
 from luxon.utils.imports import get_class
-
-def order_by(order_by, fields):
-        orders = order_by.split(',')
-        formatted_orders = []
-        for order in orders:
-            order_options = order.split(':')
-            order_field = order_options[0].replace(' ','')
-            order_type = "asc"
-            if len(order_options) == 2:
-                order_type = order_options[1].lower()
-            if order_type != "asc" and order_type != "desc":
-                raise exceptions.ValidationError('Bad order_by header provided')
-            if order_field not in fields:
-                raise exceptions.ValidationError("Unknown field '%s' in sort" %
-                                                order_field)
-            formatted_order = "%s %s" % (order_field, order_type)
-            formatted_orders.append(formatted_order)
-        formatted_orders = ",".join(formatted_orders)
-        sql_order = " ORDER BY %s " % (formatted_orders,)
-        return sql_order
-
+from luxon.utils.cast import to_list
 
 class SQLModel(Model):
     db_engine = 'innodb'
@@ -111,7 +91,10 @@ class SQLModel(Model):
             else:
                 query.append('tenant_id IS NULL')
 
-        search = g.current_request.get_list('search')
+        search = to_list(g.current_request.query_params.get('search'))
+        from luxon import GetLogger
+        log = GetLogger(__name__)
+        log.critical(search)
         if len(search) > 0:
             for lookin in search:
                 field, val = lookin.split(":")
@@ -138,7 +121,7 @@ class SQLModel(Model):
         query = ''
 
         if g.current_request.method == 'GET':
-            sort = g.current_request.get_list('sort')
+            sort = to_list(g.current_request.query_params.get('sort'))
             if len(sort) > 0:
                 ordering = []
                 for order in sort:
@@ -153,7 +136,7 @@ class SQLModel(Model):
 
                 query += " ORDER BY %s" % ','.join(ordering)
 
-            range = g.current_request.get_first('range')
+            range = g.current_request.query_params.get('range')
             if range is not None:
                 try:
                     range = range.split(',')
@@ -162,8 +145,7 @@ class SQLModel(Model):
                         query += " LIMIT %s" % limit
                     if len(range) == 2:
                         begin = int(range[0])
-                        end = int(range[1])
-                        limit = end - begin
+                        limit = int(range[1])
                         query += " LIMIT %s, %s " % (begin, limit,)
                 except ValueError:
                     raise ValueError('Invalid range defiend')

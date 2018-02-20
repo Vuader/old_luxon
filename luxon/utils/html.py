@@ -28,6 +28,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
 from luxon.structs.htmldoc import HTMLDoc
+from luxon.structs.models.fields import String
 
 def select(name, options, selected, empty=False, cls=None, onchange=None):
     html = HTMLDoc()
@@ -39,31 +40,37 @@ def select(name, options, selected, empty=False, cls=None, onchange=None):
 
     if cls is not None:
         select.set_attribute('class', cls)
-    for opt in options:
-        if empty is True:
-            option = select.create_element('option')
-            option.set_attribute('value', '')
-            option.append('')
+
+    if empty is True:
         option = select.create_element('option')
-        if isinstance(options, (list, tuple,)):
-            if isinstance(opt, (list, tuple,)):
-                try:
-                    option.set_attribute('value', opt[0])
-                    option.append(opt[1])
-                    if opt[1] == selected:
+        option.set_attribute('value', '')
+        option.append('')
+
+    if options is not None:
+        for opt in options:
+            if isinstance(options, (list, tuple,)):
+                if isinstance(opt, (list, tuple,)):
+                    try:
+                        option = select.create_element('option')
+                        option.set_attribute('value', opt[0])
+                        option.append(opt[1])
+                        if opt[1] == selected:
+                            option.set_attribute('selected')
+                    except IndexError:
+                        raise ValueError('Malformed values for HTML select')
+                else:
+                    if opt is not None:
+                        option = select.create_element('option')
+                        option.set_attribute('value', opt)
+                        if opt == selected:
+                            option.set_attribute('selected')
+                        option.append(opt)
+            elif isinstance(options, dict):
+                    option = select.create_element('option')
+                    option.set_attribute('value', opt)
+                    if opt == selected:
                         option.set_attribute('selected')
-                except IndexError:
-                    raise ValueError('Malformed values for HTML select')
-            else:
-                option.set_attribute('value', opt)
-                if opt == selected:
-                    option.set_attribute('selected')
-                option.append(opt)
-        elif isinstance(options, dict):
-                option.set_attribute('value', opt)
-                if opt == selected:
-                    option.set_attribute('selected')
-                option.append(options[opt])
+                    option.append(options[opt])
     return html
 
 class Menu(object):
@@ -262,3 +269,49 @@ def datatable(id, columns):
     tbody = table.create_element('tbody')
     tbody.set_attribute('id', id)
     script = html.create_element('script')
+
+def form(model, values=None, readonly=False):
+    html = HTMLDoc()
+    fields = model.fields
+    if values is None and not isinstance(model, type):
+        values = model.dict
+    elif values is None:
+        values = {}
+
+    for field in fields:
+        obj = fields[field]
+        if obj.hidden is False and obj.internal is False:
+            value = values.get(field)
+
+            form_group = html.create_element('div')
+            form_group.set_attribute('class', 'form-group')
+            label = form_group.create_element('label')
+            label.set_attribute('class', 'control-label col-sm-2')
+            label.set_attribute('for', 'field')
+            if obj.label is not None:
+                label.append(obj.label)
+            else:
+                label.append(field)
+            div = form_group.create_element('div')
+            div.set_attribute('class', 'col-sm-10')
+
+            if isinstance(obj, String):
+                input = div.create_element('input')
+                input.set_attribute('type', 'text')
+                input.set_attribute('class', 'form-control')
+                input.set_attribute('id', field)
+                input.set_attribute('name', field)
+                if readonly is True:
+                    input.set_attribute('readonly')
+                if obj.placeholder is not None:
+                    input.set_attribute('placeholder', obj.placeholder)
+                if value is not None:
+                    input.set_attribute('value', value)
+                if obj.readonly:
+                    input.set_attribute('readonly')
+                if obj.null is False:
+                    input.set_attribute('required')
+            else:
+                pass
+
+    return html

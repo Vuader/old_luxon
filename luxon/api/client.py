@@ -58,7 +58,7 @@ class Client(RestClient):
     """
     @memoize(120)
     def collect_endpoints(self):
-        response = super().execute('GET', '/v1/endpoints')
+        response = self.execute('GET', '/v1/endpoints')
         for endpoint in response.json:
             self.endpoints.set(endpoint['name'], endpoint['interface'],
                                endpoint['region'], endpoint['uri'])
@@ -148,7 +148,8 @@ class Client(RestClient):
 
         return response
 
-    def set_context(self, auth_token, scope_token, domain, tenant_id):
+    def set_context(self, auth_token, scope_token, domain, tenant_id, region,
+                    interface):
 
         if 'X-Domain' in self.headers:
             del self.headers['X-Domain']
@@ -167,6 +168,12 @@ class Client(RestClient):
 
         if tenant_id is not None:
             self.headers['X-Tenant-Id'] = tenant_id
+
+        if region is not None:
+            self.region = region
+
+        if interface is not None:
+            self.interface = interface
 
     def unscope(self):
         """Unscope Token.

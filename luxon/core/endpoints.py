@@ -41,6 +41,7 @@ class Endpoints(object):
 
         self.default_interface = default_interface
         self.endpoints = {}
+        self.regions = []
 
     def set(self, name, interface, region, uri):
         if interface not in self.interfaces:
@@ -52,6 +53,9 @@ class Endpoints(object):
 
         if interface not in self.endpoints[name]:
             self.endpoints[name][interface] = {}
+
+        if region not in self.regions:
+            self.regions.append(region)
 
         self.endpoints[name][interface][region] = uri
 
