@@ -643,7 +643,7 @@ class Request(RequestBase):
         if 'CONTENT_TYPE' in self.env:
             environ['CONTENT_TYPE'] = self.env['CONTENT_TYPE']
 
-        self._cached_form = FieldStorage(fp=self, keep_blank_values=False, environ=environ)
+        self._cached_form = FieldStorage(fp=self, keep_blank_values=True, environ=environ)
 
         return self._cached_form
 

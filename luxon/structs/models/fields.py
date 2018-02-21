@@ -948,6 +948,13 @@ class Boolean(SmallInt):
                 value = False
             else:
                 value = True
+        elif isinstance(value, (str, bytes,)):
+            value = if_bytes_to_unicode(value).lower()
+            if value == "1" or value == "on" or value == 'true':
+                value = True
+            else:
+                value = False
+
         if not isinstance(value, bool):
             self.error('Invalid True/False Boolean value', value)
         return value

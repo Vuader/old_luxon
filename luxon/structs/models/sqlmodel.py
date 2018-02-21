@@ -73,28 +73,36 @@ class SQLModel(Model):
             crsr.commit()
             self._sql_parse(result)
 
-    def _api_context(self, where=False):
-        values = []
-        query = []
+    def _api_context(self, where=False, id_context=False):
+        context_values = []
+        context_query = []
+
         if 'domain' in self.fields:
             domain = g.current_request.token.domain
             if domain is not None:
-                query.append('domain = %s')
-                values.append(domain)
+                context_query.append('domain = %s')
+                context_values.append(domain)
             else:
-                query.append('domain IS NULL')
+                context_query.append('domain IS NULL')
+
         if 'tenant_id' in self.fields:
             tenant_id = g.current_request.token.tenant_id
             if tenant_id is not None:
-                query.append('tenant_id = %s')
-                values.append(tenant_id)
+                if id_context is True:
+                    context_query.append('(tenant_id = %s or id = %s)')
+                    context_values.append(tenant_id)
+                    context_values.append(tenant_id)
+                else:
+                    context_query.append('tenant_id = %s')
+                    context_values.append(tenant_id)
+
             else:
-                query.append('tenant_id IS NULL')
+                context_query.append('tenant_id IS NULL')
+
+        context_query = " AND ".join(context_query)
 
         search = to_list(g.current_request.query_params.get('search'))
-        from luxon import GetLogger
-        log = GetLogger(__name__)
-        log.critical(search)
+        search_query = []
         if len(search) > 0:
             for lookin in search:
                 field, val = lookin.split(":")
@@ -103,19 +111,29 @@ class SQLModel(Model):
                                                      ' %s' % field +
                                                      ' in search')
                 if isinstance(val, (int, float,)):
-                    query.append(field + ' LIKE ' + val)
+                    search_query.append(field + ' LIKE ' + val)
                 else:
-                    query.append(field + ' LIKE ' + "'" + val + "%%'")
-        if len(query) > 0:
-            query_str = " OR ".join(query)
-            if where is True and len(query) > 0:
-                query = " WHERE %s" % query_str
+                    search_query.append(field + ' LIKE ' + "'" + val + "%%'")
+
+        search_query = " OR ".join(search_query)
+
+        if context_query != '' or search_query != '':
+            if where is True:
+                query = ' WHERE '
             else:
-                query = " AND %s" % query_str
+                query = ' AND '
+
+            if context_query != '':
+                query += context_query
+
+            if search_query != '':
+                if context_query != '':
+                    query += ' AND '
+                query += '(' + search_query + ')'
         else:
             query = ''
 
-        return (query, tuple(values),)
+        return (query, tuple(context_values),)
 
     def _api_sort_range(self):
         query = ''
@@ -207,12 +225,11 @@ class SQLModel(Model):
     def sql_id(self, primary_id):
         if isinstance(self._current, dict):
             with db() as conn:
-                ctx_query, ctx_values = self._api_context(False)
+                ctx_query, ctx_values = self._api_context(False,
+                                                          id_context=True)
                 if self.primary_key is None:
                     raise KeyError("Model %s:" % name +
                                    " No primary key") from None
-
-
 
                 crsr = conn.execute("SELECT * FROM %s" % self.model_name +
                                     " WHERE %s" % self.primary_key.name +

@@ -65,7 +65,8 @@ class Environment(Jinja2Environment):
         self.globals['G'] = g
         self.globals['CONTEXT'] = g.current_request.context
 
-        self.globals['POLICY'] = g.current_request.policy.validate
+        if hasattr(g.current_request, 'policy'):
+            self.globals['POLICY'] = g.current_request.policy.validate
 
 
 def split_template_path(template):

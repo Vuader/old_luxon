@@ -29,12 +29,29 @@
 # THE POSSIBILITY OF SUCH DAMAGE.
 from luxon.structs.htmldoc import HTMLDoc
 from luxon.structs.models.fields import String
+from luxon.structs.models.fields import Boolean
+from luxon.structs.models.fields import DateTime
+from luxon.structs.models.fields import Enum
+from luxon.utils.timezone import format_datetime
 
-def select(name, options, selected, empty=False, cls=None, onchange=None):
+def select(name, options, selected, empty=False, cls=None, onchange=None,
+           disabled=False, readonly=False):
     html = HTMLDoc()
+
+    if disabled or readonly:
+        input = html.create_element('input')
+        input.set_attribute('type', 'text')
+        input.set_attribute('id', name)
+        input.set_attribute('name', name)
+        input.set_attribute('disabled')
+        input.set_attribute('value', selected)
+        input.set_attribute('class', 'form-control')
+        return input
+
     select = html.create_element('select')
     select.set_attribute('name', name)
     select.set_attribute('id', name)
+
     if onchange is not None:
         select.set_attribute('onchange', onchange)
 
@@ -282,6 +299,11 @@ def form(model, values=None, readonly=False):
         obj = fields[field]
         if obj.hidden is False and obj.internal is False:
             value = values.get(field)
+            if value is None:
+                value = obj.default
+
+            if hasattr(value, '__call__'):
+                value = value()
 
             form_group = html.create_element('div')
             form_group.set_attribute('class', 'form-group')
@@ -295,7 +317,15 @@ def form(model, values=None, readonly=False):
             div = form_group.create_element('div')
             div.set_attribute('class', 'col-sm-10')
 
-            if isinstance(obj, String):
+            if obj.readonly is True:
+                readonly = True
+
+            if isinstance(obj, Enum):
+                div.append(select(field, obj.enum, value, cls="select",
+                                  readonly=readonly))
+            elif isinstance(obj, DateTime):
+                if value is not None:
+                    value = format_datetime(value)
                 input = div.create_element('input')
                 input.set_attribute('type', 'text')
                 input.set_attribute('class', 'form-control')
@@ -303,14 +333,49 @@ def form(model, values=None, readonly=False):
                 input.set_attribute('name', field)
                 if readonly is True:
                     input.set_attribute('readonly')
+                    input.set_attribute('disabled')
                 if obj.placeholder is not None:
                     input.set_attribute('placeholder', obj.placeholder)
                 if value is not None:
                     input.set_attribute('value', value)
                 if obj.readonly:
                     input.set_attribute('readonly')
+                    input.set_attribute('disabled')
                 if obj.null is False:
                     input.set_attribute('required')
+                if obj.placeholder:
+                    input.set_attribute('placeholder', obj.placeholder)
+            elif isinstance(obj, Boolean):
+                input = div.create_element('input')
+                input.set_attribute('type', 'checkbox')
+                input.set_attribute('id', field)
+                input.set_attribute('name', field)
+                if readonly is True:
+                    input.set_attribute('disabled')
+                if value is True:
+                    input.set_attribute('checked')
+                input.set_attribute('value', 'true')
+
+            elif isinstance(obj, String):
+                input = div.create_element('input')
+                input.set_attribute('type', 'text')
+                input.set_attribute('class', 'form-control')
+                input.set_attribute('id', field)
+                input.set_attribute('name', field)
+                if readonly is True:
+                    input.set_attribute('readonly')
+                    input.set_attribute('disabled')
+                if obj.placeholder is not None:
+                    input.set_attribute('placeholder', obj.placeholder)
+                if value is not None:
+                    input.set_attribute('value', value)
+                if obj.readonly:
+                    input.set_attribute('readonly')
+                    input.set_attribute('disabled')
+                if obj.null is False:
+                    input.set_attribute('required')
+                if obj.placeholder:
+                    input.set_attribute('placeholder', obj.placeholder)
             else:
                 pass
 
