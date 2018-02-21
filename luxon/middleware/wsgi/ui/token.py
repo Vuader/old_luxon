@@ -98,14 +98,16 @@ class Token(object):
                                                   g.client.endpoints.regions,
                                                   region,
                                                   True,
-                                                  'select2 form-control',
+                                                  'select',
                                                   'this.form.submit()')
 
+                domains = g.client.execute('GET', '/v1/rbac/domains').json
+
                 req.context.domains_html = select('X-Domain',
-                                                  ( domain, ),
+                                                  domains,
                                               domain,
                                               True,
-                                              'select2 form-control',
+                                              'select',
                                               'this.form.submit()')
                 req.context.tenants_html = select('X-Tenant-Id',
                                                   _selected_tenant,

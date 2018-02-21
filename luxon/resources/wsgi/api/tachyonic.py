@@ -44,7 +44,7 @@ from luxon.utils.auth import user_domains, user_tenants
 log = GetLogger(__name__)
 
 
-@register_resource('GET', '/v1/domains')
+@register_resource('GET', '/v1/rbac/domains')
 def domains(req, resp):
     search = req.query_params.get('term')
     domains_list = user_domains(req.token.user_id)

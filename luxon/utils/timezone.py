@@ -36,6 +36,7 @@ from tzlocal import get_localzone
 from luxon import g
 
 _cached_time_zone_system = None
+_cached_time_zone_app = None
 
 TIME_FORMATS = (
     '%Y-%m-%d %H:%M:%S.%f%z',
@@ -219,3 +220,24 @@ def to_system(datetime, src=None):
 
 def to_app(datetime, src=None):
     return to_timezone(datetime, dst=TimezoneApp(), src=src)
+
+def format_datetime(datetime, src=TimezoneUTC()):
+    """String Formatted Date & Time.
+
+    Many countries have adopted the ISO standard of year-month-day
+    hour:minute:seconds. For
+        example, 2015-03-30 10:15:25 (SAST).
+
+    Appends short timezone name.
+
+    Args:
+        datetime (datetime): Datetime object. (Optional)
+        destination_tz (str): Destination Timezone.
+            List of valid entries in timezones attribute.
+
+    Returns string formatted date.
+    """
+    datetime = to_timezone(datetime, dst=TimezoneApp(), src=src)
+
+    return(datetime.strftime('%Y-%m-%d %H:%M:%S ') + "(" +
+           datetime.tzname() + ")")

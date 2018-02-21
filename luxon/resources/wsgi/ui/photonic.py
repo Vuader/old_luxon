@@ -53,20 +53,26 @@ def logout(req, resp):
 @register_resource('POST', '/scope')
 def scope(req, resp):
     if req.token.authenticated:
-        x_region = req.get_first('X-Region')
-        x_domain = req.get_first('X-Domain')
-        x_tenant_id = req.get_first('X-Tenant-Id')
-        req.session['region'] = x_region
-        if x_domain is not None:
-            scoped = g.client.scope(x_domain, x_tenant_id).json
-            scoped = scoped['token']
-            req.session['scoped'] = scoped
-            req.session['domain'] = x_domain
-            req.session['tenant_id'] = x_tenant_id
+        if 'X-Region' in req.form:
+            x_region = req.get_first('X-Region')
+            req.session['region'] = x_region
+
+        if 'X-Domain' in req.form:
+            x_domain = req.get_first('X-Domain')
         else:
-            req.session['scoped'] = None
-            req.session['domain'] = None
-            req.session['tenant_id'] = None
+            x_domain = req.session.get('domain')
+
+        if 'X-Tenant-Id' in req.form:
+            x_tenant_id = req.get_first('X-Tenant-Id')
+        else:
+            x_tenant_id = req.session.get('tenant_id')
+
+        g.client.unscope()
+        scoped = g.client.scope(x_domain, x_tenant_id).json
+        scoped = scoped['token']
+        req.session['scoped'] = scoped
+        req.session['domain'] = x_domain
+        req.session['tenant_id'] = x_tenant_id
 
         req.session.save()
     resp.redirect('/')

@@ -27,6 +27,7 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
+from luxon.exceptions import NotFound
 
 class Endpoints(object):
     interfaces = ( 'public', 'internal', 'admin' )
@@ -67,14 +68,14 @@ class Endpoints(object):
             region = self.default_region
 
         if interface not in self.interfaces:
-            raise ValueError("Invalid interface for endpoint '%s'" % interface)
+            raise NotFound("Invalid interface for endpoint '%s'" % interface)
 
         if endpoint in self.endpoints:
             if interface in self.endpoints[endpoint]:
                 if region in self.endpoints[endpoint][interface]:
                     return self.endpoints[endpoint][interface][region]
                 else:
-                    raise ValueError("End point '%s' not" % endpoint +
+                    raise NotFound("End point '%s' not" % endpoint +
                                      " found in region '%s'" % region)
             else:
                 for interface in self.interfaces:
@@ -82,11 +83,7 @@ class Endpoints(object):
                         return self.endpoints[endpoint][interface][region]
                     except KeyError:
                         pass
-                raise ValueError("End point '%s' not" % endpoint +
+                raise NotFound("End point '%s' not" % endpoint +
                                  " found in region '%s'" % region)
-
-
-                raise ValueError("End point '%s' has no" % endpoint +
-                                 " interface '%s'" % interface)
         else:
-            raise ValueError("End point not found '%s'" % endpoint)
+            raise NotFound("End point not found '%s'" % endpoint)

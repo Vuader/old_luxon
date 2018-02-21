@@ -62,7 +62,7 @@ class luxon_role(SQLModel):
     id = Uuid(default=uuid4, internal=True)
     name = String(max_length=64, null=False)
     description = Text()
-    creation_time = DateTime(default=now, internal=True)
+    creation_time = DateTime(default=now, readonly=True)
     primary_key = id
     unique_role = UniqueIndex(name)
     db_default_rows = ROLES
@@ -79,7 +79,7 @@ class luxon_domain(SQLModel):
     name = Fqdn(null=False)
     description = Text()
     enabled = Boolean(default=True)
-    creation_time = DateTime(default=now, internal=True)
+    creation_time = DateTime(default=now, readonly=True)
     primary_key = id
     unique_domain = UniqueIndex(name)
     db_default_rows = DOMAINS
@@ -92,7 +92,7 @@ class luxon_tenant(SQLModel):
     tenant_id = Uuid(internal=True)
     name = String(max_length=100, null=False)
     enabled = Boolean(default=True)
-    creation_time = DateTime(default=now, internal=True)
+    creation_time = DateTime(default=now, readonly=True)
     unique_tenant = UniqueIndex(domain, name)
     tenants = Index(id, domain)
     tenants_search_name = Index(domain, name)
@@ -123,9 +123,9 @@ class luxon_user(SQLModel):
     phone_mobile = Phone()
     phone_office = Phone()
     designation = Enum('', 'Mr','Mrs','Ms', 'Dr', 'Prof')
-    last_login = DateTime(internal=True)
+    last_login = DateTime(readonly=True)
     enabled = Boolean(default=True)
-    creation_time = DateTime(default=now, internal=True)
+    creation_time = DateTime(default=now, readonly=True)
     unique_username = UniqueIndex(domain, username)
     user_tenant_ref = ForeignKey(tenant_id, luxon_tenant.id)
     user_domain_ref = ForeignKey(domain, luxon_domain.name)
@@ -152,7 +152,7 @@ class luxon_user_role(SQLModel):
     domain = Fqdn(internal=True)
     tenant_id = String()
     user_id = Uuid()
-    creation_time = DateTime(default=now)
+    creation_time = DateTime(readonly=True, default=now)
     unique_user_role = UniqueIndex(role_id, tenant_id, user_id)
     user_role_id_ref = ForeignKey(role_id, luxon_role.id)
     user_role_domain_ref = ForeignKey(domain, luxon_domain.name)

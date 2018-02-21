@@ -32,7 +32,7 @@ import requests
 from luxon import GetLogger
 from luxon.utils.http import request
 from luxon.utils.encoding import if_unicode_to_bytes
-from luxon.exceptions import RestClientError, JSONDecodeError
+from luxon.exceptions import RestClientError, JSONDecodeError, NotFound
 from luxon.structs.cidict import CiDict
 from luxon import js
 from luxon.core.endpoints import Endpoints
@@ -134,7 +134,10 @@ class RestClient(object):
         if endpoint is not None:
             uri = self.endpoints.get(endpoint, interface, region)
         else:
-            uri = self.uri
+            try:
+                uri = self.endpoints.get('tachyonic', interface, region)
+            except NotFound:
+                uri = self.uri
 
         resource = clean_uri("%s/%s" % (uri, resource))
 
