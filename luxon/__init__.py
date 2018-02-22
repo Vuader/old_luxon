@@ -97,8 +97,6 @@ from luxon.structs.models.fields import ForeignKey
 
 from luxon.core.config import Config
 
-import luxon.models
-
 __version__ = metadata.version
 __author__ = metadata.authors[0]
 __license__ = metadata.license

@@ -45,39 +45,21 @@ from luxon import ForeignKey
 from luxon import UniqueIndex
 from luxon import Username
 from luxon import Fqdn
-from luxon.utils.timezone import now
 from luxon.models.domains import luxon_domain
-from luxon.models.tenants import luxon_tenant
-
-USERS = [
-    ('00000000-0000-0000-0000-000000000000', 'tachyonic',
-     None, None,
-     'root', '$2b$12$QaWa.Q3gZuafYXkPo3EJRuSJ1wGuutShb73RuH1gdUVri82CU6V5q',
-     None, 'Default Root User', None, None, None, None,
-     1, now()),
-]
+from luxon.utils.timezone import now
 
 @database_model()
-class luxon_user(SQLModel):
+class luxon_tenant(SQLModel):
     id = Uuid(default=uuid4, internal=True)
-    tag = String(hidden=True, max_length=30, null=False)
     domain = Fqdn(internal=True)
     tenant_id = Uuid(internal=True)
-    username = Username(max_length=100, null=False, readonly=True)
-    password = String(max_length=100, null=False)
-    email = Email(max_length=255)
-    name = String(max_length=100)
-    phone_mobile = Phone()
-    phone_office = Phone()
-    designation = Enum('', 'Mr','Mrs','Ms', 'Dr', 'Prof')
-    last_login = DateTime(readonly=True)
+    name = String(max_length=100, null=False)
     enabled = Boolean(default=True)
     creation_time = DateTime(default=now, readonly=True)
-    unique_username = UniqueIndex(domain, username)
-    user_tenant_ref = ForeignKey(tenant_id, luxon_tenant.id)
-    user_domain_ref = ForeignKey(domain, luxon_domain.name)
-    users = Index(domain, username)
-    users_tenants = Index(domain, tenant_id)
-    users_domain = Index(domain)
+    unique_tenant = UniqueIndex(domain, name)
+    tenants = Index(id, domain)
+    tenants_search_name = Index(domain, name)
+    tenants_per_domain = Index(domain)
     primary_key = id
-    db_default_rows = USERS
+    tenant_domain_ref = ForeignKey(domain, luxon_domain.name)
+    tenant_parent_ref = ForeignKey(tenant_id, id)

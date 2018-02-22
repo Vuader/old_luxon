@@ -48,36 +48,29 @@ from luxon import Fqdn
 from luxon.utils.timezone import now
 from luxon.models.domains import luxon_domain
 from luxon.models.tenants import luxon_tenant
+from luxon.models.roles import luxon_role
 
-USERS = [
-    ('00000000-0000-0000-0000-000000000000', 'tachyonic',
-     None, None,
-     'root', '$2b$12$QaWa.Q3gZuafYXkPo3EJRuSJ1wGuutShb73RuH1gdUVri82CU6V5q',
-     None, 'Default Root User', None, None, None, None,
-     1, now()),
+USER_ROLES = [
+    ('00000000-0000-0000-0000-000000000000',
+     '00000000-0000-0000-0000-000000000000',
+     None,
+     None,
+     '00000000-0000-0000-0000-000000000000',
+     now()),
 ]
 
 @database_model()
-class luxon_user(SQLModel):
+class luxon_user_role(SQLModel):
     id = Uuid(default=uuid4, internal=True)
-    tag = String(hidden=True, max_length=30, null=False)
+    role_id = Uuid()
     domain = Fqdn(internal=True)
-    tenant_id = Uuid(internal=True)
-    username = Username(max_length=100, null=False, readonly=True)
-    password = String(max_length=100, null=False)
-    email = Email(max_length=255)
-    name = String(max_length=100)
-    phone_mobile = Phone()
-    phone_office = Phone()
-    designation = Enum('', 'Mr','Mrs','Ms', 'Dr', 'Prof')
-    last_login = DateTime(readonly=True)
-    enabled = Boolean(default=True)
-    creation_time = DateTime(default=now, readonly=True)
-    unique_username = UniqueIndex(domain, username)
-    user_tenant_ref = ForeignKey(tenant_id, luxon_tenant.id)
-    user_domain_ref = ForeignKey(domain, luxon_domain.name)
-    users = Index(domain, username)
-    users_tenants = Index(domain, tenant_id)
-    users_domain = Index(domain)
+    tenant_id = String()
+    user_id = Uuid()
+    creation_time = DateTime(readonly=True, default=now)
+    unique_user_role = UniqueIndex(role_id, tenant_id, user_id)
+    user_role_id_ref = ForeignKey(role_id, luxon_role.id)
+    user_role_domain_ref = ForeignKey(domain, luxon_domain.name)
+    user_role_tenant_ref = ForeignKey(tenant_id, luxon_tenant.id)
+    user_roles = Index(domain, tenant_id)
     primary_key = id
-    db_default_rows = USERS
+    db_default_rows = USER_ROLES

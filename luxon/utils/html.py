@@ -319,6 +319,8 @@ def form(model, values=None, readonly=False):
 
             if obj.readonly is True:
                 readonly = True
+            else:
+                readonly = False
 
             if isinstance(obj, Enum):
                 div.append(select(field, obj.enum, value, cls="select",
