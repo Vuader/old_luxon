@@ -31,25 +31,6 @@ from luxon import register_resource
 from luxon.constants import TEXT_HTML
 from luxon import g
 
-@register_resource('POST', '/login')
-def login(req, resp):
-    username = req.get_first('username')
-    password = req.get_first('password')
-    domain = req.get_first('domain')
-    req.token.authenticate(username,
-                           password,
-                           domain)
-    req.session['token'] = req.token.encoded
-    req.session.save()
-    resp.redirect('/')
-
-@register_resource('GET', '/logout')
-def logout(req, resp):
-    req.session.clear()
-    req.session.save()
-    req.token.clear()
-    resp.redirect('/')
-
 @register_resource('POST', '/scope')
 def scope(req, resp):
     if req.token.authenticated:
