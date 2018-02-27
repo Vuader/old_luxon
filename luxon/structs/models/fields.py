@@ -92,14 +92,14 @@ class BaseField(object):
                  'db', 'label', 'placeholder', 'readonly', 'prefix',
                  'suffix', 'columns' ,'hidden', 'enum', '_field_name', '_table',
                  '_value', '_creation_counter', 'm', 'd', 'on_update',
-                 'password', 'signed')
+                 'password', 'signed', 'confirm')
 
     def __init__(self, length=None, min_length=None, max_length=None,
                  null=True, default=None, db=True, label=None,
                  placeholder=None, readonly=False, prefix=None,
                  suffix=None, columns=None, hidden=False,
                  enum=[], on_update=None, password=False,
-                 signed=True, internal=False):
+                 signed=True, internal=False, confirm=False):
         self._creation_counter = global_counter()
         self._value = None
 
@@ -124,6 +124,7 @@ class BaseField(object):
         self.enum = enum
         self.password = password
         self.internal = internal
+        self.confirm = confirm
 
     @property
     def name(self):
