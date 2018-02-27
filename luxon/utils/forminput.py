@@ -27,20 +27,7 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
-from luxon import GetLogger
-from luxon import register_resource
-from luxon.utils.auth import user_domains
 
-log = GetLogger(__name__)
+def forminput(**kwargs):
+    pass
 
-@register_resource('GET', '/v1/rbac/domains')
-def rbac_domains(req, resp):
-    search = req.query_params.get('term')
-    domains_list = user_domains(req.token.user_id)
-    if search is not None:
-        filtered = []
-        for domain in domains_list:
-            if search in domain:
-                filtered.append(domain)
-        return filtered
-    return domains_list

@@ -44,7 +44,8 @@ def select(name, options, selected, empty=False, cls=None, onchange=None,
         input.set_attribute('id', name)
         input.set_attribute('name', name)
         input.set_attribute('disabled')
-        input.set_attribute('value', selected)
+        if selected is not None:
+            input.set_attribute('value', selected)
         input.set_attribute('class', 'form-control')
         return input
 
@@ -295,9 +296,7 @@ def form(model, values=None, readonly=False):
     elif values is None:
         values = {}
 
-    for field in fields:
-        obj = fields[field]
-        if obj.hidden is False and obj.internal is False:
+    def html_field(field, confirm=False):
             value = values.get(field)
             if value is None:
                 value = obj.default
@@ -310,6 +309,9 @@ def form(model, values=None, readonly=False):
             label = form_group.create_element('label')
             label.set_attribute('class', 'control-label col-sm-2')
             label.set_attribute('for', 'field')
+            if confirm:
+                label.append("Confirm ")
+
             if obj.label is not None:
                 label.append(obj.label)
             else:
@@ -318,13 +320,16 @@ def form(model, values=None, readonly=False):
             div.set_attribute('class', 'col-sm-10')
 
             if obj.readonly is True:
-                readonly = True
+                field_readonly = True
             else:
-                readonly = False
+                field_readonly = readonly
+
+            if confirm:
+                field = 'confirm_' + field
 
             if isinstance(obj, Enum):
                 div.append(select(field, obj.enum, value, cls="select",
-                                  readonly=readonly))
+                                  readonly=field_readonly))
             elif isinstance(obj, DateTime):
                 if value is not None:
                     value = format_datetime(value)
@@ -340,7 +345,7 @@ def form(model, values=None, readonly=False):
                     input.set_attribute('placeholder', obj.placeholder)
                 if value is not None:
                     input.set_attribute('value', value)
-                if obj.readonly:
+                if field_readonly:
                     input.set_attribute('readonly')
                     input.set_attribute('disabled')
                 if obj.null is False:
@@ -352,7 +357,7 @@ def form(model, values=None, readonly=False):
                 input.set_attribute('type', 'checkbox')
                 input.set_attribute('id', field)
                 input.set_attribute('name', field)
-                if readonly is True:
+                if field_readonly is True:
                     input.set_attribute('disabled')
                 if value is True:
                     input.set_attribute('checked')
@@ -371,7 +376,7 @@ def form(model, values=None, readonly=False):
                     input.set_attribute('placeholder', obj.placeholder)
                 if value is not None:
                     input.set_attribute('value', value)
-                if obj.readonly:
+                if field_readonly:
                     input.set_attribute('readonly')
                     input.set_attribute('disabled')
                 if obj.null is False:
@@ -380,5 +385,13 @@ def form(model, values=None, readonly=False):
                     input.set_attribute('placeholder', obj.placeholder)
             else:
                 pass
+
+
+    for field in fields:
+        obj = fields[field]
+        if obj.hidden is False and obj.internal is False:
+            html_field(field)
+            if obj.confirm and obj.readonly is False and readonly is False:
+                html_field(field, confirm=True)
 
     return html

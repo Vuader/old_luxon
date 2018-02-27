@@ -87,7 +87,8 @@ def compiler(dict_rule_set):
                     continue
 
                 build_rule = build_rule.replace(expr, expr.replace(':',
-                                                                   '_')[1:])
+                                                                   '_')[1:] +
+                                                '()')
 
             # Add Rule to _rules dictionary for validation to select rule.
             build_rule += "_rules['" + rule + "'] = " + rule.replace(':','_')
