@@ -59,9 +59,6 @@ class ResponseBase(object):
     __slot__ = (
         'content_type',
         '_stream',
-        '_total_rows',
-        '_filtered_rows',
-        '_view_rows',
         '_headers',
     )
 
@@ -77,9 +74,6 @@ class ResponseBase(object):
         """
         self.content_type = None
         self._stream = None
-        self._total_rows = None
-        self._filtered_rows = None
-        self._view_rows = None
         self._headers = {}
 
     def __post__(self, app, *args, **kwargs):
@@ -95,30 +89,6 @@ class ResponseBase(object):
     @property
     def rows(self):
         return (self._total_rows, self._filtered_rows)
-
-    @rows.setter
-    def rows(self, value):
-        if not isinstance(value, (tuple, list,)):
-            raise ValueError('Invalid rows value type set on response object')
-
-        try:
-            total_rows, view_rows = value
-            self._total_rows = int(total_rows)
-            self._view_rows = int(view_rows)
-            if self._view_rows > self._total_rows:
-                raise ValueError('View rows cannot' +
-                                 ' exceed total rows') from None
-            self._filtered_rows = total_rows - view_rows
-
-            try:
-                self.set_header('X-Total-Rows', str(self._total_rows))
-                self.set_header('X-View-Rows', str(self._view_rows))
-                self.set_header('X-Filtered-Rows', str(self._filtered_rows))
-            except AttributeError:
-                pass
-
-        except ValueError:
-            raise ValueError('Invalid rows value type set on response object')
 
     @property
     def content_length(self):
