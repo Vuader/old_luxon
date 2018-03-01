@@ -29,7 +29,7 @@ Next we create a new file for the entry point of the application. This is the ws
 
     $ touch myapp/wsgi.py
 
-Open app in your favourite text editor and add following lines:
+Open wsgi.py in your favourite text editor and add following lines:
 
 .. code:: python
 

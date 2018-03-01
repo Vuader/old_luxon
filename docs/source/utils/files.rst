@@ -1,4 +1,7 @@
-.. _files:
+=====
+Files
+=====
+.. _cached_input:
 
 Cached Input
 ============
@@ -19,4 +22,12 @@ File Tracker
 ============
 
 .. autoclass:: luxon.utils.files.TrackFile
+    :members:
+
+.. _fileobject:
+
+File Object
+===========
+
+.. autoclass:: luxon.utils.files.FileObject
     :members:

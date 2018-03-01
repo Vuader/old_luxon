@@ -57,7 +57,7 @@ class ProxyObject(object):
 
     Args:
         obj (obj): original (proxied) object.
-        pool (Pool): queue.Queue object wich is the pool associated with this object.
+        pool (Pool): queue.Queue object which is the pool associated with this object.
     """
 
     def __init__(self, obj, pool):

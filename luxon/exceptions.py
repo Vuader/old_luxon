@@ -32,6 +32,7 @@ from luxon.constants import HTTP_STATUS_CODES
 
 class Error(Exception):
     """Tachyonic Root Exception
+
     """
 
 class NoContextError(Error):

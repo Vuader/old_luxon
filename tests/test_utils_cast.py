@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2018 Christiaan Frans Rademan.
+# Copyright (c) 2018 Hieronymus Crouse.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,55 +28,61 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
 
-import datetime
-from timeit import default_timer
-from contextlib import contextmanager
+import pytest
+from luxon.utils.cast import *
 
-from luxon import GetLogger
+def test_to_tuple():
 
-log = GetLogger(__name__)
+    # string
+    a = "Beware the jabberwock"
+    # tuple
+    b = ("blah", 5)
+    #int
+    c = 42
+    #list
+    d = ["1","2",3]
+    #none
+    e = None
 
-debug_mode = log.debug_mode
+    cast_a = to_tuple(a)
+    assert cast_a == ("Beware the jabberwock", )
 
-#Not tested yet, does not seem to be working propperly
-class Timer():
-    """Code Execution Timer.
+    cast_b = to_tuple(b)
+    assert cast_b == ("blah",5)
 
-    Wrap code in execution timer to see elasped time.
+    cast_c = to_tuple(c)
+    assert cast_c == (42,)
 
-    **Example**
+    cast_d = to_tuple(d)
+    assert cast_d == ("1","2",3)
 
-    .. code:: python
+    cast_e = to_tuple(e)
+    assert cast_e == ()
 
-        with timer() as elapsed:
-            time.sleep(1)
-            print(elapsed())
-            time.sleep(2)
-            print(elapsed())
-            time.sleep(3)
-        print(elapsed())
-    """
+def test_to_list():
 
-    # NOTE(cfrademan): Yes this is pretty strange way going about it.
-    # However good performance is gained over using yield with contextlib.
-    # In this case the pattern wins since we use timers in many parts of
-    # the framework.
-    def __enter__(self):
-        start = default_timer()
+    # string
+    a = "Beware the jabberwock"
+    # tuple
+    b = ("blah", 5)
+    #int
+    c = 42
+    #list
+    d = ["1","2",3]
+    #none
+    e = None
 
-        def timed():
-            try:
-                return self.end
-            except AttributeError:
-                return default_timer() - start
+    cast_a = to_list(a)
+    assert cast_a == ["Beware the jabberwock"]
 
-        if debug_mode():
-            self.timed = timed
-        else:
-            self.timed = lambda: None
-            return lambda: None
+    cast_b = to_list(b)
+    assert cast_b == ["blah",5]
 
-        return timed
+    cast_c = to_list(c)
+    assert cast_c == [42]
 
-    def __exit__(self, type, value, traceback):
-        self.end = self.timed()
+    cast_d = to_list(d)
+    assert cast_d == ["1","2",3]
+
+    cast_e = to_list(e)
+    assert cast_e == []

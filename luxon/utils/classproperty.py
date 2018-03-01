@@ -31,6 +31,44 @@ import functools
 
 class classproperty(property):
     """Similar to property decorator, but allows class-level properties.
+
+    Using @classproperty as a decorator for a member,
+    that member can be called like a class attribute
+
+    Example:
+        .. code:: python
+
+            class test():
+
+                _nug = "Default"
+
+                def __init__(self,x):
+                    self._nug = x
+
+                @classproperty
+                def nug(self):
+                    return self._nug
+
+               # or use it like a wrapper
+               # although it only takes a getter
+               # so as to make a read only property
+               # nug = classproperty(nug)
+
+
+            print(test.nug)
+            test._nug = "TEST"
+            print(test.nug)
+
+            outputs:
+
+            Default
+            TEST
+
+
+    | Class Method -> test.fnc_1()
+    | Property -> test().fnc_2
+    | Class Property -> test.fnc_3
+
     """
     def __new__(cls, fget=None, doc=None):
         if fget is None:

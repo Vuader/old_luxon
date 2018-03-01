@@ -1,3 +1,6 @@
+=======
+Strings
+=======
 .. _try_lower:
 
 Lowercase
@@ -18,3 +21,10 @@ Unquoter
 ========
 
 .. autofunction:: luxon.utils.strings.unquote_string
+
+.. _blank_to_none:
+
+Blank to None
+=============
+
+.. autofunction:: luxon.utils.strings.blank_to_none

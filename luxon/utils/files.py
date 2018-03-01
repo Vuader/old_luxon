@@ -139,6 +139,8 @@ class TrackFile(metaclass=NamedSingleton):
         returns:
             True if modified
         """
+        #(Rony): might not be working check the unit test
+
         # If there was never file... check for new file...
         if self._modified is None:
             # If there is now a file...
@@ -200,6 +202,11 @@ def is_socket(socket):
 
 
 class FileObject(object):
+    """Simple File Object structure for internal use
+
+    contains attributes for: filename, type and the file itself
+
+    """
     __slots__ = ('filename', 'type', 'file')
 
     def __init__(self, filename, type, file):

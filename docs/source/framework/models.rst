@@ -156,12 +156,12 @@ Example
 		user_role_user_id_ref = ForeignKey(user_id, user.id)
 		primary_key = id
 		db_default_rows = USER_ROLES
+..
+	Models Class
+	------------
+	.. autoclass:: luxon.Models
+	    :members:
 
-Models Class
-------------
-
-.. autoclass:: luxon.Models
-    :members:
 
 Model Class
 -----------

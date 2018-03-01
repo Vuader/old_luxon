@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2018 Christiaan Frans Rademan.
+# Copyright (c) 2018 Hieronymus Crouse.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,55 +28,39 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
 
-import datetime
-from timeit import default_timer
-from contextlib import contextmanager
+import pytest
+from luxon.utils.split import *
 
-from luxon import GetLogger
+def test_split_by_n():
 
-log = GetLogger(__name__)
+    seq_str = "Nothing uses up alcohol faster than political argument."
+    seq_list = ["1","2","3","4","5","6","7","8","9","0"]
 
-debug_mode = log.debug_mode
+    split_str = split_by_n(seq_str,3)
+    assert next(split_str) == "Not"
+    assert next(split_str) == "hin"
+    assert next(split_str) == "g u"
 
-#Not tested yet, does not seem to be working propperly
-class Timer():
-    """Code Execution Timer.
+    split_lst = split_by_n(seq_list,3)
+    assert next(split_lst) == ["1","2","3"]
+    assert next(split_lst) == ["4","5","6"]
 
-    Wrap code in execution timer to see elasped time.
+def test_list_of_lines():
 
-    **Example**
+    pls = "Nor would anybody suspect.\n" \
+          "If was one thing all people took for granted,\n" \
+          "was conviction that if you feed honest figures into a computer,\n" \
+          "honest figures come out. Never doubted it myself\n" \
+          "till I met a computer with a sense of humor."
 
-    .. code:: python
+    pls_lst = list_of_lines(pls)
+    assert pls_lst == ["Nor would anybody suspect.",
+                       "If was one thing all people took for granted,",
+                       "was conviction that if you feed honest figures into a computer,",
+                       "honest figures come out. Never doubted it myself",
+                       "till I met a computer with a sense of humor."]
 
-        with timer() as elapsed:
-            time.sleep(1)
-            print(elapsed())
-            time.sleep(2)
-            print(elapsed())
-            time.sleep(3)
-        print(elapsed())
-    """
-
-    # NOTE(cfrademan): Yes this is pretty strange way going about it.
-    # However good performance is gained over using yield with contextlib.
-    # In this case the pattern wins since we use timers in many parts of
-    # the framework.
-    def __enter__(self):
-        start = default_timer()
-
-        def timed():
-            try:
-                return self.end
-            except AttributeError:
-                return default_timer() - start
-
-        if debug_mode():
-            self.timed = timed
-        else:
-            self.timed = lambda: None
-            return lambda: None
-
-        return timed
-
-    def __exit__(self, type, value, traceback):
-        self.end = self.timed()
+    # with bytes
+    bpls = b"Drop\ndead-but\nfirst\nget\npermit"
+    bpls_lst = list_of_lines(bpls)
+    assert bpls_lst == ["Drop","dead-but","first","get","permit"]
