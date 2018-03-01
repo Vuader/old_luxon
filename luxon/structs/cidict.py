@@ -74,8 +74,3 @@ class CiDict(collections.MutableMapping):
 
     def __repr__(self):
         return '%s(%r)' % (self.__class__.__name__, dict(self.items()))
-
-    def update(self, dict):
-        for k in dict:
-            self[k] = dict[k]
-
