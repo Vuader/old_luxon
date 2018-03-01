@@ -73,103 +73,6 @@ class SQLModel(Model):
             crsr.commit()
             self._sql_parse(result)
 
-    def _api_context(self, where=False, id_context=False):
-        context_values = []
-        context_query = []
-
-        if 'domain' in self.fields:
-            domain = g.current_request.token.domain
-            if domain is not None:
-                context_query.append('domain = %s')
-                context_values.append(domain)
-            else:
-                context_query.append('domain IS NULL')
-
-        if 'tenant_id' in self.fields:
-            tenant_id = g.current_request.token.tenant_id
-            if tenant_id is not None:
-                if id_context is True:
-                    context_query.append('(tenant_id = %s or id = %s)')
-                    context_values.append(tenant_id)
-                    context_values.append(tenant_id)
-                else:
-                    context_query.append('tenant_id = %s')
-                    context_values.append(tenant_id)
-
-            else:
-                context_query.append('tenant_id IS NULL')
-
-        context_query = " AND ".join(context_query)
-
-        search = to_list(g.current_request.query_params.get('search'))
-        search_query = []
-        if len(search) > 0:
-            for lookin in search:
-                field, val = lookin.split(":")
-                if field not in self.fields:
-                    raise exceptions.ValidationError("Unknown field" +
-                                                     ' %s' % field +
-                                                     ' in search')
-                if isinstance(val, (int, float,)):
-                    search_query.append(field + ' LIKE ' + val)
-                else:
-                    search_query.append(field + ' LIKE ' + "'" + val + "%%'")
-
-        search_query = " OR ".join(search_query)
-
-        if context_query != '' or search_query != '':
-            if where is True:
-                query = ' WHERE '
-            else:
-                query = ' AND '
-
-            if context_query != '':
-                query += context_query
-
-            if search_query != '':
-                if context_query != '':
-                    query += ' AND '
-                query += '(' + search_query + ')'
-        else:
-            query = ''
-
-        return (query, tuple(context_values),)
-
-    def _api_sort_range(self):
-        query = ''
-
-        if g.current_request.method == 'GET':
-            sort = to_list(g.current_request.query_params.get('sort'))
-            if len(sort) > 0:
-                ordering = []
-                for order in sort:
-                    order_field, order_type = order.split(':')
-                    order_type = order_type.lower()
-                if order_type != "asc" and order_type != "desc":
-                    raise exceptions.ValidationError('Bad order for sort provided')
-                if order_field not in self.fields:
-                    raise exceptions.ValidationError("Unknown field '%s' in sort" %
-                                                    order_field)
-                ordering.append("%s %s" % (order_field, order_type))
-
-                query += " ORDER BY %s" % ','.join(ordering)
-
-            range = g.current_request.query_params.get('range')
-            if range is not None:
-                try:
-                    range = range.split(',')
-                    if len(range) == 1:
-                        limit = int(range[0])
-                        query += " LIMIT %s" % limit
-                    if len(range) == 2:
-                        begin = int(range[0])
-                        limit = int(range[1])
-                        query += " LIMIT %s, %s " % (begin, limit,)
-                except ValueError:
-                    raise ValueError('Invalid range defiend')
-
-        return (query, (),)
-
     def delete(self):
         if not isinstance(self._current, dict):
             raise NotImplementedError()
@@ -185,10 +88,9 @@ class SQLModel(Model):
 
             crsr = conn.execute("DELETE FROM %s" % self.model_name +
                                 " WHERE %s" % self.primary_key.name +
-                                " = %s" +
-                                " %s" % ctx_query,
-                                (primary_id,) + ctx_values)
-            result = crsr.fetchall()
+                                " = %s",
+                                primary_id)
+            crsr.fetchall()
             crsr.commit()
 
         self._current.clear()
@@ -196,46 +98,17 @@ class SQLModel(Model):
         self._updated = False
         self._created = False
 
-    def sql_api(self):
-        with db() as conn:
-            if self.primary_key is None:
-                raise KeyError("Model %s:" % self.model_name +
-                               " No primary key") from None
-
-            view_query, view_values = self._api_sort_range()
-            ctx_query, ctx_values = self._api_context(True)
-
-            query = "SELECT count(*) as total FROM %s " % self.model_name
-            query += ctx_query
-            crsr = conn.execute(query, ctx_values)
-            result = crsr.fetchone()
-            if result is not None:
-                total_rows = result['total']
-
-            query = "SELECT * FROM %s " % self.model_name
-            query += ctx_query
-            query += view_query
-            crsr = conn.execute(query, ctx_values)
-            result = crsr.fetchall()
-            crsr.commit()
-            self._sql_parse(result)
-
-            g.current_request.response.rows = (total_rows, len(result),)
-
     def sql_id(self, primary_id):
         if isinstance(self._current, dict):
             with db() as conn:
-                ctx_query, ctx_values = self._api_context(False,
-                                                          id_context=True)
                 if self.primary_key is None:
-                    raise KeyError("Model %s:" % name +
+                    raise KeyError("Model %s:" % self.model_name +
                                    " No primary key") from None
 
                 crsr = conn.execute("SELECT * FROM %s" % self.model_name +
                                     " WHERE %s" % self.primary_key.name +
-                                    " = %s" +
-                                    " %s" % ctx_query,
-                                    (primary_id,) + ctx_values)
+                                    " = %s",
+                                    primary_id)
                 result = crsr.fetchall()
                 crsr.commit()
                 self._sql_parse(result)

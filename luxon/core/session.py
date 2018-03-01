@@ -59,6 +59,9 @@ class Session(object):
 
     """
     def __init__(self, session_id, backend=None, expire=3600):
+        if hasattr(session_id, '__call__'):
+            session_id = session_id()
+
         self._session_id = if_bytes_to_unicode(session_id, 'ISO-8859-1')
         self._session = {}
         if backend is not None:
@@ -121,19 +124,18 @@ class SessionRedis(object):
         self._name = "session:%s" % (self._session_id,)
 
     def load(self):
-        if self._redis.hexists(self._name, 'session'):
-            self._session.update(pickle.loads(self._redis.hget(self._name,
-                                                               'session')))
+        if self._redis.exists(self._name):
+            self._session.update(pickle.loads(self._redis.get(self._name)))
 
     def save(self):
         if len(self._session) > 0:
+            self._redis.set(self._name, pickle.dumps(self._session))
             self._redis.expire(self._name, self._expire)
-            self._redis.hset(self._name, 'session', pickle.dumps(self._session))
 
     def clear(self):
         self._session.clear()
         try:
-            self._redis.hdel(self._name, 'session')
+            self._redis.delete(self._name)
         except Exception:
             pass
 
@@ -197,4 +199,18 @@ class SessionFile(object):
                 pass
         finally:
             lock.release()
+
+def cookie():
+    expire = g.config.get('sessions', 'expire')
+    req = g.current_request
+
+    if 'luxon' in req.cookies:
+        session_id = if_bytes_to_unicode(req.cookies['luxon'],
+                                         'ISO-8859-1')
+    else:
+        session_id = req.id
+        req.response.set_cookie('luxon', session_id, max_age=expire,
+                                 domain=req.host)
+
+    return session_id
 

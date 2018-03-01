@@ -98,7 +98,7 @@ class Model(object):
             except KeyError:
                 raise ValidationError("Model %s:" % self.model_name +
                                " No such field '%s'" % key) from None
-            
+
             if key in ('domain_id', 'tenant_id',):
                 raise ValidationError("Model %s:" % self.model_name +
                                " readonly field '%s'" % key) from None

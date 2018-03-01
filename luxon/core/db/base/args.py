@@ -60,12 +60,15 @@ def _parse_param(value, cast_map):
     return value
 
 def args_to(query, args, to='qmark', cast=None):
+
     if isinstance(args, tuple):
         args = list(args)
     if not isinstance(args, (list, dict)):
         if args is None:
             return (query, args)
         args = [args, ]
+    else:
+        args = args.copy()
 
     if to == "qmark" or to == "numeric" or to == "format":
         new_args = []
