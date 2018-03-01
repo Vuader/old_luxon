@@ -137,16 +137,9 @@ def valid(password, hashed):
                     "plaintext" ]
         pwd_context = passlib.context.CryptContext(schemes=schemes)
 
-    # Validate Password using pwd_context
-    # with Timer() as elapsed:
-    #     val = pwd_context.verify(password, hashed)
-    #     log.debug('Hash Validated %s' % val +
-    #               ' (DURATION: %.4fs)' % elapsed())
-    #     return val
+    #Validate Password using pwd_context
+    with Timer() as elapsed:
+        val = pwd_context.verify(password, hashed)
+        log.debug('Hash Validated %s' % val, timer=elapsed())
 
-    #(Rony)This raises the error:  TypeError: a float is required
-    #Sorry if commenting this out breaks anything :(
-
-    val = pwd_context.verify(password, hashed)
-    return val
-
+        return val
