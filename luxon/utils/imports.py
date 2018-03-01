@@ -90,17 +90,19 @@ def get_class(path):
         The class at given path
     """
     if path is None:
-        raise ImportError("get_class: Cannot import 'None'")
+        raise ImportError("Cannot import 'None'")
 
     try:
         module, cls_name = path.split(':')
     except Exception:
-        raise ValueError("get_class: Invalid path definition '%s'" % path)
+        raise ValueError("Invalid path definition '%s'" % path)
 
     module = import_module(module)
 
     return getattr(module, cls_name)
 
+
+get_func = get_class
 
 def get_classes(classes):
     """Initilize Classes.

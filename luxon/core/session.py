@@ -59,6 +59,9 @@ class Session(object):
 
     """
     def __init__(self, session_id, backend=None, expire=3600):
+        if hasattr(session_id, '__call__'):
+            session_id = session_id()
+
         self._session_id = if_bytes_to_unicode(session_id, 'ISO-8859-1')
         self._session = {}
         if backend is not None:
@@ -196,4 +199,18 @@ class SessionFile(object):
                 pass
         finally:
             lock.release()
+
+def cookie():
+    expire = g.config.get('sessions', 'expire')
+    req = g.current_request
+
+    if 'luxon' in req.cookies:
+        session_id = if_bytes_to_unicode(req.cookies['luxon'],
+                                         'ISO-8859-1')
+    else:
+        session_id = req.id
+        req.response.set_cookie('luxon', session_id, max_age=expire,
+                                 domain=req.host)
+
+    return session_id
 

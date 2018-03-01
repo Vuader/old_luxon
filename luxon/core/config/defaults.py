@@ -36,11 +36,16 @@ defaults = {
         'use_forwarded': 'false',
         'timezone': 'local',
         'default_theme': 'default',
-        'restapi': 'http://localhost/api',
-        'log_stdout': True,
+        'log_stdout': 'True',
         'log_level': 'WARNING',
+    },
+    'restapi': {
+        'uri': 'http://localhost/api',
         'interface': 'public',
         'region': 'default',
+        'connect_timeout': '2',
+        'read_timeout': '8',
+        'verify': 'True',
     },
     'tokens': {
         'expire': '3600',
@@ -48,10 +53,8 @@ defaults = {
     },
     'sessions': {
         'expire': '3600',
-        'driver': 'luxon.core.session:SessionFile',
-    },
-    'tenants': {
-        'driver': 'luxon.core.tenant.example:ExampleDriver',
+        'backend': 'luxon.core.session:SessionFile',
+        'session': 'luxon.core.session:cookie',
     },
     'database': {
         'type': 'sqlite3',

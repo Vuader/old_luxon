@@ -45,7 +45,7 @@ from luxon.utils.timezone import parse_http_date
 from luxon.utils.objects import dict_value_property
 from luxon import GetLogger
 from luxon.core.session import Session
-from luxon.utils.imports import get_class
+from luxon.utils.imports import get_class, get_func
 from luxon.utils.encoding import if_unicode_to_bytes
 from luxon.utils.strings import blank_to_none
 
@@ -1124,16 +1124,10 @@ class Request(RequestBase):
     def session(self):
         if self._cached_session is None:
             expire = g.config.get('sessions', 'expire')
-            backend = g.config.get('sessions', 'driver')
+            backend = g.config.get('sessions', 'backend')
             backend = get_class(backend)
-
-            if 'luxon' in self.cookies:
-                session_id = if_bytes_to_unicode(self.cookies['luxon'],
-                                                 'ISO-8859-1')
-            else:
-                session_id = self.id
-                self.response.set_cookie('luxon', session_id, max_age=expire,
-                                         domain=self.host)
+            session_id = g.config.get('sessions', 'session')
+            session_id = get_func(session_id)
 
             self._cached_session = Session(session_id, expire=expire, backend=backend)
 
