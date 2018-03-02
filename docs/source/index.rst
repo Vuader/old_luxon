@@ -37,3 +37,5 @@ Documentation
    helpers/index
    utils/index
    community/index
+   structs/index
+   

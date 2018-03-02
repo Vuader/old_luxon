@@ -137,9 +137,9 @@ def valid(password, hashed):
                     "plaintext" ]
         pwd_context = passlib.context.CryptContext(schemes=schemes)
 
-    # Validate Password using pwd_context
+    #Validate Password using pwd_context
     with Timer() as elapsed:
         val = pwd_context.verify(password, hashed)
-        log.debug('Hash Validated %s' % val +
-                  ' (DURATION: %.4fs)' % elapsed())
+        log.debug('Hash Validated %s' % val, timer=elapsed())
+
         return val

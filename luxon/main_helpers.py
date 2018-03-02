@@ -36,6 +36,12 @@ from luxon.utils.imports import import_module
 
 
 def create_dir(path, new):
+    """Creates a new directory in a given location
+
+    Args:
+        path (str): location of new directory
+        new (str): name of new directory
+    """
     new = os.path.normpath('%s%s' % (path, new))
     if not os.path.exists(new):
         os.makedirs(new)
@@ -43,6 +49,20 @@ def create_dir(path, new):
 
 
 def copy_file(module, path, src, dst, update=True):
+    """Copy Resource
+
+    Given a module and a resource name this function will copy that resource into a given destination file.
+    If a file with that name already exists and update = False, a new file with .default appended to the name
+    will be created and used as the destination.
+    If update = True, the file it will be overwritten
+
+    Args:
+         module: package from which a resource will be copied
+         path (str): path of destination directory
+         src (str): name of resource to be copied
+         dst (str): destination file to be copied to
+         update (bool): whether existing file should be updated
+    """
     try:
         import_module(module)
     except ImportError as e:
@@ -74,6 +94,18 @@ def copy_file(module, path, src, dst, update=True):
 
 
 def recursive_copy(local, module, path):
+    """Copies a resource in the form of a directory
+
+    Recursively copies all the files in the resource directory.
+    A series of new files will be created in the given directory
+    to mirror the files in the resource
+
+    Args:
+        local (str): directory into which resource will be copied
+        module: package to be copied from
+        path (str): resource name
+
+    """
     if resource_isdir(module, path):
         for filename in resource_listdir(module, path):
             fullname = path + '/' + filename

@@ -33,13 +33,13 @@ from textwrap import indent, wrap
 
 
 def format_ms(ms):
-    """Format milliseconds to string.
+    """Format Seconds to string.
 
     Args:
-        ms (float): milliseconds.
+        ms (float): Seconds.
 
     Returns:
-        Milliseconds as human friendly string
+        Seconds as human friendly string
     """
     # Minutes
     if ms >= 60:
@@ -54,7 +54,14 @@ def format_ms(ms):
     ms = ms * 1000
     return '%.3fms' % ms
 
+#(Rony) Doesn't seem to work propperly, formats a list to empty string
 def format_obj(obj, dent=0):
+    """Formats an object
+
+    Takes a list or a dict
+
+
+    """
     rows, columns = os.popen('stty size', 'r').read().split()
     string = ""
     if isinstance(obj, list):

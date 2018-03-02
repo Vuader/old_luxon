@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2018 Christiaan Frans Rademan.
+# Copyright (c) 2018 Hieronymus Crouse.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,55 +28,18 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
 
-import datetime
-from timeit import default_timer
-from contextlib import contextmanager
+import pytest
+from luxon.utils.objects import *
+from luxon.utils.files import *
 
-from luxon import GetLogger
+def test_object_name():
 
-log = GetLogger(__name__)
+    x1 = FileObject("Gucci", "txt", "pls")
+    x2 = CachedInput("asdfasdfasdfasdf")
 
-debug_mode = log.debug_mode
+    assert object_name(x1) == "luxon.utils.files.FileObject"
+    assert object_name(x2) == "luxon.utils.files.CachedInput"
+    assert object_name(None) == "NoneType"
 
-#Not tested yet, does not seem to be working propperly
-class Timer():
-    """Code Execution Timer.
 
-    Wrap code in execution timer to see elasped time.
 
-    **Example**
-
-    .. code:: python
-
-        with timer() as elapsed:
-            time.sleep(1)
-            print(elapsed())
-            time.sleep(2)
-            print(elapsed())
-            time.sleep(3)
-        print(elapsed())
-    """
-
-    # NOTE(cfrademan): Yes this is pretty strange way going about it.
-    # However good performance is gained over using yield with contextlib.
-    # In this case the pattern wins since we use timers in many parts of
-    # the framework.
-    def __enter__(self):
-        start = default_timer()
-
-        def timed():
-            try:
-                return self.end
-            except AttributeError:
-                return default_timer() - start
-
-        if debug_mode():
-            self.timed = timed
-        else:
-            self.timed = lambda: None
-            return lambda: None
-
-        return timed
-
-    def __exit__(self, type, value, traceback):
-        self.end = self.timed()

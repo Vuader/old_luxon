@@ -32,6 +32,18 @@ from luxon import g
 
 
 def backup_tables(conn):
+    """Makes a backup of a database
+
+    Retrieves the models in use and returns the corresponding tables and their entries from the database
+
+    Args:
+        conn (connection object): connection object for the database
+
+    Returns:
+        Dictionary containing all tables in the database.
+        Each entry is a list(rows) of sequences(elements in row)
+        with the key being the table name
+    """
     models = {}
     for Model in reversed(g.models):
         if conn.has_table(Model.model_name):
@@ -42,17 +54,32 @@ def backup_tables(conn):
 
 
 def drop_tables(conn):
+    """Empties database
+
+    Deletes all the tables in a database that correspond to models in use
+
+    Args:
+        conn (connection object): the database to be deleted
+    """
     for Model in reversed(g.models):
         if conn.has_table(Model.model_name):
             conn.execute('DROP TABLE %s' % Model.model_name)
 
 
 def create_tables():
+    """Creates tables for all models in g.models
+    """
     for Model in g.models:
         Model.create_table()
 
 
 def restore_tables(conn, backup):
+    """Restores database from backup
+
+    Args:
+        conn (connection object): connection object of the database
+        backup (dict): backup dictionary
+    """
     for Model in g.models:
         if Model.model_name in backup:
             conn.insert(Model.model_name, backup[Model.model_name])

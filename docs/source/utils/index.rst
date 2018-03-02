@@ -26,3 +26,7 @@ Utilities Guide
     constants
     middleware
     files
+    db
+    http
+    html
+    classproperty

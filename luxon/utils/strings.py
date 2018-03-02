@@ -29,6 +29,15 @@
 # THE POSSIBILITY OF SUCH DAMAGE.
 
 def blank_to_none(value):
+    """Converts an empty string or byte object to None
+
+    If value is an empty string or an empty byte array None is returned
+    else value is returned
+
+    Args:
+        value(str/bytes): object to be converted
+
+    """
     if ((isinstance(value, str) and value == '') or
             (isinstance(value, bytes) and
              value == b'')):
@@ -70,7 +79,7 @@ def indent(text, indent):
     else:
         text = text.splitlines(True)
         return indent.join(text)
-
+    #(Rony): does not indent the first line of a multiline block, peep the unit test
 
 def unquote_string(quoted):
     """Unquote an "quoted-string".

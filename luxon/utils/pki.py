@@ -32,7 +32,7 @@ import OpenSSL
 from OpenSSL import crypto
 import base64
 
-
+#struggling to test
 def sign(key_file, data, passphrase=None, digest='sha512'):
     """Signature Generator
 
