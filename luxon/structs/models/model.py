@@ -40,7 +40,8 @@ from luxon.structs.models.fields import (BaseField,
                                          parse_defaults,
                                          ForeignKey,
                                          Index,
-                                         UniqueIndex,)
+                                         UniqueIndex,
+                                         Confirm,)
 from luxon.utils.cast import to_tuple
 
 class Model(object):
@@ -113,7 +114,9 @@ class Model(object):
                                      " Cannot alter primary key '%s'"
                                      % key) from None
 
-            self._new[key] = self.fields[key]._parse(value)
+            if ((value is None and self.fields[key].ignore_null is not True) or
+                    value is not None):
+                self._new[key] = self.fields[key]._parse(value)
             self._updated = True
         else:
             raise NotImplementedError()
@@ -142,6 +145,8 @@ class Model(object):
         elif isinstance(self._current, dict):
             transaction = {**self._current, **self._new}
             for field in transaction.copy():
+                if isinstance(self.fields[field], Confirm):
+                    del transaction[field]
                 if field in self._hide:
                     del transaction[field]
             return transaction
@@ -196,7 +201,7 @@ class Model(object):
     def dict(self):
         """Return as raw dict.
         """
-        return self.transaction.copy()
+        return self._transaction.copy()
 
     def rollback(self):
         """Rollback.
@@ -229,7 +234,14 @@ class Model(object):
                      self._transaction[field] is None)):
                 self.fields[field].error('required')
 
-            if (field in self._transaction and
+            if isinstance(self.fields[field], Confirm):
+                confirm_field = self.fields[field].field.name
+                value1 = self._transaction.get(confirm_field)
+                value2 = self._transaction.get(field)
+                if value1 != value2:
+                    raise Exception('boom')
+
+            elif (field in self._transaction and
                     self.fields[field].db):
                 transaction[field] = self._transaction[field]
 
@@ -243,7 +255,6 @@ class Model(object):
         else:
             self._current = self._transaction
 
-        #self._new.clear()
         self._created = False
         self._updated = False
 

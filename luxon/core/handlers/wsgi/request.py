@@ -651,23 +651,6 @@ class Request(RequestBase):
     def form_dict(self):
         form = self.form
 
-        def parse_value(form, key):
-            value = form[key]
-            if isinstance(value, list):
-                return form.getlist(key)
-            else:
-                return blank_to_none(form.getfirst(key))
-
-        return dict( (value, parse_value(form, value)) for value in form)
-
-    @property
-    def form_array(self):
-        raise NotImplementedError('Todo!')
-
-    @property
-    def form_json(self):
-        form = self.form
-
         json_safe_object = {}
 
         for prop in form:
@@ -694,7 +677,15 @@ class Request(RequestBase):
                 else:
                     json_safe_object[prop] = blank_to_none(field.value)
 
-        return js.dumps(json_safe_object)
+        return json_safe_object
+
+    @property
+    def form_array(self):
+        raise NotImplementedError('Todo!')
+
+    @property
+    def form_json(self):
+        return js.dumps(self.form_dict)
 
     def get_header(self, name, required=False, default=None):
         """Retrieve the raw string value for the given header.

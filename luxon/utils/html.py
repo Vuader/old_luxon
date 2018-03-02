@@ -32,6 +32,7 @@ from luxon.structs.models.fields import String
 from luxon.structs.models.fields import Boolean
 from luxon.structs.models.fields import DateTime
 from luxon.structs.models.fields import Enum
+from luxon.structs.models.fields import Confirm
 from luxon.utils.timezone import format_datetime
 
 def select(name, options, selected, empty=False, cls=None, onchange=None,
@@ -296,7 +297,7 @@ def form(model, values=None, readonly=False):
     elif values is None:
         values = {}
 
-    def html_field(field, confirm=False):
+    def html_field(field):
             value = values.get(field)
             if value is None:
                 value = obj.default
@@ -309,13 +310,12 @@ def form(model, values=None, readonly=False):
             label = form_group.create_element('label')
             label.set_attribute('class', 'control-label col-sm-2')
             label.set_attribute('for', 'field')
-            if confirm:
-                label.append("Confirm ")
 
             if obj.label is not None:
                 label.append(obj.label)
             else:
-                label.append(field)
+                label.append(obj.name.title().replace('_', ' '))
+
             div = form_group.create_element('div')
             div.set_attribute('class', 'col-sm-10')
 
@@ -323,9 +323,6 @@ def form(model, values=None, readonly=False):
                 field_readonly = True
             else:
                 field_readonly = readonly
-
-            if confirm:
-                field = 'confirm_' + field
 
             if isinstance(obj, Enum):
                 div.append(select(field, obj.enum, value, cls="select",
@@ -363,9 +360,12 @@ def form(model, values=None, readonly=False):
                     input.set_attribute('checked')
                 input.set_attribute('value', 'true')
 
-            elif isinstance(obj, String):
+            elif isinstance(obj, (String, Confirm,)):
                 input = div.create_element('input')
-                input.set_attribute('type', 'text')
+                if obj.password is False:
+                    input.set_attribute('type', 'text')
+                else:
+                    input.set_attribute('type', 'password')
                 input.set_attribute('class', 'form-control')
                 input.set_attribute('id', field)
                 input.set_attribute('name', field)
@@ -391,7 +391,5 @@ def form(model, values=None, readonly=False):
         obj = fields[field]
         if obj.hidden is False and obj.internal is False:
             html_field(field)
-            if obj.confirm and obj.readonly is False and readonly is False:
-                html_field(field, confirm=True)
 
     return html

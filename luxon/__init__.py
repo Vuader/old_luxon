@@ -94,6 +94,7 @@ from luxon.structs.models.fields import Username
 from luxon.structs.models.fields import Index
 from luxon.structs.models.fields import UniqueIndex
 from luxon.structs.models.fields import ForeignKey
+from luxon.structs.models.fields import Confirm
 
 from luxon.core.config import Config
 
