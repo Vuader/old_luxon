@@ -106,9 +106,9 @@ class FieldError(ValidationError):
         self.value = value
         msg = "The field"
         if self.label is not None:
-            msg += " '%s' (%s)" % (label, field,)
+            msg += " '%s'" % (label,)
         else:
-            msg += " '%s'" % (field,)
+            msg += " '%s'" % (field.title().replace('_', ' '),)
         msg += " %s" % description
         super().__init__(msg)
 

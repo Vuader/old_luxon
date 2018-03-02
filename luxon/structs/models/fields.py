@@ -92,14 +92,14 @@ class BaseField(object):
                  'db', 'label', 'placeholder', 'readonly', 'prefix',
                  'suffix', 'columns' ,'hidden', 'enum', '_field_name', '_table',
                  '_value', '_creation_counter', 'm', 'd', 'on_update',
-                 'password', 'signed', 'confirm')
+                 'password', 'signed', 'ignore_null')
 
     def __init__(self, length=None, min_length=None, max_length=None,
                  null=True, default=None, db=True, label=None,
                  placeholder=None, readonly=False, prefix=None,
                  suffix=None, columns=None, hidden=False,
                  enum=[], on_update=None, password=False,
-                 signed=True, internal=False, confirm=False):
+                 signed=True, internal=False, ignore_null=False):
         self._creation_counter = global_counter()
         self._value = None
 
@@ -124,7 +124,7 @@ class BaseField(object):
         self.enum = enum
         self.password = password
         self.internal = internal
-        self.confirm = confirm
+        self.ignore_null = False
 
     @property
     def name(self):
@@ -154,6 +154,22 @@ class BaseField(object):
         if value is not None:
             return self.parse(value)
 
+
+class Confirm(BaseField):
+    def __init__(self, field):
+        self.field = field
+        super().__init__()
+        self.db = False
+        self.min_length = self.field.min_length
+        self.max_length = self.field.max_length
+        self.length = self.field.length
+        self.readonly = self.field.readonly
+        self.password = self.field.password
+
+    def parse(self, value):
+        return self.field.parse(value)
+
+
 class String(BaseField):
     """String Field.
 
@@ -176,7 +192,7 @@ class String(BaseField):
     def parse(self, value):
         value = if_bytes_to_unicode(value)
         if not isinstance(value, str):
-            self.error('Text/String value required)', value)
+            self.error('Text/String value required) %s' % value, value)
         value = super().parse(value)
         return value
 

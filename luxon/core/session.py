@@ -201,15 +201,15 @@ class SessionFile(object):
             lock.release()
 
 def cookie():
-    expire = g.config.get('sessions', 'expire')
     req = g.current_request
+    cookie_name = req.host.replace('.', '_')
 
-    if 'luxon' in req.cookies:
-        session_id = if_bytes_to_unicode(req.cookies['luxon'],
+    if cookie_name in req.cookies:
+        session_id = if_bytes_to_unicode(req.cookies[cookie_name],
                                          'ISO-8859-1')
     else:
         session_id = req.id
-        req.response.set_cookie('luxon', session_id, max_age=expire,
+        req.response.set_cookie(cookie_name, session_id,
                                  domain=req.host)
 
     return session_id
