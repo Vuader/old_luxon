@@ -31,6 +31,7 @@ import pytest
 
 from luxon import register_resource
 
+"""
 @pytest.fixture(scope="module")
 def client():
     from luxon.testing.wsgi.client import Client
@@ -46,3 +47,5 @@ def test_wsgi_query(client):
     result = client.get(path='/query', query_string='test1=test1&test2=test2')
     assert result.status_code == 200
     assert result.text == 'test1:test2'
+
+"""

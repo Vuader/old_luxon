@@ -33,16 +33,15 @@ def to_tuple(obj):
     """Tuple Converter
 
     Takes any object and converts it to a tuple.
-    If the object is a list, it is converted immediatly using tuple().
     If the object is already a tuple it is just returned,
-    If the object is None a empty tuple is returned,
+    If the object is None an empty tuple is returned,
     Else a tuple is created with the object as it's first element.
 
     Args:
         obj (any object): the object to be converted
 
     Returns:
-        A tuple containg the given object
+        A tuple containing the given object
     """
     if isinstance(obj, list):
         return tuple(obj)
@@ -57,16 +56,15 @@ def to_list(obj):
     """List Converter
 
     Takes any object and converts it to a `list`.
-    If the object is a list, it is converted immediatly using `list()`.
     If the object is already a `list` it is just returned,
-    If the object is None a empty `list` is returned,
+    If the object is None an empty `list` is returned,
     Else a `list` is created with the object as it's first element.
 
     Args:
         obj (any object): the object to be converted
 
     Returns:
-        A list containg the given object
+        A list containing the given object
     """
     if isinstance(obj, tuple):
         return list(obj)

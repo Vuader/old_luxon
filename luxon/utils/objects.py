@@ -57,7 +57,7 @@ def object_name(obj):
 
     raise ValueError("Cannot determine object name '%s'" % type(obj)) from None
 
-
+#Not tested yet
 def dict_value_property(dictionary, key):
     """Create a read-only property
 

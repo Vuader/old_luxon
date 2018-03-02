@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2018 Christiaan Frans Rademan.
+# Copyright (c) 2018 Hieronymus Crouse.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,55 +28,38 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
 
-import datetime
-from timeit import default_timer
-from contextlib import contextmanager
+import pytest
+from luxon.utils.constants import Constants
 
-from luxon import GetLogger
 
-log = GetLogger(__name__)
+def test_const():
 
-debug_mode = log.debug_mode
+    const = Constants()
 
-#Not tested yet, does not seem to be working propperly
-class Timer():
-    """Code Execution Timer.
+    #__setattr__
+    const.tuna = 'fish'
+    const.olive = "oil"
+    const.spices = ["cayenne","cumin","fenugreek"]
 
-    Wrap code in execution timer to see elasped time.
+    #rebind
+    try:
+        const.tuna = "prawn"
+        assert False
+    except:
+        assert True
 
-    **Example**
+    #__contains__
+    if 'tuna' in const and 'olive' and 'spices' in const:
+        assert True
+    else:
+        assert False
 
-    .. code:: python
+    #__getitem__
+    a = const.tuna
+    assert a == "fish"
 
-        with timer() as elapsed:
-            time.sleep(1)
-            print(elapsed())
-            time.sleep(2)
-            print(elapsed())
-            time.sleep(3)
-        print(elapsed())
-    """
+    b = const.spices
+    assert b ==("cayenne","cumin","fenugreek")
 
-    # NOTE(cfrademan): Yes this is pretty strange way going about it.
-    # However good performance is gained over using yield with contextlib.
-    # In this case the pattern wins since we use timers in many parts of
-    # the framework.
-    def __enter__(self):
-        start = default_timer()
 
-        def timed():
-            try:
-                return self.end
-            except AttributeError:
-                return default_timer() - start
 
-        if debug_mode():
-            self.timed = timed
-        else:
-            self.timed = lambda: None
-            return lambda: None
-
-        return timed
-
-    def __exit__(self, type, value, traceback):
-        self.end = self.timed()

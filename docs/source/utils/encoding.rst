@@ -1,4 +1,7 @@
-.. _encoding:
+========
+Encoding
+========
+.. _bytes_to_unicode:
 
 Bytes to Unicode
 ================

@@ -33,7 +33,7 @@ import threading
 from luxon.utils.objects import object_name
 
 class ThreadList(object):
-    """Thread list.
+    """List for Threads
 
     Allows thread safe and mutable iterations and unique sequence set of values
     per thread. Context for sequence of values being the thread id.
