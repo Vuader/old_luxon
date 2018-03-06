@@ -35,12 +35,18 @@ from luxon import exceptions
 from luxon.utils.imports import get_class
 from luxon.utils.cast import to_list
 
+from luxon.core.logger import GetLogger
+
+log = GetLogger(__name__)
+
+
 class SQLModel(Model):
     db_engine = 'innodb'
     db_charset = 'UTF8'
     db_default_rows = []
 
     def _sql_parse(self, result):
+        log.debug("MYDEBUG: %s" % result)
         if len(result) > 0:
             if isinstance(self._current, dict):
                 if len(result) > 1:
@@ -83,9 +89,6 @@ class SQLModel(Model):
                                " No primary key") from None
 
             primary_id = self._transaction[self.primary_key.name]
-
-            ctx_query, ctx_values = self._api_context(False)
-
             crsr = conn.execute("DELETE FROM %s" % self.model_name +
                                 " WHERE %s" % self.primary_key.name +
                                 " = %s",
