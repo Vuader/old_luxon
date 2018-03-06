@@ -35,6 +35,7 @@ from luxon import exceptions
 from luxon.utils.imports import get_class
 from luxon.utils.cast import to_list
 
+
 class SQLModel(Model):
     db_engine = 'innodb'
     db_charset = 'UTF8'
@@ -83,9 +84,6 @@ class SQLModel(Model):
                                " No primary key") from None
 
             primary_id = self._transaction[self.primary_key.name]
-
-            ctx_query, ctx_values = self._api_context(False)
-
             crsr = conn.execute("DELETE FROM %s" % self.model_name +
                                 " WHERE %s" % self.primary_key.name +
                                 " = %s",
