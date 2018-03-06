@@ -32,8 +32,7 @@ import pytest
 from luxon import g
 #from luxon.utils.cache import *
 
+#requires redis from g.config? Probably not that hard to test
+
 def test_Cache():
-
-    print(g.config.sections())
-
-test_Cache()
+    pass

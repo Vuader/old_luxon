@@ -32,4 +32,16 @@
 from luxon.utils.db import *
 from luxon.core.db.base.connection import *
 
+#Requires database and connection objects
 
+def test_backup_tables():
+    pass
+
+def test_drop_tables():
+    pass
+
+def test_create_tables():
+    pass
+
+def test_restore_tables():
+    pass
