@@ -35,10 +35,6 @@ from luxon import exceptions
 from luxon.utils.imports import get_class
 from luxon.utils.cast import to_list
 
-from luxon.core.logger import GetLogger
-
-log = GetLogger(__name__)
-
 
 class SQLModel(Model):
     db_engine = 'innodb'
@@ -46,7 +42,6 @@ class SQLModel(Model):
     db_default_rows = []
 
     def _sql_parse(self, result):
-        log.debug("MYDEBUG: %s" % result)
         if len(result) > 0:
             if isinstance(self._current, dict):
                 if len(result) > 1:
