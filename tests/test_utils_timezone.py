@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2018 Christiaan Frans Rademan.
+# Copyright (c) 2018 Hieronymus Crouse.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,51 +27,75 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
-import os
+
 import datetime
-from textwrap import indent, wrap
+from luxon import g
+from luxon.core.config import *
+from luxon.utils.timezone import *
+
+def test_parse_http_date():
+
+    z = "Wed, 23 Sep 2009 22:15:29 GMT"
+    z2 = "Wednesday, 23-Sep-09 22:15:29 GMT"
+    x = parse_http_date(z)
+    u = parse_http_date(z2, True)
+    y = datetime.datetime(2009,9,23,22,15,29)
+
+    assert u == x == y
+
+    print(type(x))
+    print(type(y))
+
+test_parse_http_date()
+
+def test_TimezoneGMT():
+    z = "Wed, 23 Sep 2009 22:15:29 GMT"
+    pls = TimezoneGMT()
+
+    #utcoffset
+    o = pls.utcoffset(z)
+    r = datetime.timedelta(0)
+    assert o==r
+
+    #tzname
+    name = pls.tzname(z)
+    assert name == "GMT"
+
+    #dst
+    sav = pls.dst(z)
+    assert sav == datetime.timedelta(0)
 
 
-def format_ms(ms):
-    """Format Seconds to string.
+def test_TimezoneSystem():
+    x = TimezoneSystem()
+    y = get_localzone()
+    assert x == y
 
-    Args:
-        ms (float): Seconds.
+def test_parse_datetime():
 
-    Returns:
-        Seconds as human friendly string
-    """
-    # Minutes
-    if ms >= 60:
-        ms = str(datetime.timedelta(seconds=round(ms)))
-        hours, days, seconds = ms.split(':')
-        return '%sh %sm %ss' % (hours, days, seconds)
-    # Seconds
-    if ms >= 1:
-        return '%.3fs' % ms
+    try:
+        x = parse_datetime("2009,9,23,22,15,29")
+        assert False
+    except ValueError:
+        assert True
 
-    # Milliseconds
-    ms = ms * 1000
-    return '%.3fms' % ms
+    pls = py_datetime(2009,9,23,22,15,29)
+    z = "2009-09-23 22:15:29"
 
-#(Rony) Doesn't seem to work propperly, formats a list to empty string?
-def format_obj(obj, dent=0):
-    """Formats an object
+    assert parse_datetime(pls) == datetime.datetime(2009,9,23,22,15,29)
 
-    Takes a list or a dict
+    y = parse_datetime(z)
+    assert y == datetime.datetime(2009,9,23,22,15,29)
 
 
-    """
-    rows, columns = os.popen('stty size', 'r').read().split()
-    string = ""
-    if isinstance(obj, list):
-        dent = dent + 4
-        for item in obj:
-            string += indent(format_obj(item, dent), ' '*dent)
-            string += '\n\n'
-    elif isinstance(obj, dict):
-        for key in obj:
-            string += "%s: %s " % (key, obj[key],)
-        return '\n'.join(wrap(string, int(columns)-dent, drop_whitespace=False,
-                              subsequent_indent='|'))
-    return string
+
+def test_now():
+
+    x = now()
+    y = py_datetime.now(TimezoneUTC())
+    z = type(y)
+    assert x is not None and type(x) == z
+
+
+
+# TimezoneApp() and format_datetime() mess with g.app.config, will take a look later

@@ -38,7 +38,7 @@ log = GetLogger(__name__)
 
 debug_mode = log.debug_mode
 
-#Not tested yet, does not seem to be working propperly
+
 class Timer():
     """Code Execution Timer.
 

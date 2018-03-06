@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2018 Christiaan Frans Rademan.
+# Copyright (c) 2018 Hieronymus Crouse.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,51 +27,61 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
-import os
-import datetime
-from textwrap import indent, wrap
+
+import pytest
+from luxon.utils.pool import *
+
+#trashy stub to simulate connection objects
+class Connect():
+    def __init__(self,x,y,z):
+        self.host = x
+        self.username = y
+        self.password = z
+
+def con_func():
+    return Connect("host","username","password")
 
 
-def format_ms(ms):
-    """Format Seconds to string.
 
-    Args:
-        ms (float): Seconds.
+#create pool
+pool = Pool(con_func, pool_size = 3, max_overflow = 2)
+assert pool._count == 0
 
-    Returns:
-        Seconds as human friendly string
-    """
-    # Minutes
-    if ms >= 60:
-        ms = str(datetime.timedelta(seconds=round(ms)))
-        hours, days, seconds = ms.split(':')
-        return '%sh %sm %ss' % (hours, days, seconds)
-    # Seconds
-    if ms >= 1:
-        return '%.3fs' % ms
+#fetch/create conn objects
 
-    # Milliseconds
-    ms = ms * 1000
-    return '%.3fms' % ms
+conn = pool()
+assert pool._count == 1
+assert conn.host == "host"
 
-#(Rony) Doesn't seem to work propperly, formats a list to empty string?
-def format_obj(obj, dent=0):
-    """Formats an object
+conn = pool()
+assert pool._count == 2
 
-    Takes a list or a dict
+conn = pool()
+assert pool._count == 3
 
+#overflow starts
+conn = pool()
+assert pool._count == 4
 
-    """
-    rows, columns = os.popen('stty size', 'r').read().split()
-    string = ""
-    if isinstance(obj, list):
-        dent = dent + 4
-        for item in obj:
-            string += indent(format_obj(item, dent), ' '*dent)
-            string += '\n\n'
-    elif isinstance(obj, dict):
-        for key in obj:
-            string += "%s: %s " % (key, obj[key],)
-        return '\n'.join(wrap(string, int(columns)-dent, drop_whitespace=False,
-                              subsequent_indent='|'))
-    return string
+conn = pool()
+assert pool._count == 5
+
+#max size reached
+try:
+    conn = pool()
+    assert False
+except:
+    assert True
+
+#close/return connection objects
+
+conn.close()
+assert pool._count == 4
+
+conn.close()
+assert pool._count == 3
+
+#overflow empty
+conn.close()
+assert pool._count == 3
+

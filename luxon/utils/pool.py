@@ -137,7 +137,8 @@ class Pool(object):
         get_obj_func (function): The function that creates and returns the connector object.
         pool_size (int): Length of the queue. At any given time no more than this many objects will
                          exist in the queue.
-        max_overflow (int): How many objects can be created over and above the pool size. The maximum
+        max_overflow (int): How many objects can be created over an
+                            above the pool size. The maximum
                             number of objects that will exist at any given time equals the sum of pool_size
                             and max_overflow. When the number of created objects exceed the pool_size, the next object
                             to be closed will really be closed and not returned to the pool.

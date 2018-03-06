@@ -29,15 +29,22 @@
 # THE POSSIBILITY OF SUCH DAMAGE.
 
 #import pytest
+
 import time
 from luxon.utils.timer import *
+from luxon.core.logger import *
+
+
 
 def test_Timer():
 
-    with Timer() as elapsed:
-        print(elapsed())
-        #time.sleep(1)
-        print(elapsed())
+    log = GetLogger()
+    log.setLevel("DEBUG")
 
-#What?
+    with Timer() as elapsed:
+
+        assert elapsed()<0.001
+        time.sleep(0.01)
+        assert elapsed()<0.02 and elapsed()>0.01
+
 
