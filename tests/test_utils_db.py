@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2018 Christiaan Frans Rademan.
+# Copyright (c) 2018 Hieronymus Crouse.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,51 +27,21 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
-import os
-import datetime
-from textwrap import indent, wrap
 
 
-def format_ms(ms):
-    """Format Seconds to string.
+from luxon.utils.db import *
+from luxon.core.db.base.connection import *
 
-    Args:
-        ms (float): Seconds.
+#Requires database and connection objects
 
-    Returns:
-        Seconds as human friendly string
-    """
-    # Minutes
-    if ms >= 60:
-        ms = str(datetime.timedelta(seconds=round(ms)))
-        hours, days, seconds = ms.split(':')
-        return '%sh %sm %ss' % (hours, days, seconds)
-    # Seconds
-    if ms >= 1:
-        return '%.3fs' % ms
+def test_backup_tables():
+    pass
 
-    # Milliseconds
-    ms = ms * 1000
-    return '%.3fms' % ms
+def test_drop_tables():
+    pass
 
-#(Rony) Doesn't seem to work propperly, formats a list to empty string?
-def format_obj(obj, dent=0):
-    """Formats an object
+def test_create_tables():
+    pass
 
-    Takes a list or a dict
-
-
-    """
-    rows, columns = os.popen('stty size', 'r').read().split()
-    string = ""
-    if isinstance(obj, list):
-        dent = dent + 4
-        for item in obj:
-            string += indent(format_obj(item, dent), ' '*dent)
-            string += '\n\n'
-    elif isinstance(obj, dict):
-        for key in obj:
-            string += "%s: %s " % (key, obj[key],)
-        return '\n'.join(wrap(string, int(columns)-dent, drop_whitespace=False,
-                              subsequent_indent='|'))
-    return string
+def test_restore_tables():
+    pass
