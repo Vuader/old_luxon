@@ -255,7 +255,7 @@ class Menu(object):
         a = li.create_element('a')
         a.set_attribute('href', href)
         for kwarg in kwargs:
-            a.set_attribute(kwarg, **kwargs)
+            a.set_attribute(kwarg, kwargs[kwarg])
         if image is not None:
             img = a.create_element('img')
             img.set_attribute('alt', name)

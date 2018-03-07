@@ -128,6 +128,7 @@ def main(argv):
 
     args = parser.parse_args()
 
+    site.addsitedir(os.path.abspath(os.path.abspath(args.path)))
     if args.funcs is not None:
         for func in args.funcs:
             func(args)
