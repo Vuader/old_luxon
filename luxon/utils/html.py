@@ -33,6 +33,7 @@ from luxon.structs.models.fields import Boolean
 from luxon.structs.models.fields import DateTime
 from luxon.structs.models.fields import Enum
 from luxon.structs.models.fields import Confirm
+from luxon.structs.models.fields import Integer
 from luxon.utils.timezone import format_datetime
 
 def select(name, options, selected, empty=False, cls=None, onchange=None,
@@ -360,7 +361,7 @@ def form(model, values=None, readonly=False):
                     input.set_attribute('checked')
                 input.set_attribute('value', 'true')
 
-            elif isinstance(obj, (String, Confirm,)):
+            elif isinstance(obj, (String, Confirm, Integer)):
                 input = div.create_element('input')
                 if obj.password is False:
                     input.set_attribute('type', 'text')
