@@ -216,7 +216,7 @@ class SQLModel(Model):
     @classmethod
     def create_table(cls):
         if cls.primary_key is None:
-            raise KeyError("Model %s:" % cls.name +
+            raise KeyError("Model %s:" % cls.__name__ +
                            " No primary key") from None
 
         api = g.config.get('database', 'type')
